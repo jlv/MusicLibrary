@@ -8,7 +8,36 @@
 // Parameters
 //
 
+$hostname = gethostname();
 
+//
+// Params can change as hostname changes
+//
+
+if ($hostname != "Rising-Sun")
+{
+// NOn-Rising-Sun Machines
+
+//
+// Log file directory
+$logdir = "c:/quentin/MusicWorking/Log";
+//
+// Log print flag: if set to TRUE, prints log messages to screen 
+//  and to log file
+$logprint = TRUE;
+//$logprint = FALSE;
+
+// source directory of wave files and cue files
+$srcdir = "c:/quentin/MusicWorking/MusicSrc";
+
+// destimation MP3 directory
+$mp3dir = "c:/quentin/MusicWorking/MusicMP3";
+
+
+}
+else
+{
+// Rising-Sun
 
 //
 // Log file directory
@@ -19,15 +48,14 @@ $logdir = "d:/Music Programming/Log";
 $logprint = TRUE;
 //$logprint = FALSE;
 
-//
-// Delete files in destination directory
-//$dir = "C:/Quentin/MusicReference";
-
 // source directory of wave files and cue files
 $srcdir = "D:/Music Programming/Music Ref";
 
 // destimation MP3 directory
 $mp3dir = "D:/Music Programming/Music Out";
+}
+
+
 
 // location of coverter binary to be invoked through system call
 $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";

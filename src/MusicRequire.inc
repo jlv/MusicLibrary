@@ -177,7 +177,8 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
         else
           plog("User function '" . $ufunction . "' is not callable.");
 
-	closedir($dir);
+     // close directory
+     closedir($dir);
   }
   else
     // If selected file is not a folder, print error
