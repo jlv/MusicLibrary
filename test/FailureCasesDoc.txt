@@ -1,0 +1,80 @@
+Music Library
+Test Cases
+FailureCase.cue Failure Modes
+
+Track 1:
+- should pass if wav file is in the directory
+
+
+Track 2:
+Fails: Not NN
+
+Track 3:
+Fails: Too many N' NNNN
+
+Track 4:
+Fails: Old format: NN -
+
+
+Track 5:
+Fails: Old format: NN ~
+
+
+Track 6:
+Fails: Old format: NN. -
+
+
+Track 7:
+Fails: Old format: NNN ~
+
+
+Track 8:
+Fails: NN. X
+
+
+Track 9:
+Fails: Extra space after NN
+
+Track 10:
+Fails: Not a wav file
+
+Track 11:
+Fails: Doesn't end in .wav (no .)
+
+Track 12:
+Succeeds: WAV instead of wav (match should be 
+
+Track 13:
+Fails: Special character: /
+
+Track 14:
+Fails: Special character: \
+
+
+Track 15:
+Fails: Special character: >
+
+
+Track 16:
+Fails: Special character: <
+
+
+Track 17:
+Fails: Special character: :
+
+
+Track 18:
+Fails: Special character: "
+
+
+Track 19:
+Fails: Special character: ?
+
+
+Track 20:
+Fails: Special character: *
+
+
+Track 21:
+Fails: Special character: |
+

@@ -1,0 +1,117 @@
+REM GENRE "Progressive Rock"
+REM DATE 1983
+REM DISCID 7D0A7D09
+REM COMMENT "ExactAudioCopy v0.99pb5"
+PERFORMER "Yes"
+TITLE "90125"
+FILE "01 Owner Of A Lonely Heart.wav" WAVE
+  TRACK 01 AUDIO
+    TITLE "Owner Of A Lonely Heart"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:00:33
+FILE "2 Hold On.wav" WAVE
+  TRACK 02 AUDIO
+    TITLE "Hold On"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:03:15
+FILE "0003 It Can Happen.wav" WAVE
+  TRACK 03 AUDIO
+    TITLE "It Can Happen"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:03:13
+FILE "04 - Changes.wav" WAVE
+  TRACK 04 AUDIO
+    TITLE "Changes"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:01:71
+FILE "05 ~ Cinema.wav" WAVE
+  TRACK 05 AUDIO
+    TITLE "Cinema"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:01:19
+FILE "06. - Leave It.wav" WAVE
+  TRACK 06 AUDIO
+    TITLE "Leave It"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "007 ~ Our Song.wav" WAVE
+  TRACK 07 AUDIO
+    TITLE "Our Song"
+    PERFORMER "Yes"
+    INDEX 00 00:00:00
+    INDEX 01 00:00:60
+FILE "08. City Of Love.wav" WAVE
+  TRACK 08 AUDIO
+    TITLE "City Of Love"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "09  Hearts.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "10 Hearts1.wv" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "11 Hearts2.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "12 Hearts3.WAV" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "13 Hea/rts4.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "14 H\earts5.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "15 Hear>ts6.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "16 He<arts7.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "17 Hear:ts8.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "18 Hear"ts9.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "19 Hea?rts10.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "20 Hea*rts11.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
+FILE "21 H|earts12.wav" WAVE
+  TRACK 09 AUDIO
+    TITLE "Hearts"
+    PERFORMER "Yes"
+    INDEX 01 00:00:00
