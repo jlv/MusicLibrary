@@ -60,7 +60,7 @@ FILE "10 Hearts1.wv" WAVE
     TITLE "Hearts"
     PERFORMER "Yes"
     INDEX 01 00:00:00
-FILE "11 Hearts2.wav" WAVE
+FILE "11 Hearts2wav" WAVE
   TRACK 09 AUDIO
     TITLE "Hearts"
     PERFORMER "Yes"

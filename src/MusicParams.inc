@@ -30,6 +30,9 @@ $logprint = TRUE;
 // source directory of wave files and cue files
 $srcdir = "c:/quentin/MusicWorking/MusicSrc";
 
+// source directory of wave files and cue files
+$cuedir = "c:/quentin/MusicWorking/cuefiles";
+
 // destimation MP3 directory
 $mp3dir = "c:/quentin/MusicWorking/MusicMP3";
 
