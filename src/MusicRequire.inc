@@ -43,18 +43,19 @@ function debug()
 /// Use plog to log individual messages
 ///
 
-// function log_init()
+// function log_init($logroot)
+//   $logroot - rootname of log file, after which date and extension are added
+//              example: mylog produces file mylog.20181228-074823.log
 //
-// initializes log file
+// initializes log file for further use by plog
 //
-// $logroot - rootname of log file, after which date and extension are added
 //
 // Uses the following globals:
 //   - logdir: directory for log files
 //   - logroot: root name of logfile
 //   - logfilehdl: 
 // requires that $logdir be defined.  Uses $logroot as the name of the logfile.
-///
+//
 function log_init($logroot)
 {
   global $logdir;
@@ -131,13 +132,15 @@ function plog($message)
 //  $ufunction - string of user function name to perform on non-folders.  This
 //       function is called on every directory entry that is not a directory itself.
 //       matching format of function:
-//         ufunction($base_folder, $add_folder, $new_base_folder, $filename, $array_of_params)
+//         ufunction($base_folder, $add_folder, $new_base_folder, $filename, $array_of_options)
 //  $options - array of options passed to $ufunction
 //  no return value;
 //    NOTE: should we return something?
 //
 // crawl function - crawls each directory under $base folder and executes $function
 //       on any files that are not a directory.
+//
+// A typical call to crawl would start with $add_folder set to "".
 //
 // Note: uses '/' to delimit directories.  This works on windows platforms as well.
 //
