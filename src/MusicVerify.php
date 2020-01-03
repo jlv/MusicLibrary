@@ -11,38 +11,45 @@ function verify($input)  {
 
 	//checks backslash
 	if(preg_match('/\\\/', $title))
-		return 1;
+		plog("ERROR: has \ in title");
 
 	//checks if it starts with a number and space
 	$num2 = "/^\d{2,3} /";
 	//$num3 = "/\d\d\d /";
-	if(!preg_match($num2, $title))
-		return 1;
+	else if(!preg_match($num2, $title))
+		plog("ERROR: does not start with a number followed by a space");
 
 	//checks for - after beginning number
 	$character1 = "/^\d{2,3} -/";
 	//$character2 = "/\d\d\d -/";
-	if(preg_match($character1, $title))
-		return 1;
+	else if(preg_match($character1, $title))
+		plog("ERROR: has -  after number");
 
 	//checks if character after whitespace is non-whitespace
 	$character = "/^\d{2,3} \s/";
-	if(preg_match($character, $title))
-		return 1;
+	else if(preg_match($character, $title))
+		plog("ERROR: two white spaces in a row");
 
 	//checks for all other special characters
 	$special = "/[~\?\*\+\[\]\(\)\{\}\^\$\|<>:;\/\"]/";
 	//"
-	if(preg_match($special, $title))
-		return 1;
+	else if(preg_match($special, $title))
+		plog("ERROR: invalid special character");
 
 	//checks for ending in .wav
 	$wav = "/\.wav/i";
-	if(!preg_match($wav,$title))
-		return 1;
+	else if(!preg_match($wav,$title))
+		plog("ERROR: does not end in .wav");
 
 	//checks if name exists in directory
-	return 0;
+	$fileExists = file_exists($title);
+	else if(!$fileExists){
+	    plog("ERROR: file does not exist");
+	}
+
+	else{
+		return 0;
+	}
 }
 
 
