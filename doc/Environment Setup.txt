@@ -1,0 +1,14 @@
+Music Environment Setup
+
+Production environment:
+  Log - directory where log files are stored
+  MusicWav
+  MusicMP3
+  Trash
+  "$Z Old Cue Sheets"
+
+
+Development environment:
+
+
+Reference files (available in BigFiles\Music Programming)
