@@ -22,7 +22,7 @@ date_default_timezone_set($sys_time_zone);
 // function: debug
 //  returns true if $debug is true, otherwise returns false
 //
-//  use: if (debug()) {}
+//  use in programming: if (debug()) {}
 $debug=FALSE;
 $debug=TRUE;
 //
@@ -38,6 +38,9 @@ function debug()
 ///
 /// Log Functions
 ///
+///
+/// Use log_init() to set up logging at the first of the routine
+/// Use plog to log individual messages
 ///
 
 // function log_init()

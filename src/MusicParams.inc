@@ -8,68 +8,115 @@
 // Parameters
 //
 
+//
+// Timezone setting
+//  -- the string must come from a PHP list found here:
+//       http://php.net/manual/en/timezones.php
+$sys_time_zone='America/Los_Angeles';
+
+
+//
+// Host-based Param Section
+//  Params can change as hostname changes
+//
+// If a param is not set when we get to defaults, it is set
+//  using $homedir
+
+// get $hostname to determine host-based parameters
 $hostname = gethostname();
 
-//
-// Params can change as hostname changes
-//
-
-if ($hostname != "Rising-Sun")
+if ($hostname == "ProdHost")
 {
-// NOn-Rising-Sun Machines
+// Production Host
+
+//
+// $homedir - for systems that are built around a single home directory
+$homedir="E:\MusicLibrary";
 
 //
 // Log file directory
-$logdir = "c:/quentin/MusicWorking/Log";
+$logdir = "e:/MusicLibrary/Log";
 //
 // Log print flag: if set to TRUE, prints log messages to screen 
 //  and to log file
-$logprint = TRUE;
-//$logprint = FALSE;
+//$logprint = TRUE;
+$logprint = FALSE;
 
 // source directory of wave files and cue files
-$srcdir = "c:/quentin/MusicWorking/MusicSrc";
+$srcdir = "e:/MusicLibrary/Music Ref";
 
 // source directory of wave files and cue files
 $cuedir = "c:/quentin/MusicWorking/cuefiles";
 
 // destimation MP3 directory
-$mp3dir = "c:/quentin/MusicWorking/MusicMP3";
+$mp3dir = "e:/MusicLibrary/Music Out";
+}
+elseif ($hostname == "Rising-Sun")
+{
+  // Rising-Sun
 
+  // $homedir - for systems that are built around a single home directory
+  $homedir="D:\MusicLibrary";
 
+}
+elseif ($hostname == "hector")
+{
+  // hector development machine
+
+  // $homedir - for systems that are built around a single home directory
+  $homedir="D:\MusicLibrary";
+}
+elseif ($hostname == "tonto")
+{
+  // tonto development machine
+
+  // $homedir - for systems that are built around a single home directory
+  $homedir="C:Quentin\MusicLibrary";
 }
 else
 {
-// Rising-Sun
+  // default system home directory
+
+  // $homedir - for systems that are built around a single home directory
+  $homedir="C:\MusicLibrary";
+}
+
+//
+// Default parameters if not set on a host basis
+//
+
+//
+// $HomeDir - for systems that are built around a single home directory
+if (! isset($homedir)) $homedir="c:\MusicLibrary";
 
 //
 // Log file directory
-$logdir = "d:/Music Programming/Log";
+if (! isset($logdir)) $logdir=$homedir . "\Log";
 //
 // Log print flag: if set to TRUE, prints log messages to screen 
 //  and to log file
-$logprint = TRUE;
+if (! isset($logprint)) $logprint = TRUE;
 //$logprint = FALSE;
 
 // source directory of wave files and cue files
-$srcdir = "D:/Music Programming/Music Ref";
+if (! isset($srcdir)) $srcdir=$homedir . "\MusicWav";
 
 // destimation MP3 directory
-$mp3dir = "D:/Music Programming/Music Out";
-}
+if (! isset($mp3dir)) $mpcdir=$homedir . "\MusicMP3";
 
+// trash directory
+if (! isset($trash)) $mpcdir=$homedir . "\Trash";
 
+//
+// other parameters, non-host-based
+//
 
 // location of coverter binary to be invoked through system call
-$converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
+if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 
 // parameters to feed converter
 $convparams = "/dest mp3 /cbr 192 /pfilename %track2%";
 
 
-// Timezone setting
-//  -- the string must come from a PHP list found here:
-//       http://php.net/manual/en/timezones.php
-$sys_time_zone='America/Los_Angeles';
 
 ?>
