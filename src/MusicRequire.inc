@@ -163,6 +163,22 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
   }
 
   if ( $debug == 1 ) print "\n\nCrawl: in FOLDER:" . $catfolder . "\n\n";
+  
+  // check for . or ..
+  if (($catfolder == ".") || ($catfolder == ".."))
+  {
+      plog("Error: shouldn't call crawl function without a folder.");
+      return;
+  }
+  
+  // check for link
+  if (is_link($catfolder))
+  {
+  	$catfolder = readlink($catfolder);
+  	print "read link\n";
+  	print $catfolder;
+  	print "\n";
+  }
 
   // check if $catfolder is a directory, then jump in
   if((is_dir($catfolder)) && ($catfolder != ".") && ($catfolder != ".."))
@@ -171,7 +187,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     //   Open directory, read directory contents, and iterate through
     $dir = opendir($catfolder); // Creates a directory handle
     while (($file = readdir($dir)) !== false)
-      // crawl further if $file is a directory
+      // crawl further if $file is a directory otherwise perform user function
       //   Note: avoid .  and .. file structure
       if((is_dir($catfolder . '/' .$file)) && ($file != ".") && ($file != ".."))
         // nested crawl.  Note concating $file to extend $add_folder
