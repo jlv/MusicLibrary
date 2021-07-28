@@ -8,6 +8,10 @@
 // Parameters
 //
 
+// Test statement
+print "Accessed MusicParams.inc \n\n";
+
+
 //
 // Timezone setting
 //  -- the string must come from a PHP list found here:
@@ -37,7 +41,7 @@ $homedir="E:\MusicLibrary";
 // Log file directory
 $logdir = "e:/MusicLibrary/Log";
 //
-// Log print flag: if set to TRUE, prints log messages to screen 
+// Log print flag: if set to TRUE, prints log messages to screen
 //  and to log file
 //$logprint = TRUE;
 $logprint = FALSE;
@@ -72,6 +76,12 @@ elseif ($hostname == "tonto")
 
   // $homedir - for systems that are built around a single home directory
   $homedir="C:Quentin\MusicLibrary";
+
+  // source directory of wave files and cue files
+  $cuedir = "c:/quentin/MusicWorking/cuefiles";
+
+  // Log file directory
+  $logdir = "c:/quentin/MusicWorking/Log";
 }
 else
 {
@@ -93,7 +103,7 @@ if (! isset($homedir)) $homedir="c:\MusicLibrary";
 // Log file directory
 if (! isset($logdir)) $logdir=$homedir . "\Log";
 //
-// Log print flag: if set to TRUE, prints log messages to screen 
+// Log print flag: if set to TRUE, prints log messages to screen
 //  and to log file
 if (! isset($logprint)) $logprint = TRUE;
 //$logprint = FALSE;
