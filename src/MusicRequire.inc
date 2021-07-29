@@ -53,7 +53,7 @@ function debug()
 // Uses the following globals:
 //   - logdir: directory for log files
 //   - logroot: root name of logfile
-//   - logfilehdl: 
+//   - logfilehdl:
 // requires that $logdir be defined.  Uses $logroot as the name of the logfile.
 //
 function log_init($logroot)
@@ -61,7 +61,7 @@ function log_init($logroot)
   global $logdir;
   global $logfile;
   global $logprint;
-  
+
   // check if $logdir is a directory
   if (! is_dir($logdir))
   {
@@ -69,22 +69,22 @@ function log_init($logroot)
     print "       Please create or adjust logdir in the parameters file.\n";
     exit;
   }
-  
+
   // look for $logroot and assign generic root if $logroot not assigned
   if ( $logroot == "" ) $logroot = "MsLib-Generic";
-  
+
   // set time and full logfile name
   $logfile = $logdir . "/" . $logroot . "-" . date("Ymd-His") . ".log";
-  
+
   // add initial message to log file
   $logtext = "Music Library Log File - " . $logroot . "  " . date("Y M d H:i:s") . "\n";
-  
+
   file_put_contents($logfile, $logtext , FILE_APPEND | LOCK_EX);
-  
+
   // if $logprint, print to std out
   if ( $logprint === TRUE )
     print $logtext;
-    
+
   return;
 
 }
@@ -100,17 +100,17 @@ function plog($message)
 {
   global $logfile;
   global $logprint;
-  
+
   // date-stamp message
-  $lmessage = date("Ymd-His: ") . $message . "\n";
-  
+  $lmessage = date("Ymd-His: ") . $message . "\r\n";
+
   // append to end of log
   file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
-  
+
   // if $logprint, print to std out
   if ( $logprint === TRUE )
     print $lmessage;
-    
+
   return;
 }
 
@@ -163,22 +163,6 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
   }
 
   if ( $debug == 1 ) print "\n\nCrawl: in FOLDER:" . $catfolder . "\n\n";
-  
-  // check for . or ..
-  if (($catfolder == ".") || ($catfolder == ".."))
-  {
-      plog("Error: shouldn't call crawl function without a folder.");
-      return;
-  }
-  
-  // check for link
-  if (is_link($catfolder))
-  {
-  	$catfolder = readlink($catfolder);
-  	print "read link\n";
-  	print $catfolder;
-  	print "\n";
-  }
 
   // check if $catfolder is a directory, then jump in
   if((is_dir($catfolder)) && ($catfolder != ".") && ($catfolder != ".."))
@@ -187,7 +171,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     //   Open directory, read directory contents, and iterate through
     $dir = opendir($catfolder); // Creates a directory handle
     while (($file = readdir($dir)) !== false)
-      // crawl further if $file is a directory otherwise perform user function
+      // crawl further if $file is a directory
       //   Note: avoid .  and .. file structure
       if((is_dir($catfolder . '/' .$file)) && ($file != ".") && ($file != ".."))
         // nested crawl.  Note concating $file to extend $add_folder
