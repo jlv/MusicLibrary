@@ -81,7 +81,10 @@ elseif ($hostname == "tonto")
   $cuedir = "c:/quentin/MusicWorking/cuefiles";
 
   // Log file directory
-  $logdir = "c:/quentin/MusicWorking/Log";
+  $logdir = "c:/Quentin/Report";
+
+  // $startdir - starting directory for crawl function
+  $startdir = "c:/Quentin/MusicReference/Music";
 }
 else
 {

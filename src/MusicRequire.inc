@@ -173,7 +173,9 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     while (($file = readdir($dir)) !== false)
       // crawl further if $file is a directory
       //   Note: avoid .  and .. file structure
-      if((is_dir($catfolder . '/' .$file)) && ($file != ".") && ($file != ".."))
+      if(($file == ".") || ($file == ".."))
+        print '';
+      else if((is_dir($catfolder . '/' .$file)))
         // nested crawl.  Note concating $file to extend $add_folder
         crawl($base_folder, $add_folder . $catfile . $file, $new_base_folder, $ufunction, $options);
       else
