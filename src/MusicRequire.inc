@@ -41,19 +41,19 @@ function debug()
 ///
 /// Use log_init() to set up logging at the first of the routine
 /// Use plog to log individual messages
-///
+///  logroot is the root name of the log/err/notify file
 
 // function log_init($logroot)
 //   $logroot - rootname of log file, after which date and extension are added
-//              example: mylog produces file mylog.20181228-074823.log
+//              example: mylog produces file mylog-20181228-074823.log
 //
 // initializes log file for further use by plog
 //
 //
 // Uses the following globals:
 //   - logdir: directory for log files
-//   - logroot: root name of logfile
-//   - logfilehdl:
+//   - logfile: path and filename for lag (without suffix)
+//   - logprint: boolean flag to
 // requires that $logdir be defined.  Uses $logroot as the name of the logfile.
 //
 function log_init($logroot)
@@ -90,19 +90,50 @@ function log_init($logroot)
 }
 
 
-// function plog($message)
-//  $error_msg - text string with message
+// function plog($control_string, $message)
+//  $error_msg - text string of message
 //  returns nothing
 //
 // logs error to log file and prints if $logprint is set to TRUE
+//
+// Control string is a comma-separated list of array_of_options
+//
+// options:
+//  log - just log a message.  Not needed if other options besides debug are
+//        called. Just a value for the variable placeholder
+//  nolog - do not log to regular logfile
+//  echo  - echo/print to terminal
+//  nnl  - no newline on echo to terminal statement
+//  error - log in error log as well as regular log (.err).  Will be picked up
+//           in next error log roll-up (w/in 24 hrs)
+//  notify - log in notification log (.not).  Will be picked up for notification
+//           in next run, usually hourly
+//  exitX - exit entire routine with code X. If no code, 0 assumed
+//  exit-nologX - exit with code X  without creating a log entry
+//  complete - script complete.  Logs in logfile and creates .cmplt file
+//  debug - debugging line, only returned if $debug != 0
+//  debug-noecho - like debug but will not echo to terminal
+//
+// Example: plog("echo,error", "This is a log message.")
+//     Logs in log file, logs message in error file, and echo's to screen
+//
 
-function plog($message)
+function plog($ctl, $message)
 {
   global $logfile;
   global $logprint;
 
+  // TTD:
+  //  write tests
+  //  use array to mark file writing?
+  //  open log file and keep open?  can you make an array of streams for different file types?
+  //  use explde on control structure, then move to associate array?
+  //
+
+  // if file hasn't been written, start file
+
   // date-stamp message
-  $lmessage = date("Ymd-His: ") . $message . "\r\n";
+  $lmessage = date("Y-m-d-H:i:s: ") . $message . "\r\n";
 
   // append to end of log
   file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
@@ -113,6 +144,23 @@ function plog($message)
 
   return;
 }
+
+function plog_int_write($suffix, $lmessage)
+{
+  global $logfile;
+  global $logprint;
+
+  $filename = "$logfile" . '/' . $suffix
+  // if file does not exist, initialize with header
+  if ( ! file_exists ($filename))
+  {
+
+  }
+  // append to end of log
+  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
+
+}
+
 
 
 ///
