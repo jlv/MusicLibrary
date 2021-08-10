@@ -10,6 +10,8 @@
 
 require "MusicParams.inc";
 
+// globals definitions
+
 // software release version
 $release_version="0.5";
 
@@ -17,6 +19,11 @@ $release_version="0.5";
 // set time zone
 //
 date_default_timezone_set($sys_time_zone);
+
+// global _logctl for log system
+_logctl = array();
+_logctl["_types"] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
+                  "complete"=>"cmplt", "info"=>"info");
 
 //
 // function: debug
@@ -39,58 +46,183 @@ function debug()
 /// Log Functions
 ///
 ///
-/// Use log_init() to set up logging at the first of the routine
-/// Use plog to log individual messages
-///  logroot is the root name of the log/err/notify file
+/// log_init() sets up logging at the first of the routine
+/// logp() - log individual messages
+/// log_close() - closes log files. Not needed if an "exit" is used with
+///                logp
+///
+/// Global array _logctl is populated with control information for all
+///  log types.
+///   Structure:
+///     ["_default"] - default control settings
+///     ["_file"] - filename root
+///     ["_types"] - indexed array of types that are open
+///     [$logtype] - structure for each type of log
+///          ["open"] - TRUE means file has been opened
+///          ["handle"] - FILE handle
 
 // function log_init($logroot)
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
 //
-// initializes log file for further use by plog
+// initializes log control for further use by plog
 //
-//
-// Uses the following globals:
-//   - logdir: directory for log files
+// Uses the following global parameters:
+//   - logdir: directory for log files set in musicparams.inc
 //   - logfile: path and filename for lag (without suffix)
 //   - logprint: boolean flag to
 // requires that $logdir be defined.  Uses $logroot as the name of the logfile.
 //
-function log_init($logroot)
+function log_init($logroot,$default_ctl)
 {
   global $logdir;
-  global $logfile;
-  global $logprint;
+  global $_logctl;
 
   // check if $logdir is a directory
   if (! is_dir($logdir))
   {
-    print "ERROR: log directory $logdir does not exist.\n";
-    print "       Please create or adjust logdir in the parameters file.\n";
-    exit;
+    print "LOG ERROR: log directory $logdir does not exist.\n";
+    print "    Please create or adjust logdir in the parameters file.\n";
+    exit(1);
   }
 
   // look for $logroot and assign generic root if $logroot not assigned
   if ( $logroot == "" ) $logroot = "MsLib-Generic";
 
   // set time and full logfile name
-  $logfile = $logdir . "/" . $logroot . "-" . date("Ymd-His") . ".log";
+  $_logctl["_file"] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
 
-  // add initial message to log file
-  $logtext = "Music Library Log File - " . $logroot . "  " . date("Y M d H:i:s") . "\n";
-
-  file_put_contents($logfile, $logtext , FILE_APPEND | LOCK_EX);
+  // handle default control string
+  $_logctl["_default"] = log_int_ctlstring($default_ctl);
 
   // if $logprint, print to std out
-  if ( $logprint === TRUE )
-    print $logtext;
+//  if ( $logprint === TRUE )
+//    print $logtext;
 
   return;
 
 }
 
+// function logp($control_string, $message)
+//  $message - text string of message
+//  returns nothing
+//
+// logs error to log file and prints if $logprint is set to TRUE
+//
+// Control string is a comma-separated list of options:
+// options:
+//  log - just log a message.  Not needed if other options besides debug are
+//        called. Just a value for the variable placeholder
+//  nolog - do not log to regular logfile
+//  echo  - echo/print to terminal
+//  nnl  - no newline on echo to terminal statement
+//  error - log in error log as well as regular log (.err).  Will be picked up
+//           in next error log roll-up (w/in 24 hrs)
+//  notify - log in notification log (.not).  Will be picked up for notification
+//           in next run, usually hourly
+//  info - log in "info" log
+//  exitX - exit entire routine with code X. If no code, 0 assumed
+//  exit-nologX - exit with code X  without creating a log entry
+//  complete - script complete.  Logs in logfile and creates .cmplt file
+//  debug - debugging line, only returned if $debug != 0
+//  debug-noecho - like debug but will not echo to terminal
+//
+// Example: plog("echo,error", "This is a log message.")
+//     Logs in log file, logs message in error file, and echo's to screen
+//
 
-// function plog($control_string, $message)
+function logp($ctl, $message)
+{
+  global $_logctl;
+
+  // TTD:
+  //  write tests
+  //  use array to mark file writing?
+  //  open log file and keep open?  can you make an array of streams for different file types?
+  //  use explde on control structure, then move to associate array?
+  //
+
+  // if file hasn't been written, start file
+
+  // date-stamp message
+  $lmessage = date("Y-m-d-H:i:s: ") . $message . "\r\n";
+
+  // append to end of log
+  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
+
+  // if $logprint, print to std out
+  if ( $logprint === TRUE )
+    print $lmessage;
+
+  return;
+}
+
+
+// log_close
+
+
+// returns array
+
+
+function log_int_ctlstring ($ctl)
+{
+  $ctl_index = explode(",", $ctl);
+  $ctl_array = array();
+
+  foreach $ctl_index as $option
+  {
+    switch ($option)
+    {
+      case log: $ctl_array["log"] = TRUE; break;
+      case nolog: $ctl_array["log"] = FALSE; break;
+      case echo: $ctl_array["echo"] = TRUE; break;
+      case noecho: $ctl_array["echo"] = FALSE; break;
+      case debug: $ctl_array["debug"] = TRUE; break;
+      case notify: $ctl_array["notify"] = TRUE; break;
+      case complete: $ctl_array["complete"] = TRUE; break;
+      case preg_match('/^exit\d*$/',$option,):
+        $ctl_array["exit"] = TRUE;
+        $ctl_array["exit_level"] = intval(substr($option, 4));
+        if ($ctl_array["exit_level"] == "") $ctl_array["exit_level"] = 0;
+        break;
+
+      print "reached default!!\n";
+    }
+  }
+
+  return $ctl_array;
+}
+
+function plog_int_write($type, $message, $prefix)
+{
+  global $_logctl;
+
+  // check for type and get file suffix, or error
+  if (! isset($_logtypes[$type]))
+
+
+  // if file has not been opened, start the file
+  if ($_logctl[$type]["_open"] !== TRUE)
+  {
+
+  }
+
+  $filename = "$logfile" . '/' . $suffix
+  // if file does not exist, initialize with header
+  if ( ! file_exists ($filename))
+  {
+
+  }
+  // append to end of log
+  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
+
+}
+
+
+
+
+
+// BACKWARD COMPATIBLE - TEMPORARY: function plog($control_string, $message)
 //  $error_msg - text string of message
 //  returns nothing
 //
@@ -102,7 +234,7 @@ function log_init($logroot)
 //  log - just log a message.  Not needed if other options besides debug are
 //        called. Just a value for the variable placeholder
 //  nolog - do not log to regular logfile
-//  echo  - echo/print to terminal
+//  echo/noecho  - echo/print to terminal
 //  nnl  - no newline on echo to terminal statement
 //  error - log in error log as well as regular log (.err).  Will be picked up
 //           in next error log roll-up (w/in 24 hrs)
@@ -112,9 +244,8 @@ function log_init($logroot)
 //  exit-nologX - exit with code X  without creating a log entry
 //  complete - script complete.  Logs in logfile and creates .cmplt file
 //  debug - debugging line, only returned if $debug != 0
-//  debug-noecho - like debug but will not echo to terminal
 //
-// Example: plog("echo,error", "This is a log message.")
+// Example: logp("echo,error", "This is a log message.")
 //     Logs in log file, logs message in error file, and echo's to screen
 //
 
@@ -145,7 +276,8 @@ function plog($ctl, $message)
   return;
 }
 
-function plog_int_write($suffix, $lmessage)
+// internal function to write log
+function logp_int_write($suffix, $lmessage)
 {
   global $logfile;
   global $logprint;

@@ -32,7 +32,7 @@ if ($hostname == "ProdHost")
 {
   // Production Host
 
-  // OStype
+  // OStype  Values: Windows, Linux
   $OStype="Windows";
 
   //
@@ -115,7 +115,7 @@ if (! isset($homedir)) $homedir="c:\MusicLibrary";
 
 //
 // Log file directory
-if (! isset($logdir)) $logdir=$homedir . "\Log";
+if (! isset($logdir)) $logdir=$homedir . "/Log";
 //
 // Log print flag: if set to TRUE, prints log messages to screen
 //  and to log file
@@ -123,13 +123,13 @@ if (! isset($logprint)) $logprint = TRUE;
 //$logprint = FALSE;
 
 // source directory of wave files and cue files
-if (! isset($srcdir)) $srcdir=$homedir . "\MusicWav";
+if (! isset($srcdir)) $srcdir=$homedir . "/MusicWav";
 
 // destimation MP3 directory
-if (! isset($mp3dir)) $mpcdir=$homedir . "\MusicMP3";
+if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 
 // trash directory
-if (! isset($trash)) $mpcdir=$homedir . "\Trash";
+if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 
 //
 // other parameters, non-host-based
