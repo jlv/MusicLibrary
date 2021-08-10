@@ -40,6 +40,7 @@ function scanCues($directory, $trashBin){
                 $list = preg_split("/\\\/", $line);
 
                 $album = $list[count($list) - 2];
+
               }
 
             }
@@ -49,7 +50,7 @@ function scanCues($directory, $trashBin){
           }
 
         }else{
-          $goodCue = $file;
+
 
         }
     }
@@ -63,6 +64,14 @@ function scanCues($directory, $trashBin){
   while(($file = readdir($dir)) !== false){
     // NOTE $file is  name.cue
     if(getSuffix($file) === "cue"){
+      // moves uncleaned cue files to trash bin
+      // if $file already exists in trash, then it adds ".1" to differ new file
+      if(file_exists($trashBin . "/" . $file)){
+        copy($directory . "/" . $file, $trashBin . "/" . $file . ".1");
+      }else{
+        copy($directory . "/" . $file, $trashBin . "/" . $file);
+      }
+
       cleanCue($directory, $file);
     }
   }
@@ -420,6 +429,14 @@ function cleanCue($directory, &$file){
 
       // fixes FILE line to just song title
       $fixing[$i] = "FILE \"" . $song;
+
+      // double checks if wave file of song actually exists. ERROR if doesn't
+      $song = preg_replace("/\".*$/", '', $song);
+      if(!file_exists($directory . "/" . $artist . "/" . $album . "/" . $song)){
+        plog("ERROR: .wav files does not exist");
+        plog("\t{$directory}/{$artist}/{$album}");
+        plog("\t{$song}");
+      }
 
     }
   }
