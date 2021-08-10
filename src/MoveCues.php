@@ -4,8 +4,6 @@ require 'MusicRequire.inc';
 
 log_init("MoveCues");
 
-global $albumList;
-
 // function scanCues($directory, $trashBin)
 //  $directory - target directory which the function checks
 //  $trashBin - target directory for old cue files
@@ -15,6 +13,7 @@ function scanCues($directory, $trashBin){
 
   $dir = opendir($directory);
   while(($file = readdir($dir)) !== false){
+    // NOTE $file is $var.cue
 
     if(getSuffix($file) === "cue"){
         // gets album title of cue file
@@ -49,8 +48,11 @@ function scanCues($directory, $trashBin){
           }
 
         }else{
+          $goodCue = $file;
 
         }
+        print "CUE FILE BEING CLEANED " . $goodCue . "\n";
+        // cleanCue($directory, $goodCue);
     }
 
   }
@@ -374,73 +376,49 @@ function changeTracks(&$track, &$trackNum, &$array){
   return $track;
 }
 
+// function cleanCue($directory, &$file)
+//  $directory - the starting directory where all the cue files are sitting
+//  &$file - the cue file that we are checking and cleaning up
+//   NOTE $file must be compilation of all multi CDs of an album
+//   NOTE &$file is a reference variable
+// returns nothing
+//
+// cleanCue function - removes all \ from FILE lines of cue file
+function cleanCue($directory, &$file){
 
+  // $album and $artist are name holders to get cue file in correct directory
+  $album = "";
+  $artist = "";
 
-// function moveCues($directory)
-//  $directory - the directory given to check for cue files to move
-//  $multiGroup - if this is part of a multiple cd collection, it is added to a place holder group
-function moveCues($directory, $multiGroup)
-{
-  // opens directory and checks all the files
-  $dir = opendir($directory);
-  while(($file = readdir($dir)) !== false)
-    if(getSuffix($file) === "cue")
-    {
-      // gets just title before cue
-      $title = substr($file, 0, strlen($file) - 3);
+  // sets opens the file
+  $fixing = file($directory . $file, FILE_IGNORE_NEW_LINES);
 
-      // checks for multiple CDs
-      $endChecker = "/\d$/";
-      if(preg_match($endChecker, $title))
-      {
-        // checks if there is a first disk
-      }else{
-        // runs program for one file
-        singleMove($file);
-      }
-    }
+  for($i = 0; $i < count($fixing); $i++){
+    if(preg_match ( '/^\a*FILE/', $fixing[$i] ) && preg_match('/\\\/', $fixing[$i])){
 
-  closedir($dir);
+      $list = preg_split("/\\\/", $fixing[$i]);
 
-}
+      // attaches propper song title and album title
+      $song = $list[count($list) - 1];
+      $album = $list[count($list) - 2];
+      // artist requires more work because of FILE "
+      $artist = $list[count($list) - 3];
+      $artist = substr($artist, 6);
 
-// function singleMove($file)
-//  $file - single cue file given to move to a spot
-function singleMove($file)
-{
-  $fileLines = file($file);
-  $newFileLines = array();
-  for($i = 0; $i <= count($fileLines); $i++)
-  {
-    $fileMarker = "/FILE/";
-    if(preg_match($fileMarker, $fileLines[$i]))
-    {
-      $newFileLines[$i] = $fileLines[$i];
-      $replacePart = "/FILE \".*\\\/";
-      // " (ignore this)
-      $fillerPart = "/FILE \"/";
-      // " (ignore this)
-      preg_replace($replacePart, $fillerPart, $newFileLines[i]);
-    }else{
-      $newFileLines[$i] = $fileLines[$i];
+      // fixes FILE line to just song title
+      $fixing[$i] = "FILE \"" . $song;
+
     }
   }
+
+  // puts $fixing back into a cue file
+  $file = file_put_contents($directory . "/" . $artist . "/" . $album . ".cue", $fixing);
+
+  // verifies the cue file to make sure it's working well NOTE finish later
+
 }
 
-// function test()
-// basic test function
-function test()
-{
-  $line = "FILE \"Thelonious Monk\At Carnegie Hall\02 Evidence.wav\" WAVE";
-  $replacePart = "/FILE \".*\\\/";
-  // " (ignore this)
-  $fillerPart = "/FILE \"/";
-  // " (ignore this)
-  $stuff = preg_replace($replacePart, $fillerPart, $line);
-  print $stuff . "\n";
-}
-
-$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
+$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Classical";
 $trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
 
 scanCues($testDir, $trashDir);
