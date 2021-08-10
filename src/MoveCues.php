@@ -11,9 +11,10 @@ function scanCues($directory, $trashBin){
 
   $goodCue = '';
 
+  // sees if there are multiple cue files for album. Runs multiMove is there are
   $dir = opendir($directory);
   while(($file = readdir($dir)) !== false){
-    // NOTE $file is $var.cue
+    // NOTE $file is name.cue
 
     if(getSuffix($file) === "cue"){
         // gets album title of cue file
@@ -35,7 +36,7 @@ function scanCues($directory, $trashBin){
             $album = '';
             foreach($cue as $line){
               if(preg_match( '/^\a*FILE/', $line ) === 1 ){
-                // $list - array of $add_folder split between every /
+                // $list - array of $add_folder split between every \
                 $list = preg_split("/\\\/", $line);
 
                 $album = $list[count($list) - 2];
@@ -51,13 +52,22 @@ function scanCues($directory, $trashBin){
           $goodCue = $file;
 
         }
-        print "CUE FILE BEING CLEANED " . $goodCue . "\n";
-        // cleanCue($directory, $goodCue);
     }
 
   }
 
-  closedir($directory);
+  closedir($dir);
+
+  //
+  $dir = opendir($directory);
+  while(($file = readdir($dir)) !== false){
+    // NOTE $file is  name.cue
+    if(getSuffix($file) === "cue"){
+      cleanCue($directory, $file);
+    }
+  }
+
+  closedir($dir);
 
 }
 
@@ -383,7 +393,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 //   NOTE &$file is a reference variable
 // returns nothing
 //
-// cleanCue function - removes all \ from FILE lines of cue file
+// cleanCue function - removes all \ from FILE lines of cue file, then puts files in correct artist/album directory
 function cleanCue($directory, &$file){
 
   // $album and $artist are name holders to get cue file in correct directory
@@ -391,7 +401,10 @@ function cleanCue($directory, &$file){
   $artist = "";
 
   // sets opens the file
-  $fixing = file($directory . $file, FILE_IGNORE_NEW_LINES);
+  $fixing = file($directory . "/" . $file, FILE_IGNORE_NEW_LINES);
+
+  // deletes old cue file
+  unlink($directory . "/" . $file);
 
   for($i = 0; $i < count($fixing); $i++){
     if(preg_match ( '/^\a*FILE/', $fixing[$i] ) && preg_match('/\\\/', $fixing[$i])){
@@ -411,14 +424,17 @@ function cleanCue($directory, &$file){
     }
   }
 
+  // fix up array for turning back into file
+  addLines($fixing);
+
   // puts $fixing back into a cue file
-  $file = file_put_contents($directory . "/" . $artist . "/" . $album . ".cue", $fixing);
+  $file = file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue", $fixing);
 
   // verifies the cue file to make sure it's working well NOTE finish later
 
 }
 
-$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Classical";
+$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
 $trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
 
 scanCues($testDir, $trashDir);
