@@ -71,7 +71,6 @@ function multiMove($directory, $trashBin, $file){
 
   // checks for dash in cue file title first, goes into if statement if it does have a dash
   if(preg_match("/-\d.cue$/", $file)){
-    print "Start multiMove \n";
     // gets album title
     $album = substr($file, 0, strlen($file) - 6);
 
@@ -99,13 +98,13 @@ function multiMove($directory, $trashBin, $file){
       }
     }
 
+    // moves the old bad cue file to the trash directory
     rename($directory . "/" . $album . "-" . $index . ".cue", $trashBin . "/" . $album . "-" . $index . ".cue");
 
     $index++;
 
     // compiles all cue files of album into one
     while(file_exists($directory . "/" . $album . "-" . $index . ".cue")){
-      print "In WHILE Loop" . $index . "\n";
       array_push($newCue, "REM CD " . $index);
 
       // reads next cue file into an array
@@ -125,6 +124,7 @@ function multiMove($directory, $trashBin, $file){
       // combines cue files together with $nextCue being the second one
       $newCue = array_merge($newCue, $nextCue);
 
+      // moves the old bad cue file to the trash directory
       rename($directory . "/" . $album . "-" . $index . ".cue", $trashBin . "/" . $album . "-" . $index . ".cue");
 
       $index++;
@@ -150,6 +150,7 @@ function multiMove($directory, $trashBin, $file){
       // combines cue files together with $nextCue being the second one
       $newCue = array_merge($newCue, $nextCue);
 
+      // moves the old bad cue file to the trash directory
       rename($directory . "/" . $album . ".cue", $trashBin . "/" . $album . ".cue");
 
     }
@@ -170,92 +171,94 @@ function multiMove($directory, $trashBin, $file){
     $album = substr($file, 0, strlen($file) - 5);
 
 
-        // starting number for cue files
-        $index =  1;
+    // starting number for cue files
+    $index =  1;
 
-        // $track is the track number of the album
-        $track = 0;
+    // $track is the track number of the album
+    $track = 0;
 
-        // combined cue file
-        $newCue = file($directory . "/" . $album . $index . ".cue", FILE_IGNORE_NEW_LINES);
+    // combined cue file
+    $newCue = file($directory . "/" . $album . $index . ".cue", FILE_IGNORE_NEW_LINES);
 
-        // checks track numbering format
-        foreach($newCue as $line){
-          if(preg_match ( '/^\a*FILE/', $line ) === 1 ){
-            // $list - array of $add_folder split between every \
-            $list = preg_split("/\\\/", $line);
+    // checks track numbering format
+    foreach($newCue as $line){
+      if(preg_match ( '/^\a*FILE/', $line ) === 1 ){
+        // $list - array of $add_folder split between every \
+        $list = preg_split("/\\\/", $line);
 
-            $song = $list[count($list) - 1];
-            if(preg_match("/\d\d\d/", $song))
-              $trackNum = 3;
+        $song = $list[count($list) - 1];
+        if(preg_match("/\d\d\d/", $song))
+          $trackNum = 3;
 
-            // incriments the track number as it finds songs
-            $track++;
-          }
-        }
+        // incriments the track number as it finds songs
+        $track++;
+      }
+    }
 
-        // DEBUGGING checker
-        $checker = rename($directory . "/" . $album . $index . ".cue", $trashBin . "/" . $album . $index . ".cue");
+    // moves the old bad cue file to the trash directory
+    rename($directory . "/" . $album . $index . ".cue", $trashBin . "/" . $album . $index . ".cue");
 
-        $index++;
+    $index++;
 
-        // compiles all cue files of album into one
-        while(file_exists($directory . "/" . $album . "-" . $index . ".cue")){
-          array_push($newCue, "REM CD " . $index);
+    // compiles all cue files of album into one
+    while(file_exists($directory . "/" . $album . $index . ".cue")){
+      array_push($newCue, "REM CD " . $index);
 
-          // reads next cue file into an array
-          $nextCue = file($directory . "/" . $album . $index . ".cue", FILE_IGNORE_NEW_LINES);
+      // reads next cue file into an array
+      $nextCue = file($directory . "/" . $album . $index . ".cue", FILE_IGNORE_NEW_LINES);
 
-          // cuts off the beginning part of a cue file up to the first FILE line
-          $cutLength = 0;
-          while(!preg_match( '/^\a*FILE/', $nextCue[$cutLength] )){
-            $cutLength += 1;
-          }
+      // cuts off the beginning part of a cue file up to the first FILE line
+      $cutLength = 0;
+      while(!preg_match( '/^\a*FILE/', $nextCue[$cutLength] )){
+        $cutLength += 1;
+      }
 
-          array_splice($nextCue, 0, $cutLength);
+      array_splice($nextCue, 0, $cutLength);
 
-          // changes the TRACK number to correct track number
-          $track = changeTracks($track, $trackNum, $nextCue);
+      // changes the TRACK number to correct track number
+      $track = changeTracks($track, $trackNum, $nextCue);
 
-          // combines cue files together with $nextCue being the second one
-          $newCue = array_merge($newCue, $nextCue);
+      // combines cue files together with $nextCue being the second one
+      $newCue = array_merge($newCue, $nextCue);
 
-          rename($directory . "/" . $album . $index . ".cue", $trashBin . "/" . $album . $index . ".cue");
+      // moves the old bad cue file to the trash directory
+      rename($directory . "/" . $album . $index . ".cue", $trashBin . "/" . $album . $index . ".cue");
 
-          $index++;
-        }
+      $index++;
+    }
 
-        // checks to see if ripper made cue file that's just album title
-        if(file_exists($directory . "/" . $album . ".cue")){
-          array_push($newCue, "REM CD " . $index++);
+    // checks to see if ripper made cue file that's just album title
+    if(file_exists($directory . "/" . $album . ".cue")){
+      array_push($newCue, "REM CD " . $index++);
 
-          $nextCue = file($directory . "/" . $album . ".cue", FILE_IGNORE_NEW_LINES);
+      $nextCue = file($directory . "/" . $album . ".cue", FILE_IGNORE_NEW_LINES);
 
-          // cuts off the beginning part of a cue file up to the first FILE line
-          $cutLength = 0;
-          while(!preg_match( '/^\a*FILE/', $nextCue[$cutLength] )){
-            $cutLength += 1;
-          }
+      // cuts off the beginning part of a cue file up to the first FILE line
+      $cutLength = 0;
+      while(!preg_match( '/^\a*FILE/', $nextCue[$cutLength] )){
+        $cutLength += 1;
+      }
 
-          array_splice($nextCue, 0, $cutLength);
+      array_splice($nextCue, 0, $cutLength);
 
-          // changes the TRACK number to correct track number
-          $track = changeTracks($track, $trackNum, $nextCue);
+      // changes the TRACK number to correct track number
+      $track = changeTracks($track, $trackNum, $nextCue);
 
-          // combines cue files together with $nextCue being the second one
-          $newCue = array_merge($newCue, $nextCue);
+      // combines cue files together with $nextCue being the second one
+      $newCue = array_merge($newCue, $nextCue);
 
-          rename($directory . "/" . $album . ".cue", $trashBin . "/" . $album . ".cue");
-        }
+      // moves the old bad cue file to the trash directory
+      rename($directory . "/" . $album . ".cue", $trashBin . "/" . $album . ".cue");
+    }
 
-        // adds lines to cue file array
-        addLines($newCue);
+    // adds lines to cue file array
+    addLines($newCue);
 
-        // puts $newCue into an actual cue file
-        $finished = file_put_contents($directory . "/" . $album . ".cue", $newCue);
+    // puts $newCue into an actual cue file
+    $finished = file_put_contents($directory . "/" . $album . ".cue", $newCue);
 
-        // returns $finished as fully made cue file
-        return $finished;
+    // returns $finished as fully made cue file
+    return $finished;
 
   }
 
@@ -293,10 +296,10 @@ function changeTracks(&$track, &$trackNum, &$array){
       $song = $list[count($list) - 1];
 
       // checks if the track number in the FILE line matches the track number in TRACK
-      if(!preg_match('/^0*$numTrack/', $song)){
+      if(!preg_match("/^0*{$numTrack}/", $song)){
         plog("ERROR: FILE song number does not match TRACK number");
         plog("\t{$array[$i-1]}");
-        plog("\t{$array[$i]}");
+        plog("\t  TRACK {$numTrack} AUDIO");
       }
 
       $array[$i] = "  TRACK " . $numTrack . " AUDIO";
@@ -309,10 +312,10 @@ function changeTracks(&$track, &$trackNum, &$array){
       $song = $list[count($list) - 1];
 
       // checks if the track number in the FILE line matches the track number in TRACK
-      if(!preg_match('/^0*$numTrack/', $song)){
+      if(!preg_match("/^0*{$numTrack}/", $song)){
         plog("ERROR: FILE song number does not match TRACK number");
         plog("\t{$array[$i-1]}");
-        plog("\t{$array[$i]}");
+        plog("\t  TRACK 0{$numTrack} AUDIO");
       }
 
       $array[$i] = "  TRACK 0" . $numTrack . " AUDIO";
@@ -325,10 +328,10 @@ function changeTracks(&$track, &$trackNum, &$array){
       $song = $list[count($list) - 1];
 
       // checks if the track number in the FILE line matches the track number in TRACK
-      if(!preg_match('/^0*$numTrack/', $song)){
+      if(!preg_match("/^0*{$numTrack}/", $song)){
         plog("ERROR: FILE song number does not match TRACK number");
         plog("\t{$array[$i-1]}");
-        plog("\t{$array[$i]}");
+        plog("\t  TRACK {$numTrack} AUDIO");
       }
 
       $array[$i] = "  TRACK " . $numTrack . " AUDIO";
@@ -341,10 +344,10 @@ function changeTracks(&$track, &$trackNum, &$array){
       $song = $list[count($list) - 1];
 
       // checks if the track number in the FILE line matches the track number in TRACK
-      if(!preg_match('/^0*$numTrack/', $song)){
+      if(!preg_match("/^0*{$numTrack}/", $song)){
         plog("ERROR: FILE song number does not match TRACK number");
         plog("\t{$array[$i-1]}");
-        plog("\t{$array[$i]}");
+        plog("\t  TRACK 0{$numTrack} AUDIO");
       }
 
       $array[$i] = "  TRACK 0" . $numTrack . " AUDIO";
@@ -357,10 +360,10 @@ function changeTracks(&$track, &$trackNum, &$array){
       $song = $list[count($list) - 1];
 
       // checks if the track number in the FILE line matches the track number in TRACK
-      if(!preg_match('/^0*$numTrack/', $song)){
+      if(!preg_match("/^0*{$numTrack}/", $song)){
         plog("ERROR: FILE song number does not match TRACK number");
         plog("\t{$array[$i-1]}");
-        plog("\t{$array[$i]}");
+        plog("\t  TRACK 00{$numTrack} AUDIO");
       }
 
       $array[$i] = "  TRACK 00" . $numTrack . " AUDIO";
@@ -437,7 +440,7 @@ function test()
   print $stuff . "\n";
 }
 
-$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Classical";
+$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
 $trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
 
 scanCues($testDir, $trashDir);
