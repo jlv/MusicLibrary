@@ -161,7 +161,7 @@ function logp($ctl, $message)
   // append to end of log
 
   // write log entry
-  logp_int_write("foo", $message, "");
+  logp_int_write("log", $message, "");
 
   return;
 }
@@ -176,10 +176,12 @@ function logp_int_write($type, $message, $prefix)
   global $_logctl;
   global $logdir;
   global $EOL;
+  global $release_version;
 
+print_r($_logctl);
   // check for type and get file suffix, or error
-  if (isset($_logtypes[$type]))
-    $suffix = $_logtypes[$type];
+  if (isset($_logctl["_types"][$type]))
+    $suffix = $_logctl["_types"][$type];
   else
   {
     print "ERROR: type was not found.\n";
@@ -187,14 +189,25 @@ function logp_int_write($type, $message, $prefix)
   }
 
   $filename = $_logctl["_file"] . '/' . $suffix;
+  $logdate = date("Y-m-d-H:i:s: ");
 
   // if file has not been opened, start the file
-  if ($_logctl[$type]["_open"] !== TRUE)
+  if (( ! isset($_logctl[$type]["_open"])) ||
+       $_logctl[$type]["_open"] !== TRUE)
   {
-    if (! $_logctl[$type]["handle"] = fopen($logdir))
+    if (! ($_logctl[$type]["handle"] = fopen("/foowrong/bebar/" . $_logctl["_file"] . "." . $_logctl["_types"][$type], 'a')))
       print "Error: log couldn't open\n";
-  }
+    if (! fwrite($_logctl[$type]["handle"],
+                  "{$logdate} MusicLib Log - {$type}, Release {$release_version}\n"))
+      print "LOG ERROR: Could not write log.";
 
+    if (! fflush($_logctl[$type]["handle"]))
+      print "LOG ERROR: Could not write log.";
+  }
+  else
+  {
+    print "log was set\n";// code...
+  }
 
   // date-stamp message
   $lmessage = date("Y-m-d-H:i:s: ") . $message . $EOL;
