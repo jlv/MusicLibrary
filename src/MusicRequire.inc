@@ -21,8 +21,8 @@ $release_version="0.5";
 date_default_timezone_set($sys_time_zone);
 
 // global _logctl for log system
-_logctl = array();
-_logctl["_types"] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
+$_logctl = array();
+$_logctl["_types"] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
                   "complete"=>"cmplt", "info"=>"info");
 
 //
@@ -73,7 +73,7 @@ function debug()
 //   - logprint: boolean flag to
 // requires that $logdir be defined.  Uses $logroot as the name of the logfile.
 //
-function log_init($logroot,$default_ctl)
+function log_init($logroot = "MsLib-Generic", $default_ctl)
 {
   global $logdir;
   global $_logctl;
@@ -87,7 +87,7 @@ function log_init($logroot,$default_ctl)
   }
 
   // look for $logroot and assign generic root if $logroot not assigned
-  if ( $logroot == "" ) $logroot = "MsLib-Generic";
+  //if ( $logroot == "" ) $logroot = "MsLib-Generic";
 
   // set time and full logfile name
   $_logctl["_file"] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
@@ -144,21 +144,65 @@ function logp($ctl, $message)
 
   // if file hasn't been written, start file
 
+  // check for initialization
+  if (! isset($_logctl["_file"]))
+  {
+    print "LOG ERROR: function logp called without initializing with log_init.\n";
+    print "    Exiting.\n";
+    exit(1);
+  }
+  //  parse control options
+  $ctlarr = log_int_ctlstring($ctl);
+
+
+  print_r($ctlarr);
   // date-stamp message
-  $lmessage = date("Y-m-d-H:i:s: ") . $message . "\r\n";
 
   // append to end of log
-  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
 
-  // if $logprint, print to std out
-  if ( $logprint === TRUE )
-    print $lmessage;
+  // write log entry
+  logp_int_write("foo", $message, "");
 
   return;
 }
 
 
 // log_close
+
+
+
+function logp_int_write($type, $message, $prefix)
+{
+  global $_logctl;
+  global $logdir;
+  global $EOL;
+
+  // check for type and get file suffix, or error
+  if (isset($_logtypes[$type]))
+    $suffix = $_logtypes[$type];
+  else
+  {
+    print "ERROR: type was not found.\n";
+    exit(1);
+  }
+
+  $filename = $_logctl["_file"] . '/' . $suffix;
+
+  // if file has not been opened, start the file
+  if ($_logctl[$type]["_open"] !== TRUE)
+  {
+    if (! $_logctl[$type]["handle"] = fopen($logdir))
+      print "Error: log couldn't open\n";
+  }
+
+
+  // date-stamp message
+  $lmessage = date("Y-m-d-H:i:s: ") . $message . $EOL;
+
+
+
+  return;
+}
 
 
 // returns array
@@ -169,53 +213,30 @@ function log_int_ctlstring ($ctl)
   $ctl_index = explode(",", $ctl);
   $ctl_array = array();
 
-  foreach $ctl_index as $option
+  foreach ($ctl_index as $option)
   {
+    print "option:{$option}\n";
     switch ($option)
     {
-      case log: $ctl_array["log"] = TRUE; break;
-      case nolog: $ctl_array["log"] = FALSE; break;
-      case echo: $ctl_array["echo"] = TRUE; break;
-      case noecho: $ctl_array["echo"] = FALSE; break;
-      case debug: $ctl_array["debug"] = TRUE; break;
-      case notify: $ctl_array["notify"] = TRUE; break;
-      case complete: $ctl_array["complete"] = TRUE; break;
-      case preg_match('/^exit\d*$/',$option,):
+      case "log": $ctl_array["log"] = TRUE; break;
+      case "nolog": $ctl_array["log"] = FALSE; break;
+      case "echo": $ctl_array["echo"] = TRUE; break;
+      case "noecho": $ctl_array["echo"] = FALSE; break;
+      case "debug": $ctl_array["debug"] = TRUE; break;
+      case "notify": $ctl_array["notify"] = TRUE; break;
+      case "complete": $ctl_array["complete"] = TRUE; break;
+      case (preg_match('/^exit\d*$/',$option) ? TRUE : FALSE):
         $ctl_array["exit"] = TRUE;
         $ctl_array["exit_level"] = intval(substr($option, 4));
         if ($ctl_array["exit_level"] == "") $ctl_array["exit_level"] = 0;
         break;
-
-      print "reached default!!\n";
+      default:
+        print "ERROR: reached default!!\n";
+        break;
     }
   }
 
   return $ctl_array;
-}
-
-function plog_int_write($type, $message, $prefix)
-{
-  global $_logctl;
-
-  // check for type and get file suffix, or error
-  if (! isset($_logtypes[$type]))
-
-
-  // if file has not been opened, start the file
-  if ($_logctl[$type]["_open"] !== TRUE)
-  {
-
-  }
-
-  $filename = "$logfile" . '/' . $suffix
-  // if file does not exist, initialize with header
-  if ( ! file_exists ($filename))
-  {
-
-  }
-  // append to end of log
-  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
-
 }
 
 
@@ -275,24 +296,6 @@ function plog($ctl, $message)
 
   return;
 }
-
-// internal function to write log
-function logp_int_write($suffix, $lmessage)
-{
-  global $logfile;
-  global $logprint;
-
-  $filename = "$logfile" . '/' . $suffix
-  // if file does not exist, initialize with header
-  if ( ! file_exists ($filename))
-  {
-
-  }
-  // append to end of log
-  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
-
-}
-
 
 
 ///

@@ -12,7 +12,7 @@
 // Timezone setting
 //  -- the string must come from a PHP list found here:
 //       http://php.net/manual/en/timezones.php
-sys_time_zone='America/Los_Angeles';
+$sys_time_zone='America/Los_Angeles';
 
 //
 // Host-based Param Section
