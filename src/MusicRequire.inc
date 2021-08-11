@@ -8,22 +8,33 @@
 // Library functions used by multiple routines
 //
 
+// global _base for base system, including logs
+$_base = array();
+
+// load params
 require "MusicParams.inc";
 
-// globals definitions
+///
+/// globals definitions
+///
 
 // software release version
-$release_version="0.5";
+$_base["release_version"]="0.5";
+
+// global _logctl for log system
+$_base['log']['_types'] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
+                  "complete"=>"cmplt", "info"=>"info");
+
+// Set endofline char based on OStype
+if ($OStype == "Windows")
+  $_base['EOL'] = "\r\n";
+else
+  $_base['EOL']="\n";
 
 //
 // set time zone
 //
 date_default_timezone_set($sys_time_zone);
-
-// global _logctl for log system
-$_logctl = array();
-$_logctl["_types"] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
-                  "complete"=>"cmplt", "info"=>"info");
 
 //
 // function: debug
@@ -36,7 +47,6 @@ $debug=TRUE;
 function debug()
 {
     global $debug;
-
     if ( $debug === TRUE ) return(TRUE); else return(FALSE);
 }
 
@@ -55,11 +65,11 @@ function debug()
 ///  log types.
 ///   Structure:
 ///     ["_default"] - default control settings
-///     ["_file"] - filename root
-///     ["_types"] - indexed array of types that are open
+///     ['_file'] - filename root
+///     ['_types'] - indexed array of types that are open
 ///     [$logtype] - structure for each type of log
 ///          ["open"] - TRUE means file has been opened
-///          ["handle"] - FILE handle
+///          ['handle'] - FILE handle
 
 // function log_init($logroot)
 //   $logroot - rootname of log file, after which date and extension are added
@@ -76,7 +86,7 @@ function debug()
 function log_init($logroot = "MsLib-Generic", $default_ctl)
 {
   global $logdir;
-  global $_logctl;
+  global $_base;
 
   // check if $logdir is a directory
   if (! is_dir($logdir))
@@ -90,10 +100,10 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
   //if ( $logroot == "" ) $logroot = "MsLib-Generic";
 
   // set time and full logfile name
-  $_logctl["_file"] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+  $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
 
   // handle default control string
-  $_logctl["_default"] = log_int_ctlstring($default_ctl);
+  $_base['log']["_default"] = log_int_ctlstring($default_ctl);
 
   // if $logprint, print to std out
 //  if ( $logprint === TRUE )
@@ -133,7 +143,7 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
 
 function logp($ctl, $message)
 {
-  global $_logctl;
+  global $_base;
 
   // TTD:
   //  write tests
@@ -145,7 +155,7 @@ function logp($ctl, $message)
   // if file hasn't been written, start file
 
   // check for initialization
-  if (! isset($_logctl["_file"]))
+  if (! isset($_base['log']['_file']))
   {
     print "LOG ERROR: function logp called without initializing with log_init.\n";
     print "    Exiting.\n";
@@ -173,35 +183,35 @@ function logp($ctl, $message)
 
 function logp_int_write($type, $message, $prefix)
 {
-  global $_logctl;
-  global $logdir;
-  global $EOL;
-  global $release_version;
+  global $_base;
 
-print_r($_logctl);
+print_r($_base['log']);
   // check for type and get file suffix, or error
-  if (isset($_logctl["_types"][$type]))
-    $suffix = $_logctl["_types"][$type];
+  if (isset($_base['log']['_types'][$type]))
+    $suffix = $_base['log']['_types'][$type];
   else
   {
     print "ERROR: type was not found.\n";
     exit(1);
   }
 
-  $filename = $_logctl["_file"] . '/' . $suffix;
+  $filename = $_base['log']['_file'] . '/' . $suffix;
   $logdate = date("Y-m-d-H:i:s: ");
 
   // if file has not been opened, start the file
-  if (( ! isset($_logctl[$type]["_open"])) ||
-       $_logctl[$type]["_open"] !== TRUE)
+  if (( ! isset($_base['log'][$type]["_open"])) ||
+       $_base['log'][$type]["_open"] !== TRUE)
   {
-    if (! ($_logctl[$type]["handle"] = fopen("/foowrong/bebar/" . $_logctl["_file"] . "." . $_logctl["_types"][$type], 'a')))
+// "/foowrong/bebar/" .
+    if (! ($_base['log'][$type]['handle'] =
+      fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
       print "Error: log couldn't open\n";
-    if (! fwrite($_logctl[$type]["handle"],
-                  "{$logdate} MusicLib Log - {$type}, Release {$release_version}\n"))
+    if (! fwrite($_base['log'][$type]['handle'],
+                  "{$logdate}MusicLib Log - {$_base['log']['_file']}.{$_base['log']['_types'][$type]}{$_base['EOL']}" .
+                  "{$logdate} Software Release {$_base['release_version']}{$_base['EOL']}"))
       print "LOG ERROR: Could not write log.";
 
-    if (! fflush($_logctl[$type]["handle"]))
+    if (! fflush($_base['log'][$type]['handle']))
       print "LOG ERROR: Could not write log.";
   }
   else
@@ -210,7 +220,7 @@ print_r($_logctl);
   }
 
   // date-stamp message
-  $lmessage = date("Y-m-d-H:i:s: ") . $message . $EOL;
+  $lmessage = date("Y-m-d-H:i:s: ") . $message . $_base['EOL'];
 
 
 
