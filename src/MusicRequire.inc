@@ -11,7 +11,13 @@
 // global _base for base system, including logs
 $_base = array();
 
+// global _logctl for log system
+$_base['log']['_types'] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "info"=>"info",
+                                 "notify"=>"not", "complete"=>"cmplt" );
+
+//
 // load params
+//
 require "MusicParams.inc";
 
 ///
@@ -21,9 +27,6 @@ require "MusicParams.inc";
 // software release version
 $_base["release_version"]="0.5";
 
-// global _logctl for log system
-$_base['log']['_types'] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "notify"=>"not",
-                  "complete"=>"cmplt", "info"=>"info");
 
 // Set endofline char based on OStype
 if ($OStype == "Windows")
@@ -103,7 +106,7 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
   $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
 
   // handle default control string
-  $_base['log']["_default"] = log_int_ctlstring($default_ctl);
+  $_base['log']['_default'] = log_int_ctlstring($default_ctl);
 
   // if $logprint, print to std out
 //  if ( $logprint === TRUE )
@@ -164,7 +167,7 @@ function logp($ctl, $message)
   //  parse control options
   $ctlarr = log_int_ctlstring($ctl);
 
-
+  print "logp {$ctl}:\n";
   print_r($ctlarr);
   // date-stamp message
 
@@ -185,7 +188,9 @@ function logp_int_write($type, $message, $prefix)
 {
   global $_base;
 
-print_r($_base['log']);
+  print "logp_int_write {$type}\n";
+  print_r($_base['log']);
+
   // check for type and get file suffix, or error
   if (isset($_base['log']['_types'][$type]))
     $suffix = $_base['log']['_types'][$type];
@@ -203,9 +208,12 @@ print_r($_base['log']);
        $_base['log'][$type]["_open"] !== TRUE)
   {
 // "/foowrong/bebar/" .
+    /* if no handle, open the log file */
     if (! ($_base['log'][$type]['handle'] =
       fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
       print "Error: log couldn't open\n";
+
+    /* write log header */
     if (! fwrite($_base['log'][$type]['handle'],
                   "{$logdate}MusicLib Log - {$_base['log']['_file']}.{$_base['log']['_types'][$type]}{$_base['EOL']}" .
                   "{$logdate} Software Release {$_base['release_version']}{$_base['EOL']}"))
@@ -213,16 +221,19 @@ print_r($_base['log']);
 
     if (! fflush($_base['log'][$type]['handle']))
       print "LOG ERROR: Could not write log.";
+
+    $_base['log'][$type]['_open'] = TRUE;
+    /* set open */
+
   }
-  else
-  {
-    print "log was set\n";// code...
-  }
-
-  // date-stamp message
-  $lmessage = date("Y-m-d-H:i:s: ") . $message . $_base['EOL'];
 
 
+  /* write log message */
+  if (! fwrite($_base['log'][$type]['handle'],"{$logdate}{$message}{$_base['EOL']}"))
+    print "LOG ERROR: Could not write log.";
+
+  if (! fflush($_base['log'][$type]['handle']))
+    print "LOG ERROR: Could not write log.";
 
   return;
 }
@@ -233,12 +244,19 @@ print_r($_base['log']);
 
 function log_int_ctlstring ($ctl)
 {
+  global $_base;
+
   $ctl_index = explode(",", $ctl);
-  $ctl_array = array();
+
+  /* set up defaults in ctl_array */
+  if (isset($_base['log']['_basectl']))
+    $ctl_array = $_base['log']['_basectl'];
+  else
+    $ctl_array = array();
 
   foreach ($ctl_index as $option)
   {
-    print "option:{$option}\n";
+    print "ctlstring option:{$option}\n";
     switch ($option)
     {
       case "log": $ctl_array["log"] = TRUE; break;
@@ -247,6 +265,7 @@ function log_int_ctlstring ($ctl)
       case "noecho": $ctl_array["echo"] = FALSE; break;
       case "debug": $ctl_array["debug"] = TRUE; break;
       case "notify": $ctl_array["notify"] = TRUE; break;
+      case "info": $ctl_array["info"] = TRUE; break;
       case "complete": $ctl_array["complete"] = TRUE; break;
       case (preg_match('/^exit\d*$/',$option) ? TRUE : FALSE):
         $ctl_array["exit"] = TRUE;
@@ -261,10 +280,6 @@ function log_int_ctlstring ($ctl)
 
   return $ctl_array;
 }
-
-
-
-
 
 // BACKWARD COMPATIBLE - TEMPORARY: function plog($control_string, $message)
 //  $error_msg - text string of message
@@ -350,6 +365,7 @@ function plog($ctl, $message)
 //
 // Note: uses '/' to delimit directories.  This works on windows platforms as well.
 //
+
 function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options)
 {
   global $debug;	// global debug flag

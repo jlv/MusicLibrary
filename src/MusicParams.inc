@@ -141,12 +141,5 @@ if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 // parameters to feed converter
 $convparams = "/dest mp3 /cbr 192 /pfilename %track2%";
 
-
-// Set endofline char based on OStype
-if ($OStype == "Windows")
-  $EOL="\r\n";
-else
-  $EOL="\n";
-
 // end of MusicParams.inc
 ?>
