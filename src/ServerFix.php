@@ -131,7 +131,7 @@
         // splits FILE line into artist, album, and song components
         $list = preg_split("/\\\/", $cuefile[$i]);
         // checks if $list was able to be formed. If cue line is all good, $list = false
-        while($list == false){
+        while($list === 3){
           if($i >= $cuefile){
             plog("ERROR: unable to find \\ in FILE line");
             return 0;
@@ -146,11 +146,12 @@
         $artist = $list[count($list) - 3];
         $artist = substr($artist, 6);
 
+        // fixes () if they are in album/title
+        $album = fixParens($album);
+        $artist = fixParens($artist);
+
         // checks if in artist/album directory
         $checkDir = "/{$artist}\/{$album}/";
-        print $artist . "\n";
-        print $album . "\n";
-        print $add_folder . "\n";
         if(!preg_match($checkDir, $add_folder)){
           plog("ERROR: cue file in incorrect directory");
         }
@@ -166,17 +167,18 @@
         }
         $wavIndex = intval($tooLong);
         $wav[$wavIndex] = array();
-        $tooLong += "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
+        $tooLong = $tooLong .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
         // as long as a song file exists, will assign old name of track to $wav array
         if(file_exists($base_folder . "/" . $add_folder . "/" . $song)){
           $wav[$wavIndex]["old"] = $song;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else if(file_exists($base_folder . "/" . $add_folder . "/" . $tooLong)){
           print "is too long \n";
-          $wav[$wavIndex]["old"] = $toolong;
+          $wav[$wavIndex]["old"] = $tooLong;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else{
           plog("ERROR: .wav file does not exist");
+          plog("\t{$tooLong}");
           return 0;
         }
 
@@ -227,6 +229,10 @@
     // artist requires more work because of FILE "
     $artist = $list[count($list) - 3];
     $artist = substr($artist, 6);
+
+    // fixes () if they are in album/title
+    $album = fixParens($album);
+    $artist = fixParens($artist);
 
     // erases extra artist and album
     $song = preg_replace("/{$artist} /", '', $song);
@@ -290,6 +296,18 @@
     for($i = 0; $i < count($array); $i++){
       $array[$i] .= "\r\n";
     }
+  }
+
+  // function fixParens($str)
+  //  $str - given to string that is to be fixed
+  // returns nothing
+  //
+  // fixDash function - changes () to \(\) for regex functions. NOTE only use when you want str in regex
+  // returns fixed string
+  function fixParens($str){
+    $str = preg_replace("/\(/", "\\(", $str);
+    $str = preg_replace("/\)/", "\\)", $str);
+    return $str;
   }
 
   $test = "C:/Quentin/MusicReference/Music";
