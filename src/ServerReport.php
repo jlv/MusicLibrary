@@ -4,7 +4,7 @@
 
   log_init("ServerReport");
 
-  $crawlDir = "C:/Quentin/ReferenceMusic-RippingTool";
+  $crawlDir = "D:/A";
 
   // funciton crawlName($base_folder, $add_folder, $new_base_folder, $filename, $array_of_options)
   //  $base_folder - initial root folder
@@ -16,7 +16,7 @@
   //  $filename - name of file passed to function
   //  $options - array of options passed to function
   //
-  // 
+  //
   function crawlName($base_folder, $add_folder, $new_base_folder, $filename, $options){
     $wav = "/\.wav$/";
     $cue = "/\.cue$/";

@@ -9,7 +9,7 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
   $list = preg_split("/\//", $add_folder);
   // $album - last input of $list, which will be the album title
   $album = $list[count($list) - 1];
-  
+
   if(!file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue')){
     plog("ERROR: no .cue file found");
     plog("\t{$base_folder}/{$add_folder}/{$file}");
@@ -34,7 +34,7 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
         //checks if character after whitespace is non-whitespace
         $character = "/^\d{2,3} \s/";
         //checks for all other special characters
-        $special = "/[~\?\*\+\[\]\(\)\{\}\^\$\|<>:;\/\"]/";
+        $special = "/[~\?\*\+\[\]\{\}\^\$\|<>:;\/\"]/";
         //checks for ending in .wav
         $wav = "/\.wav/i";
         //checks if name exists in directory

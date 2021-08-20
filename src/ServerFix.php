@@ -66,7 +66,7 @@
         //checks if character after whitespace is non-whitespace
         $character = "/^\d{2,3} \s/";
         //checks for all other special characters
-        $special = "/[~\?\*\+\[\]\(\)\{\}\^\$\|<>:;\/\"]/";
+        $special = "/[~\?\*\+\[\]\{\}\^\$\|<>:;\/\"]/";
         //checks for ending in .wav
         $wav = "/\.wav/i";
         //checks if name exists in directory
@@ -131,7 +131,7 @@
         // splits FILE line into artist, album, and song components
         $list = preg_split("/\\\/", $cuefile[$i]);
         // checks if $list was able to be formed. If cue line is all good, $list = false
-        while($list === 3){
+        while($list === false){
           if($i >= $cuefile){
             plog("ERROR: unable to find \\ in FILE line");
             return 0;
@@ -146,9 +146,11 @@
         $artist = $list[count($list) - 3];
         $artist = substr($artist, 6);
 
-        // fixes () if they are in album/title
+        // fixes () and . if they are in album/title
         $album = fixParens($album);
         $artist = fixParens($artist);
+        $album = fixDot($album);
+        $artist = fixDot($artist);
 
         // checks if in artist/album directory
         $checkDir = "/{$artist}\/{$album}/";
@@ -165,6 +167,10 @@
         }else {
           $tooLong = substr($song, 0, 2);
         }
+        // reassigns $artist to artist name without \
+        $artist = $list[count($list) - 3];
+        $artist = substr($artist, 6);
+        // begins making $tooLong
         $wavIndex = intval($tooLong);
         $wav[$wavIndex] = array();
         $tooLong = $tooLong .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
@@ -173,7 +179,6 @@
           $wav[$wavIndex]["old"] = $song;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else if(file_exists($base_folder . "/" . $add_folder . "/" . $tooLong)){
-          print "is too long \n";
           $wav[$wavIndex]["old"] = $tooLong;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else{
@@ -230,11 +235,18 @@
     $artist = $list[count($list) - 3];
     $artist = substr($artist, 6);
 
-    // fixes () if they are in album/title
+    // fixes () and . if they are in album/title
     $album = fixParens($album);
     $artist = fixParens($artist);
+    $album = fixDot($album);
+    $artist = fixDot($artist);
 
-    // erases extra artist and album
+    // checks to see that $album and $artist are correctly in $song. ERROR and exit if not
+    if(!preg_match("/{$artist} /", $song) || !preg_match("/$album /", $song)
+        && (preg_match("/ ~ .* ~ /", $song) || preg_match("/ - .* - /", $song))){
+      plog("ERROR: artist/album in .cue file does not match .wav file");
+      return 0;
+    }
     $song = preg_replace("/{$artist} /", '', $song);
     $song = preg_replace("/{$album} /", '', $song);
     // checks for ~ or - delimeter, then fixes song title
@@ -300,13 +312,22 @@
 
   // function fixParens($str)
   //  $str - given to string that is to be fixed
-  // returns nothing
   //
   // fixDash function - changes () to \(\) for regex functions. NOTE only use when you want str in regex
   // returns fixed string
   function fixParens($str){
     $str = preg_replace("/\(/", "\\(", $str);
     $str = preg_replace("/\)/", "\\)", $str);
+    return $str;
+  }
+
+  // function fixDot($str)
+  //  $str - given to string that is to be fixed
+  //
+  // fixDot function - changes all . to \. for regex function
+  // retruns fixed $str
+  function fixDot($str){
+    $str = preg_replace("/\./", "\\.", $str);
     return $str;
   }
 
