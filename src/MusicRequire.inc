@@ -73,6 +73,8 @@ function debug()
 ///     [$logtype] - structure for each type of log
 ///          ["open"] - TRUE means file has been opened
 ///          ['handle'] - FILE handle
+///     ['_log_err'] - set to true if logging a log message had already been attempted
+///     ['_err_err'] - set to true if logging an err has been attempted
 
 // function log_init($logroot)
 //   $logroot - rootname of log file, after which date and extension are added
@@ -108,12 +110,7 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
   // handle default control string
   $_base['log']['_default'] = log_int_ctlstring($default_ctl);
 
-  // if $logprint, print to std out
-//  if ( $logprint === TRUE )
-//    print $logtext;
-
   return;
-
 }
 
 // function logp($control_string, $message)
@@ -128,7 +125,9 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
 //        called. Just a value for the variable placeholder
 //  nolog - do not log to regular logfile
 //  echo  - echo/print to terminal
-//  nnl  - no newline on echo to terminal statement
+//  noecho - do not print to terminal
+//  nnl or nonl  - no newline on echo to terminal statement
+//  debug - 
 //  error - log in error log as well as regular log (.err).  Will be picked up
 //           in next error log roll-up (w/in 24 hrs)
 //  notify - log in notification log (.not).  Will be picked up for notification
@@ -136,9 +135,9 @@ function log_init($logroot = "MsLib-Generic", $default_ctl)
 //  info - log in "info" log
 //  exitX - exit entire routine with code X. If no code, 0 assumed
 //  exit-nologX - exit with code X  without creating a log entry
-//  complete - script complete.  Logs in logfile and creates .cmplt file
+//  complete - script complete.  Logs in logfile and creates .cmplt file with
+//              ==COMPLETE== at end
 //  debug - debugging line, only returned if $debug != 0
-//  debug-noecho - like debug but will not echo to terminal
 //
 // Example: plog("echo,error", "This is a log message.")
 //     Logs in log file, logs message in error file, and echo's to screen
@@ -167,6 +166,26 @@ function logp($ctl, $message)
   //  parse control options
   $ctlarr = log_int_ctlstring($ctl);
 
+  // set EOL character
+  if ($_ctlarr['nl'] === FALSE) $eol = ""; else $eol = $_base['EOL'];
+
+  // if // DEBUG
+  // if in debug mode, add log, etc.
+
+  // loop through types and if set, log message
+  foreach ($_base['log']['_types]'] as $type)
+    if ( $ctlarr[$type] === TRUE)
+      log_int_write($type,$message,NULL,$eol);
+  }
+
+  // add complete if needed
+
+  // echo to terminal if set
+
+  // handle exit
+
+
+
   print "logp {$ctl}:\n";
   print_r($ctlarr);
   // date-stamp message
@@ -174,7 +193,7 @@ function logp($ctl, $message)
   // append to end of log
 
   // write log entry
-  logp_int_write("log", $message, "");
+  logp_int_write("log", $message, NULL, $_base['EOL']);
 
   return;
 }
@@ -182,9 +201,12 @@ function logp($ctl, $message)
 
 // log_close
 
+function log_close ()
+{
+  return;
+}
 
-
-function logp_int_write($type, $message, $prefix)
+function logp_int_write($type, $message, $prefix, $eol)
 {
   global $_base;
 
@@ -195,10 +217,7 @@ function logp_int_write($type, $message, $prefix)
   if (isset($_base['log']['_types'][$type]))
     $suffix = $_base['log']['_types'][$type];
   else
-  {
-    print "ERROR: type was not found.\n";
-    exit(1);
-  }
+    log_int_error("LOG ERROR in logp: type \"{$type}\" was not found. Exiting.", TRUE);
 
   $filename = $_base['log']['_file'] . '/' . $suffix;
   $logdate = date("Y-m-d-H:i:s: ");
@@ -207,35 +226,88 @@ function logp_int_write($type, $message, $prefix)
   if (( ! isset($_base['log'][$type]["_open"])) ||
        $_base['log'][$type]["_open"] !== TRUE)
   {
-// "/foowrong/bebar/" .
-    /* if no handle, open the log file */
+    // open the file
     if (! ($_base['log'][$type]['handle'] =
-      fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
-      print "Error: log couldn't open\n";
+        fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
+      log_int_error(array("LOG ERROR: logp could not open",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
 
-    /* write log header */
+    // write log header
     if (! fwrite($_base['log'][$type]['handle'],
                   "{$logdate}MusicLib Log - {$_base['log']['_file']}.{$_base['log']['_types'][$type]}{$_base['EOL']}" .
                   "{$logdate} Software Release {$_base['release_version']}{$_base['EOL']}"))
-      print "LOG ERROR: Could not write log.";
+      log_int_error(array("LOG ERROR: logp could not write to,",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
 
     if (! fflush($_base['log'][$type]['handle']))
-      print "LOG ERROR: Could not write log.";
+      log_int_error(array("LOG ERROR: logp could not flush to",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting"), TRUE);
 
+    // set open bit
     $_base['log'][$type]['_open'] = TRUE;
-    /* set open */
-
   }
 
+  // normalize message into array
+  if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
 
-  /* write log message */
-  if (! fwrite($_base['log'][$type]['handle'],"{$logdate}{$message}{$_base['EOL']}"))
-    print "LOG ERROR: Could not write log.";
+  // write log message
+  foreach ($msgarr as $msg)
+    if (! fwrite($_base['log'][$type]['handle'],"{$logdate}{$msg}{$eol}"))
+      log_int_error(array("LOG ERROR: logp could not write to",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
 
   if (! fflush($_base['log'][$type]['handle']))
-    print "LOG ERROR: Could not write log.";
+    log_int_error(array("LOG ERROR: logp could not flush to",
+                        "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                        "    Exiting."), TRUE);
 
   return;
+}
+
+// log_int_error
+//
+// logs an error message if possible, otherwise prints to terminal
+//
+// message array
+
+function log_int_error ($message, $fatal)
+{
+  $print = FALSE;
+
+  // if already tried error, then set $print
+  if (isset($_base['log']['_err_err']) && ($_base['log']['_err_err'] === TRUE))
+    $print = TRUE;
+  else
+  {
+    $_base['log']['_err_err'] = TRUE;
+    logp_int_write("error", $message, NULL, $_base['EOL']);
+  }
+
+  // if already tried log, then set $print
+  if (isset($_base['log']['_log_err']) && ($_base['log']['_log_err'] === TRUE))
+    $print = TRUE;
+  else
+  {
+    $_base['log']['_log_err'] = TRUE;
+    logp_int_write("log", $message, NULL, $_base['EOL']);
+  }
+
+  if ($print === TRUE || $fatal === TRUE)
+  {
+    // normalize message into array
+    if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
+
+    // write log message
+    foreach ($msgarr as $msg) print "$msg\n";
+  }
+
+  // exit if $fatal or $print
+  if ($print === TRUE || $fatal === TRUE)
+    exit(1);
 }
 
 
@@ -259,21 +331,25 @@ function log_int_ctlstring ($ctl)
     print "ctlstring option:{$option}\n";
     switch ($option)
     {
-      case "log": $ctl_array["log"] = TRUE; break;
-      case "nolog": $ctl_array["log"] = FALSE; break;
+      case "log": $ctl_array["log_ctl"] = TRUE; break;
+      case "nolog": $ctl_array["log_ctl"] = FALSE; break;
       case "echo": $ctl_array["echo"] = TRUE; break;
       case "noecho": $ctl_array["echo"] = FALSE; break;
       case "debug": $ctl_array["debug"] = TRUE; break;
       case "notify": $ctl_array["notify"] = TRUE; break;
       case "info": $ctl_array["info"] = TRUE; break;
       case "complete": $ctl_array["complete"] = TRUE; break;
+      case "nl": $ctl_array["nl"] = TRUE; break;
+      case "nonl": $ctl_array["nl"] = FALSE; break;
+      case "nnl": $ctl_array["nl"] = FALSE; break;
       case (preg_match('/^exit\d*$/',$option) ? TRUE : FALSE):
         $ctl_array["exit"] = TRUE;
         $ctl_array["exit_level"] = intval(substr($option, 4));
         if ($ctl_array["exit_level"] == "") $ctl_array["exit_level"] = 0;
         break;
       default:
-        print "ERROR: reached default!!\n";
+        log_int_error(array("LOG ERROR: log_int_ctlstring called with unrecognizable option \"$option\".",
+                            "     Exiting."), TRUE);
         break;
     }
   }
