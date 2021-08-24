@@ -63,12 +63,15 @@ elseif ($hostname == "Rising-Sun")
   $homedir="D:\MusicLibrary";
 
 }
-elseif ($hostname == "hector")
+elseif ($hostname == "Hector")
 {
   // hector development machine
 
   // $homedir - for systems that are built around a single home directory
-  $homedir="D:\MusicLibrary";
+  $homedir="D:/Quentin/MusicProgramming";
+
+  // Lob file direcotry
+  $logdir = "D:/Quentin/MusicProgramming/Log";
 }
 elseif ($hostname == "tonto")
 {

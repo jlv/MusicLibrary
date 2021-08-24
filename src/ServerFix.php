@@ -331,7 +331,11 @@
     return $str;
   }
 
-  $test = "C:/Quentin/MusicReference/Music";
+  // TONTO directory starts
+  // $test = "C:/Quentin/MusicReference/Music";
+
+  // HECTOR directory starts
+  $test = "D:/Quentin/MusicProgramming/RenameTest";
 
   crawl($test, '', '', "serverFix", array());
 

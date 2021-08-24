@@ -80,8 +80,9 @@
 
               if(strtoupper($response) == "Y"){
 
-                print "Affirmative. Commencing rename";
+                print "Affirmative. Commencing rename\n";
                 editAlbum($oldDir, $newDir, $trackExcerpt);
+                print "Finished Rename";
 
               }else if(strtoupper($response) == "N"){
                 print "Affirmative. Rename Aborted";
@@ -166,7 +167,7 @@
         $wav[$i] = array();
         // $song is just the song title with no FILE
         $song = preg_replace("/FILE \"/", '', $newCue[$i]);
-        $song = preg_replace("/\" WAVE/", '' $song);
+        $song = preg_replace("/\" WAVE/", '', $song);
 
         $wav[$i]["old"] = $song;
 
@@ -190,7 +191,7 @@
     // now fixes .wav files in $newDir
     foreach ($wav as $index) {
       $goodWav = rename($newDir . "/" . $index["old"], $newDir . "/" . $index["new"]);
-      if(!goodWav){
+      if(!$goodWav){
         plog("ERROR: failure on renaming .wav file");
       }
     }
