@@ -175,6 +175,7 @@
         $wav[$wavIndex] = array();
         $tooLong = $tooLong .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
         // as long as a song file exists, will assign old name of track to $wav array
+        print $base_folder . "/" . $add_folder . "/" . $song . "\n";
         if(file_exists($base_folder . "/" . $add_folder . "/" . $song)){
           $wav[$wavIndex]["old"] = $song;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
@@ -335,7 +336,8 @@
   // $test = "C:/Quentin/MusicReference/Music";
 
   // HECTOR directory starts
-  $test = "D:/Quentin/MusicProgramming/RenameTest";
+  // $test = "D:/Quentin/MusicProgramming/RenameTest";
+  $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
 
   crawl($test, '', '', "serverFix", array());
 
