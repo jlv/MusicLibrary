@@ -153,6 +153,8 @@
         $artist = fixParens($artist);
         $album = fixDot($album);
         $artist = fixDot($artist);
+        $album = fixBrackets($album);
+        $artist = fixBrackets($artist);
 
         // checks if in artist/album directory
         $checkDir = "/{$artist}\/{$album}/";
@@ -242,6 +244,8 @@
     $artist = fixParens($artist);
     $album = fixDot($album);
     $artist = fixDot($artist);
+    $album = fixBrackets($album);
+    $artist = fixBrackets($artist);
 
     // checks to see that $album and $artist are correctly in $song. ERROR and exit if not
     if(!preg_match("/{$artist} /", $song) || !preg_match("/$album /", $song)
@@ -257,8 +261,9 @@
       $song = preg_replace("/{$album} ~ /", '', $song);
       $song = preg_replace("/~ /", '', $song);
     }else if(preg_match($dash, $song)){
-      $song = preg_replace("/- {$artist} - /", '', $song);
-      $song = preg_replace("/{$album} - /", '', $song);
+      $song = preg_replace("/- {$artist} /", '', $song);
+      $song = preg_replace("/{$artist} /", '', $song);
+      $song = preg_replace("/- {$album} - /", '', $song);
     }
     // finally replaces NN. or NNN.
     $cutout = "/^\d{2,3}\./";
@@ -324,6 +329,17 @@
     return $str;
   }
 
+  // function fixParens($str)
+  //  $str - given to string that is to be fixed
+  //
+  // fixDash function - changes [] to \[\] for regex functions. NOTE only use when you want str in regex
+  // returns fixed string
+  function fixBrackets($str){
+    $str = preg_replace("/\[/", "\\[", $str);
+    $str = preg_replace("/\]/", "\\]", $str);
+    return $str;
+  }
+
   // function fixDot($str)
   //  $str - given to string that is to be fixed
   //
@@ -339,8 +355,8 @@
 
   // HECTOR directory starts
   // $test = "D:/Quentin/MusicProgramming/RenameTest";
-  $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
-  // $test = "D:/a";
+  // $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
+  $test = "D:/Quentin/Misc/Music";
 
   crawl($test, '', '', "serverFix", array());
 
