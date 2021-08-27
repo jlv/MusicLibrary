@@ -32,8 +32,7 @@ function intro(){
   // checks that all cds actually exist
   foreach($multiDisks as $disk){
     if(!is_dir($disk)){
-      plog("ERROR: given directory handle does not exist");
-      plog("\t{$disk}");
+      plog("ERROR: given directory handle does not exist: {$disk}");
       return 0;
     }
   }
@@ -61,7 +60,7 @@ function intro(){
 
         if(strtoupper($response) == "Y"){
 
-          print "Affirmative: Comencing combine";
+          print "Affirmative: Comencing combine\n";
           combine($finalDir, $multiDisks);
 
         }else if(strtoupper($response) == "N"){
@@ -105,6 +104,10 @@ function intro(){
 //                    NOTE - all directories must be in new, correct format
 // returns 0 on failure
 function combine($finalDir, $multiDisks){
+  // creates $finalDir if it doesn't exist
+  if(!is_dir($finalDir)){
+    mkdir($finalDir);
+  }
   // all variables needed to combine $multiDisks
   $newCue = array();
   $trackNum = 1;
@@ -114,16 +117,24 @@ function combine($finalDir, $multiDisks){
     if($num != 0){
       $cdNum = $num + 1;
       array_push($newCue, "REM CD " . $cdNum);
+      // cuts off the beginning part of a cue file up to the first FILE line
+      $cutLength = 0;
+      while(!preg_match( '/^\a*FILE/', $oldCue[$cutLength] )){
+        $cutLength += 1;
+      }
+
+      array_splice($oldCue, 0, $cutLength);
+    }else{
+      if(!$changedAlbum && preg_match("/TITLE/", $oldCue[$i])){
+        $oldCue[$i] = "TITLE \"" . $disk . "\"";
+        $changedAlbum = true;
+      }
     }
 
     // $changedAlbum lets turns true when the first TITLE (aka title of Album) has been changed
     $changedAlbum = false;
     // puts together the track and changes .wav
     for($i = 0; $i < count($oldCue); $i++){
-      if(!$changedAlbum && preg_match("/TITLE/", $oldCue[$i])){
-        $oldCue[$i] = "TITLE \"" . $disk . "\"";
-        $changedAlbum = true;
-      }
 
       if(preg_match ( '/^\a*FILE/', $oldCue[$i] ) === 1){
         $isTwoDigit = true;
@@ -141,26 +152,36 @@ function combine($finalDir, $multiDisks){
           $newSong = preg_replace("/^\d\d/", "0{$trackNum}", $song);
           // renames FILE line
           $oldCue[$i] = preg_replace("/\"\d\d /", "\"0{$trackNum} ", $oldCue[$i]);
+          // changes the TRACK number
+          $oldCue[$i+1] = preg_replace("/\d\d /", "0{$trackNum} ", $oldCue[$i+1]);
         }else if($trackNum >= 10 && $isTwoDigit){
           // renaming the old .wav file to new .wav file in $finalDir
           $newSong = preg_replace("/^\d\d/", "{$trackNum}", $song);
           // renames FILE line
           $oldCue[$i] = preg_replace("/\"\d\d /", "\"{$trackNum} ", $oldCue[$i]);
+          // changes the TRACK number
+          $oldCue[$i+1] = preg_replace("/\d\d /", "{$trackNum} ", $oldCue[$i+1]);
         }else if($trackNum < 10 && !$isTwoDigit){
           // renaming the old .wav file to new .wav file in $finalDir
           $newSong = preg_replace("/^\d\d\d/", "00{$trackNum}", $song);
           // renames FILE line
           $oldCue[$i] = preg_replace("/\"\d\d\d /", "\"00{$trackNum} ", $oldCue[$i]);
+          // changes the TRACK number
+          $oldCue[$i+1] = preg_replace("/\d\d\d /", "00{$trackNum} ", $oldCue[$i+1]);
         }else if($trackNum >= 10 && $trackNum < 100 && !$isTwoDigit){
           // renaming the old .wav file to new .wav file in $finalDir
           $newSong = preg_replace("/^\d\d\d/", "0{$trackNum}", $song);
           // renames FILE line
           $oldCue[$i] = preg_replace("/\"\d\d\d /", "\"0{$trackNum} ", $oldCue[$i]);
+          // changes the TRACK number
+          $oldCue[$i+1] = preg_replace("/\d\d\d /", "0{$trackNum} ", $oldCue[$i+1]);
         }else if($trackNum >= 100 && !$isTwoDigit){
           // renaming the old .wav file to new .wav file in $finalDir
           $newSong = preg_replace("/^\d\d\d/", "{$trackNum}", $song);
           // renames FILE line
           $oldCue[$i] = preg_replace("/\"\d\d\d /", "\"{$trackNum} ", $oldCue[$i]);
+          // changes the TRACK number
+          $oldCue[$i+1] = preg_replace("/\d\d\d /", "{$trackNum} ", $oldCue[$i+1]);
         }
 
         if($newSong == ""){
@@ -180,25 +201,30 @@ function combine($finalDir, $multiDisks){
     }
 
     // now cue should be all good to add and discard $oldCue
-    print_r($oldCue);
     $newCue = array_merge($newCue, $oldCue);
     unlink($disk . "/" . $disk . ".cue");
 
-    // sees if $disk has any other files in it and moves them to $finalDir
-    $dir = opendir($disk);
-    while(($file = readdir($dir)) !== false){
-      if(getSuffix($file) === "cue" || getSuffix($file) === "wav"){
-        plog("ERROR: Found {$file} still in {$disk} when it should have been moved/deleted");
-        return 0;
-      }else if($file != "." && $file != ".."){
-        $cdNum = $num + 1;
-        rename($disk . "/" . $file, $finalDir . "/" . $cdNum . "-" . $file);
+    // must check if $disk = $finalDir because this will happen sometimes
+    if($disk != $finalDir){
+      // sees if $disk has any other files in it and moves them to $finalDir
+      $dir = opendir($disk);
+      while(($file = readdir($dir)) !== false){
+        if(getSuffix($file) === "cue" || getSuffix($file) === "wav"){
+          plog("ERROR: Found {$file} still in {$disk} when it should have been moved/deleted");
+          return 0;
+        }else if($file != "." && $file != ".."){
+          $cdNum = $num + 1;
+          $end = getSuffix($file);
+          $name = preg_replace("/\....$/", "", $file);
+          rename($disk . "/" . $file, $finalDir . "/" . $name . "-" . $cdNum . "." . $end);
+        }
       }
-    }
-    closedir($dir);
+      closedir($dir);
 
-    // deletes $disk directory
-    unlink($disk);
+      // deletes $disk directory
+      unlink($disk);
+    }
+
   }
 
   // puts $newCue back into a .cue file and puts it in the $finalDir folder

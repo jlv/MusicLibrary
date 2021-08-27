@@ -340,6 +340,7 @@
   // HECTOR directory starts
   // $test = "D:/Quentin/MusicProgramming/RenameTest";
   $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
+  // $test = "D:/a";
 
   crawl($test, '', '', "serverFix", array());
 
