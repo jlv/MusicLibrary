@@ -18,13 +18,15 @@
   //                        Fixes cue files first and then changes .wav files
   function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options){
     // only looks at cue files
+    // changes the directory to $base_folder because we will always stay in it
+    chdir($base_folder . '/' . $add_folder);
     // $list - array of $add_folder split between every /
     $list = preg_split("/\//", $add_folder);
     // $album - last input of $list, which will be the album title
     $album = $list[count($list) - 1];
 
     // checks if there is a cue file. if there isn't, ERROR
-    if(!file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue')){
+    if(!file_exists($album . '.cue')){
       plog("ERROR: no .cue file found");
       plog("\t{$base_folder}/{$add_folder}/{$file}");
     }
@@ -49,7 +51,7 @@
   // cueGood function - verifys cue file
   //  returns true if cue file has no ERRORs, else returns false
   function cueGood($base_folder, $add_folder, $file){
-    $cuefile = file($base_folder . '/' . $add_folder . '/' . $file, FILE_IGNORE_NEW_LINES);
+    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
     foreach ($cuefile as $input) {
 
@@ -70,7 +72,7 @@
         //checks for ending in .wav
         $wav = "/\.wav/i";
         //checks if name exists in directory
-        $fileExists = file_exists($base_folder . '/' . $add_folder . '/' . $title);
+        $fileExists = file_exists($title);
 
         //checks backslash
         if(preg_match('/\\\/', $title)){
@@ -124,7 +126,7 @@
     $wav = array();
 
     // $cuefile is array of outdated cue file
-    $cuefile = file($base_folder . '/' . $add_folder . '/' . $file, FILE_IGNORE_NEW_LINES);
+    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match ( '/^\a*FILE/', $cuefile[$i] ) === 1){
@@ -156,6 +158,7 @@
         $checkDir = "/{$artist}\/{$album}/";
         if(!preg_match($checkDir, $add_folder)){
           plog("ERROR: cue file in incorrect directory");
+          return 0;
         }
 
         // checks that .wav file exists for FILE line
@@ -175,16 +178,14 @@
         $wav[$wavIndex] = array();
         $tooLong = $tooLong .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
         // as long as a song file exists, will assign old name of track to $wav array
-        print $base_folder . "/" . $add_folder . "/" . $song . "\n";
-        if(file_exists($base_folder . "/" . $add_folder . "/" . $song)){
+        if(file_exists($song)){
           $wav[$wavIndex]["old"] = $song;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
-        }else if(file_exists($base_folder . "/" . $add_folder . "/" . $tooLong)){
+        }else if(file_exists($tooLong)){
           $wav[$wavIndex]["old"] = $tooLong;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else{
-          plog("ERROR: .wav file does not exist");
-          plog("\t{$tooLong}");
+          plog("ERROR: {$song} or {$tooLong} file does not exist");
           return 0;
         }
 
@@ -208,10 +209,10 @@
       }
     }
     // renames old cue file
-    rename($base_folder . '/' . $add_folder . '/' . $file, $base_folder . '/' . $add_folder . '/' . $file. ".old");
+    rename($file, $file . ".old");
     // writes array $cuefile into an actual cue file
     addLines($cuefile);
-    $goodCue = file_put_contents($base_folder . '/' . $add_folder . '/' . $file, $cuefile);
+    $goodCue = file_put_contents($file, $cuefile);
 
     fixWAV($base_folder, $add_folder, $wav);
   }
@@ -248,15 +249,16 @@
       plog("ERROR: artist/album in .cue file does not match .wav file");
       return 0;
     }
-    $song = preg_replace("/{$artist} /", '', $song);
-    $song = preg_replace("/{$album} /", '', $song);
     // checks for ~ or - delimeter, then fixes song title
     $tilda = "/^\d*. ~/";
     $dash = "/^\d*. -/";
     if(preg_match($tilda, $song)){
+      $song = preg_replace("/~ {$artist} ~ /", '', $song);
+      $song = preg_replace("/{$album} ~ /", '', $song);
       $song = preg_replace("/~ /", '', $song);
     }else if(preg_match($dash, $song)){
-      $song = preg_replace("/- /", '', $song);
+      $song = preg_replace("/- {$artist} - /", '', $song);
+      $song = preg_replace("/{$album} - /", '', $song);
     }
     // finally replaces NN. or NNN.
     $cutout = "/^\d{2,3}\./";
@@ -290,8 +292,8 @@
   // fixWAV function - fixes the .wav files in the album
   function fixWAV($base_folder, $add_folder, &$wav){
     foreach ($wav as $type) {
-      $goodRename = rename($base_folder . '/' . $add_folder . '/' . $type["old"],
-                            $base_folder . '/' . $add_folder . '/' . $type["new"]);
+      $goodRename = rename($type["old"],
+                            $type["new"]);
       if(!$goodRename){
         plog("ERROR: failure on renaming .wav file");
       }
