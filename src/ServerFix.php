@@ -267,7 +267,6 @@
       $song = preg_replace("/{$album} ~ /", '', $song);
       $song = preg_replace("/~ /", '', $song);
     }else if(preg_match($dash, $song)){
-      print "At - fix\n";
       $song = preg_replace("/- {$artist} /", '', $song);
       $song = preg_replace("/{$artist} /", '', $song);
       $song = preg_replace("/- {$album} - /", '', $song);
