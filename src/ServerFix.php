@@ -36,7 +36,11 @@
       // checks to see if cue file needs any fixing
       if(!cueGood($base_folder, $add_folder, $file)){
         // if !cueGood, runs cueFix function
-        fixCUE($base_folder, $add_folder, $file);
+        $checkSpecial = specialFix($base_folder, $add_folder, $file);
+        // checks for fixCUE using specialFix
+        if($checkSpecial === 1){
+          plog("Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
+        }
       }
     }
   }
@@ -113,55 +117,53 @@
     }
   }
 
-  // function fixCUE($base_folder, $add_folder, $file)
+  // function specialFix($base_folder, $add_folder, $file)
   //  $base_folder - initial root folder
   //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
   //       full path name.  $add_folder can be blank to start (and usually is).  Used by
   //       recursive function to crawl.
-  //  $file - name of file passed to function
+  //  $line - FILE line from .cue file
   //
-  // fixCUE function - actually changes the cue file given
-  function fixCUE($base_folder, $add_folder, $file){
+  // specialFix function - new fix function to see if it works. Go back to GitHub if there are big problems
+  // returns 0 on failure
+  function specialFix($base_folder, $add_folder, $file){
     // $wav is a 2D aray of [tracknum][old/new]
     $wav = array();
 
     // $cuefile is array of outdated cue file
     $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
+    // gets $artist and $album
+    $list = preg_split("/\//", $add_folder);
+    $album = $list[count($list) - 1];
+    $artist = $list[count($list) - 2];
+
+    // fixes () and . if they are in album/title
+    $album = fixParens($album);
+    $artist = fixParens($artist);
+    $album = fixDot($album);
+    $artist = fixDot($artist);
+    $album = fixBrackets($album);
+    $artist = fixBrackets($artist);
+
+    // checks if in artist/album directory
+    $checkDir = "/{$artist}\/{$album}/";
+    if(!preg_match($checkDir, $add_folder)){
+      plog("ERROR: cue file in incorrect directory");
+      return 0;
+    }
+
+    // $cuefile is array of outdated cue file
+    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
+
+    // crawls through lines in $cuefile
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match ( '/^\a*FILE/', $cuefile[$i] ) === 1){
-        // splits FILE line into artist, album, and song components
-        $list = preg_split("/\\\/", $cuefile[$i]);
-        // checks if $list was able to be formed. If cue line is all good, $list = false
-        while($list === false){
-          if($i >= $cuefile){
-            plog("ERROR: unable to find \\ in FILE line");
-            return 0;
-          }
-          $i++;
-          $list = preg_split("/\\\/", $cuefile[$i]);
-        }
-        $song = $list[count($list) - 1];
-        $song = preg_replace("/\".*$/", '', $song);
-        $album = $list[count($list) - 2];
-        // artist requires more work because of FILE "
-        $artist = $list[count($list) - 3];
-        $artist = substr($artist, 6);
-
-        // fixes () and . if they are in album/title
-        $album = fixParens($album);
-        $artist = fixParens($artist);
-        $album = fixDot($album);
-        $artist = fixDot($artist);
-        $album = fixBrackets($album);
-        $artist = fixBrackets($artist);
-
-        // checks if in artist/album directory
-        $checkDir = "/{$artist}\/{$album}/";
-        if(!preg_match($checkDir, $add_folder)){
-          plog("ERROR: cue file in incorrect directory");
-          return 0;
-        }
+        // defines $song
+        $song = preg_replace("/^FILE \"/", '', $cuefile[$i]);
+        $song = preg_replace("/\" WAVE$/", '', $song);
+        $song = preg_replace("/\\\/", '', $song);
+        $song = preg_replace("/{$artist}{$album}/", '', $song);
 
         // checks that .wav file exists for FILE line
         // Also checks for too long file name (i.e. NN~AAA~1.wav)
@@ -173,12 +175,11 @@
           $tooLong = substr($song, 0, 2);
         }
         // reassigns $artist to artist name without \
-        $artist = $list[count($list) - 3];
-        $artist = substr($artist, 6);
+        $tooLongArtist = $list[count($list) - 2];
         // begins making $tooLong
         $wavIndex = intval($tooLong);
         $wav[$wavIndex] = array();
-        $tooLong = $tooLong .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
+        $tooLong = $tooLong .  "-" . strtoupper(substr($tooLongArtist, 0, 3)) . "~" . "1.wav";
         // as long as a song file exists, will assign old name of track to $wav array
         if(file_exists($song)){
           $wav[$wavIndex]["old"] = $song;
@@ -201,6 +202,7 @@
         $trackNum = "";
         if(preg_match("/^\d\d\d/", $song)){
           $trackNum = substr($song, 0, 3);
+          $trackNum = substr($song, 1, 2);
         }else {
           $trackNum = substr($song, 0, 2);
         }
@@ -210,6 +212,7 @@
         }
       }
     }
+
     // renames old cue file
     rename($file, $file . ".old");
     // writes array $cuefile into an actual cue file
@@ -230,14 +233,10 @@
   // fixFILe function - fixes the file line to new, correct standard
   // returns a string which is the correct line, else returns 0 on failure
   function fixFILE($base_folder, $add_folder, $line, &$wav){
-    // first, must split $line again to gain neccessary components
-    $list = preg_split("/\\\/", $line);
-    $song = $list[count($list) - 1];
-    $song = preg_replace("/\".*$/", '', $song);
-    $album = $list[count($list) - 2];
-    // artist requires more work because of FILE "
-    $artist = $list[count($list) - 3];
-    $artist = substr($artist, 6);
+    // gets $artist and $album
+    $list = preg_split("/\//", $add_folder);
+    $album = $list[count($list) - 1];
+    $artist = $list[count($list) - 2];
 
     // fixes () and . if they are in album/title
     $album = fixParens($album);
@@ -247,20 +246,28 @@
     $album = fixBrackets($album);
     $artist = fixBrackets($artist);
 
+    // defines $song
+    $song = preg_replace("/^FILE \"/", '', $line);
+    $song = preg_replace("/\" WAVE$/", '', $song);
+    $song = preg_replace("/\\\/", '', $song);
+    $song = preg_replace("/{$artist}{$album}/", '', $song);
+
     // checks to see that $album and $artist are correctly in $song. ERROR and exit if not
-    if(!preg_match("/{$artist} /", $song) || !preg_match("/$album /", $song)
-        && (preg_match("/ ~ .* ~ /", $song) || preg_match("/ - .* - /", $song))){
+    if((!preg_match("/{$artist} /", $song) || !preg_match("/{$album} /", $song))
+        && ((preg_match("/ ~ .* ~ /", $song) || preg_match("/ - .* - /", $song)))){
       plog("ERROR: artist/album in .cue file does not match .wav file");
       return 0;
     }
     // checks for ~ or - delimeter, then fixes song title
-    $tilda = "/^\d*. ~/";
-    $dash = "/^\d*. -/";
+    $tilda = "/^\d*.* ~/";
+    $dash = "/^\d*.* -/";
+
     if(preg_match($tilda, $song)){
       $song = preg_replace("/~ {$artist} ~ /", '', $song);
       $song = preg_replace("/{$album} ~ /", '', $song);
       $song = preg_replace("/~ /", '', $song);
     }else if(preg_match($dash, $song)){
+      print "At - fix\n";
       $song = preg_replace("/- {$artist} /", '', $song);
       $song = preg_replace("/{$artist} /", '', $song);
       $song = preg_replace("/- {$album} - /", '', $song);
@@ -356,7 +363,7 @@
   // HECTOR directory starts
   // $test = "D:/Quentin/MusicProgramming/RenameTest";
   // $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
-  $test = "D:/Quentin/Misc/Music";
+  $test = "D:/Quentin/MusicProgramming/ServerFixTest";
 
   crawl($test, '', '', "serverFix", array());
 
