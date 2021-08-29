@@ -4,7 +4,7 @@ require "MusicRequire.inc";
 
 require "MultiDisk.inc";
 
-log_init("MultiDist");
+log_init("MultiDisk");
 
 // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
 // $finalDir - directory of combined multi-disk
