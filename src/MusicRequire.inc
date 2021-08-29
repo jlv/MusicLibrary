@@ -80,14 +80,12 @@ function debug()
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
 //
-// initializes log control for further use by plog
+// initializes log control for further use by logp
+// Uses globals:
+//   - $logdir: directory for log files set in musicparams.inc
+//   - $_base
 //
-// Uses the following global parameters:
-//   - logdir: directory for log files set in musicparams.inc
-//   - logfile: path and filename for lag (without suffix)
-//   - logprint: boolean flag to
-// requires that $logdir be defined.  Uses $logroot as the name of the logfile.
-//
+
 function logp_init($logroot = "MsLib-Generic", $default_ctl)
 {
   global $logdir;
@@ -100,9 +98,6 @@ function logp_init($logroot = "MsLib-Generic", $default_ctl)
     print "    Please create or adjust logdir in the parameters file.\n";
     exit(1);
   }
-
-  // look for $logroot and assign generic root if $logroot not assigned
-  //if ( $logroot == "" ) $logroot = "MsLib-Generic";
 
   // set time and full logfile name
   $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
@@ -139,7 +134,7 @@ function logp_init($logroot = "MsLib-Generic", $default_ctl)
 //  debug - debugging line, only returned if debug() != 0
 //
 // Example: plog("echo,error", "This is a log message.")
-//     Logs in log file, logs message in error file, and echos to screen
+//     Logs in log file, error file, and echos to screen
 //
 
 function logp($ctl, $message)
@@ -147,10 +142,10 @@ function logp($ctl, $message)
   global $_base;
 
   // flags initial state
-  $msg_logged = FALSE;
-  $debug_log = FALSE;
-  $prefix = NULL;
+  $log_exec = FALSE;
+  $debug_logged = FALSE;
   $echo_exec = FALSE;
+  $prefix = NULL;
 
   // check for initialization
   if (! isset($_base['log']['_file']))
@@ -162,24 +157,35 @@ function logp($ctl, $message)
   //  parse control options
   $ctlarr = logp_int_ctlstring($ctl);
 
-  // set EOL character
-  if ($ctlarr['nl'] === FALSE) $eol = ""; else $eol = $_base['EOL'];
+  // set EOL character for file and echo
+  if ($ctlarr['nl'] === FALSE)
+  {
+    $eol = "";
+    $echo_eol = "";
+  }
+  else
+  {
+    $eol = $_base['EOL'];
+    $echo_eol = "\n";
+  }
 
-  // if in debug mode and debug set, write debug
+  // handle debug logging
   if ( $ctlarr['debug'] === TRUE )
   {
-    // signal logger not to log
-    $debug_log = TRUE;
+    // signal logger not to log based on just this line
+    $debug_logged = TRUE;
     // write debug if in debug state
     if ( debug() ) logp_int_write("debug", $message, "DEBUG:", $eol);
-
-//    $msg_logged = TRUE;
   }
 
   // loop through non-logging types and if set, log message
-  foreach (array("info", "complete", "notify" ) as $type)
+  foreach (array("info", "complete", "notify", "error" ) as $type)
     if ( isset($ctlarr[$type]) && $ctlarr[$type] === TRUE)
+    {
       logp_int_write($type, $message, NULL, $eol);
+      // set log flag
+      $log_exec = TRUE;
+    }
 
   // add complete tag if needed
   if ( isset($ctlarr['complete']) && $ctlarr['complete'] === TRUE )
@@ -188,27 +194,35 @@ function logp($ctl, $message)
   // determine if log needed
   //  logic: follow if explicitly set, otherwise,
   //    if not $msg_logged, write
-  $types = array();
+//  $types = array();
   if ( isset($ctlarr['log_ctl']))
   {
-    if ( $ctlarr['log_ctl'] === TRUE )
-      $types = array('log');
+//    if ( $ctlarr['log_ctl'] === TRUE )
+    $log_exec = TRUE;
+    if ( $ctlarr['log_ctl'] === FALSE )
+      $log_exec === FALSE;
+//      $types = array('log');
   }
-  elseif ( $debug_log === FALSE )
-     $types = array('log');
+  //elseif ( $debug_logged === FALSE || $log_exec === TRUE )
+  elseif ( $debug_logged === FALSE )
+    $log_exec = TRUE;
+
+  if ( $log_exec === TRUE )
+    logp_int_write("log", $message, NULL, $eol);
+//     $types = array('log');
 
 //print "types/ctlarr: debug:{$debug_log} ::";
 //print_r($types);
 //print_r($ctlarr);
 
   // check if error, add to array
-  if ( isset($ctlarr['error']) && $ctlarr['error'] === TRUE )
-    $types = array_merge($types, array("error"));
+//  if ( isset($ctlarr['error']) && $ctlarr['error'] === TRUE )
+//    $types = array_merge($types, array("error"));
 
   // output more file types
-  foreach ($types as $type)
-    logp_int_write($type, $message, NULL, $eol);
-
+//  foreach ($types as $type)
+//    logp_int_write($type, $message, NULL, $eol);
+//|| $log_exec === TRUE
   // determine echo
   //  logic: follow if explicitly set, otherwise,
   //         if debug, output
@@ -218,7 +232,7 @@ function logp($ctl, $message)
     if ( $ctlarr['echo_ctl'] === TRUE )
       $echo_exec = TRUE;
   }
-  elseif ( $debug_log === TRUE && debug() )
+  elseif ( $debug_logged === TRUE && debug() )
   {
     $echo_exec = TRUE;
     $prefix = "DEBUG:";
@@ -232,7 +246,7 @@ function logp($ctl, $message)
 
     // echo message
     foreach ($msgarr as $msg)
-      print $prefix . $msg . "\n";
+      print $prefix . $msg . $echo_eol;
   }
 
   // handle exit
@@ -436,6 +450,10 @@ function logp_int_ctlstring ($ctl)
         break;
     }
   }
+
+// outputs
+//print "CTLarray {$ctl}:";
+//print_r($ctl_array);
 
   return $ctl_array;
 }
