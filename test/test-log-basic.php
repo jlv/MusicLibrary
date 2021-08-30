@@ -3,9 +3,9 @@
 require "MusicRequire.inc";
 
 
-print "Testing Log System\n\n";
+print "Testing Log System - Basic Messages\n\n";
 
-logp_init("Test-Log", NULL);
+logp_init("Test-Log-Basic", NULL);
 
 logp("log","Explicit log statement.");
 
@@ -14,16 +14,32 @@ logp("info",
 
 logp("error","Error log message.");
 
+// null tests
+
+logp("","Log message with null ctl string");
+
+logp("","Next message is a log with null ctl string and null message");
+
+logp("","");
+
+logp("","After message with null ctl string and null message");
 
 //
 // debug testing
 //
-logp("debug","debug message with debug turned off.");
+
+logp("","next message: debug message 1 should not show up");
+
+logp("debug","debug message 1 with debug turned off.");
 
 $debug=TRUE;
-logp("debug","debug message with debug turned on. 1;");
+logp("debug","debug message 2 with debug turned on. 1;");
 
 logp("log","Previous line debug-only statement. Should not see a debug statement before this line in log.");
+
+logp("info","Info statement 1 should show in log, info, and debug");
+
+logp("debug,info","Info statement 2 should show in log, info, and debug");
 
 logp("debug,nnl",array("debug no NL array 1; ","debug no NL array 2; "));
 
@@ -62,19 +78,11 @@ logp("echo,error,nnl",array("echo and error, array, nnl 1;","echo and error, arr
 
 logp("echo,error","echo and error, finishing line after nnl;");
 
+// exit
+
+logp("echo,exit2","Test log on exit, 2.");
+
+logp("echo,info,exit2","Test info log on exit - should not reach this point, 2.");
 
 
-logp("echo,exit2","Test log on exit.");
-
-logp("echo,info,exit2","Test info log on exit.");
-
-// various echo
-// debug no echo
-// combinations
-// combinations with debug, no debug
-// fixed error path in logp
-//
-
-
-
- ?>
+?>

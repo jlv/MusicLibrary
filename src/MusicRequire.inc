@@ -68,7 +68,8 @@ function debug()
 ///  log types.
 ///   Structure:
 ///     ["_default"] - default control settings
-///     ['_file'] - filename root
+///     ['_file'] - filename root -- also used to identify where log has been initialized
+///     ['_logroot'] - $logroot part of _file
 ///     ['_types'] - indexed array of types that are open
 ///     [$logtype] - structure for each type of log
 ///          ["open"] - TRUE means file has been opened
@@ -86,7 +87,7 @@ function debug()
 //   - $_base
 //
 
-function logp_init($logroot = "MsLib-Generic", $default_ctl)
+function logp_init($logroot, $default_ctl)
 {
   global $logdir;
   global $_base;
@@ -99,11 +100,51 @@ function logp_init($logroot = "MsLib-Generic", $default_ctl)
     exit(1);
   }
 
-  // set time and full logfile name
-  $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+  // check $logroot is set or apply
+  if (! isset($logroot) || $logroot == "")
+    if (isset($log_default_name)) $logroot = $log_default_name;
+    else $logroot = "Log-Default";
+
+  // check if file (open indicator) is already set.  If set, log a warning
+  // but proceed
+  if (isset ($_base['log']['_file']))
+  {
+    logp("log",
+      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
+
+    // check if file has changed
+//    if ( $_base['log']['_file'] != $logdir . "/" . $logroot . "-" . date("Ymd-His"))
+    if ( $_base['log']['_logroot'] != $logroot )
+    {
+      logp("log",
+        array("WARNING: additional logp_init call does not match file from previous call:",
+            "  Previous file: ". $_base['log']['_file'],
+            "  New file in call: " . $logdir . "/" . $logroot . "-" . date("Ymd-His"),
+            " Closing previous files and opening new log files.",
+            " Continuing logging with new file."));
+
+//print "in new logfile\n";
+      // close current logs in preparation for new file
+      logp_close();
+
+      // set time and full logfile name, logroot
+      $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+      $_base['log']['_logroot'] = $logroot;
+    }
+  }
+  else
+  {
+    // set time and full logfile name, logroot
+    $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+    $_base['log']['_logroot'] = $logroot;
+  }
 
   // handle default control string
+//print "seting up default\n";
   $_base['log']['_default'] = logp_int_ctlstring($default_ctl);
+//print_r($_base);
+//print "complete with default\n";
+
 
   return;
 }
@@ -150,12 +191,15 @@ function logp($ctl, $message)
   // check for initialization
   if (! isset($_base['log']['_file']))
   {
-    print "LOG ERROR: function logp called without initializing with logp_init.\n";
+    print "LOG ERROR: function logp called without first initializing with logp_init.\n";
     print "    Exiting.\n";
     exit(1);
   }
   //  parse control options
   $ctlarr = logp_int_ctlstring($ctl);
+
+//print $message . "\n" . "Ctl ";
+//print_r($ctlarr);
 
   // set EOL character for file and echo
   if ($ctlarr['nl'] === FALSE)
@@ -193,36 +237,34 @@ function logp($ctl, $message)
 
   // determine if log needed
   //  logic: follow if explicitly set, otherwise,
-  //    if not $msg_logged, write
-//  $types = array();
+  //    follow flag or defaultto TRUE if not debug_logged
   if ( isset($ctlarr['log_ctl']))
   {
-//    if ( $ctlarr['log_ctl'] === TRUE )
-    $log_exec = TRUE;
-    if ( $ctlarr['log_ctl'] === FALSE )
-      $log_exec === FALSE;
+  //  if ( $ctlarr['log_ctl'] === TRUE )
+    // logp_int_write("log", $message, NULL, $eol);
+//    $log_exec = TRUE;
+    if ( $ctlarr['log_ctl'] === FALSE ) $log_exec = FALSE;
+    else $log_exec = TRUE;
+    // $log_exec === FALSE;
+//      $log_exec === FALSE;
 //      $types = array('log');
   }
   //elseif ( $debug_logged === FALSE || $log_exec === TRUE )
-  elseif ( $debug_logged === FALSE )
-    $log_exec = TRUE;
+  elseif ( $debug_logged === FALSE ) $log_exec = TRUE;
+  //logp_int_write("log", $message, NULL, $eol);
+//    $log_exec = TRUE;
 
   if ( $log_exec === TRUE )
+  {
     logp_int_write("log", $message, NULL, $eol);
-//     $types = array('log');
+    // write debug log if debug is on
+    if ( $debug_logged === FALSE && debug() )
+    {
+      print "in debug on, print log\n";
+      logp_int_write("debug", $message, NULL, $eol);
+    }
+  }
 
-//print "types/ctlarr: debug:{$debug_log} ::";
-//print_r($types);
-//print_r($ctlarr);
-
-  // check if error, add to array
-//  if ( isset($ctlarr['error']) && $ctlarr['error'] === TRUE )
-//    $types = array_merge($types, array("error"));
-
-  // output more file types
-//  foreach ($types as $type)
-//    logp_int_write($type, $message, NULL, $eol);
-//|| $log_exec === TRUE
   // determine echo
   //  logic: follow if explicitly set, otherwise,
   //         if debug, output
@@ -253,13 +295,14 @@ function logp($ctl, $message)
   if ( isset($ctlarr['exit']) && $ctlarr['exit'] === TRUE )
   {
     // log message
-    logp_int_write("log","Exit {$ctlarr['exit']}",NULL,$eol);
-
+    logp_int_write("log", "Exit {$ctlarr['exit']}", NULL, $eol);
+//print "in exit\n";
+//print_r($ctlarr);
     // close log files
     logp_close();
 
     // exit
-    exit ($ctlarr['exit']);
+    exit ($ctlarr['exit_level']);
   }
 
   return;
@@ -282,7 +325,17 @@ function logp_close ()
         logp_int_error(array("LOG ERROR: logp could not close file",
                           "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
                           "    Skipping close."), FALSE);
+
+      // unset handle and open
+      unset($_base['log'][$type]['handle']);
+      unset($_base['log'][$type]['open']);
     }
+
+  // unset file params
+  unset( $_base['log']['_file'] );
+  unset( $_base['log']['_logroot'] );
+  unset( $_base['log']['_basectl'] );
+  unset( $_base['log']['_default'] );
 
   return;
 }
@@ -312,8 +365,8 @@ function logp_int_write($type, $message, $prefix, $eol)
   $logdate = date("Y-m-d-H:i:s: ");
 
   // if file has not been opened, start the file
-  if (( ! isset($_base['log'][$type]["_open"])) ||
-       $_base['log'][$type]["_open"] !== TRUE)
+  if (( ! isset($_base['log'][$type]['open'])) ||
+       $_base['log'][$type]['open'] !== TRUE)
   {
     // open the file
     if (! ($_base['log'][$type]['handle'] =
@@ -336,7 +389,7 @@ function logp_int_write($type, $message, $prefix, $eol)
                           "    Exiting"), TRUE);
 
     // set open bit
-    $_base['log'][$type]['_open'] = TRUE;
+    $_base['log'][$type]['open'] = TRUE;
   }
 
   // normalize message into array
@@ -413,20 +466,21 @@ function logp_int_ctlstring ($ctl)
   $ctl_index = explode(",", $ctl);
 
   /* set up defaults in ctl_array */
-  if (isset($_base['log']['_basectl']))
-    $ctl_array = $_base['log']['_basectl'];
+  if (isset($_base['log']['_default']))
+    $ctl_array = $_base['log']['_default'];
   else
     $ctl_array = array();
 
-  // defaults
-  $ctl_array['nl'] = TRUE;
-  $ctl_array['debug'] = FALSE;
+  // defaults if not set
+  if (! isset($ctl_array['nl']) ) $ctl_array['nl'] = TRUE;
+  if (! isset($ctl_array['debug']) ) $ctl_array['debug'] = FALSE;
 
   foreach ($ctl_index as $option)
   {
   //  print "ctlstring option:{$option}\n";
     switch ($option)
     {
+      case "": break;
       case "log": $ctl_array["log_ctl"] = TRUE; break;
       case "nolog": $ctl_array["log_ctl"] = FALSE; break;
       case "echo": $ctl_array["echo_ctl"] = TRUE; break;
@@ -450,10 +504,6 @@ function logp_int_ctlstring ($ctl)
         break;
     }
   }
-
-// outputs
-//print "CTLarray {$ctl}:";
-//print_r($ctl_array);
 
   return $ctl_array;
 }
@@ -621,7 +671,5 @@ function fileAge($file_name)
 	$daydiff = ($systime - $filetime ) / (60*60*24);
 	return $daydiff;
 }// end of function
-
-
 
 ?>
