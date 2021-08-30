@@ -78,6 +78,8 @@ logp("echo,error,nnl",array("echo and error, array, nnl 1;","echo and error, arr
 
 logp("echo,error","echo and error, finishing line after nnl;");
 
+logp("echo,error","echo and error, finishing line after nnl and can see NL;");
+
 // exit
 
 logp("echo,exit2","Test log on exit, 2.");

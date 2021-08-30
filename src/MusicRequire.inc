@@ -112,8 +112,7 @@ function logp_init($logroot, $default_ctl)
     logp("log",
       "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
 
-    // check if file has changed
-//    if ( $_base['log']['_file'] != $logdir . "/" . $logroot . "-" . date("Ymd-His"))
+    // check if file root has changed
     if ( $_base['log']['_logroot'] != $logroot )
     {
       logp("log",
@@ -123,7 +122,6 @@ function logp_init($logroot, $default_ctl)
             " Closing previous files and opening new log files.",
             " Continuing logging with new file."));
 
-//print "in new logfile\n";
       // close current logs in preparation for new file
       logp_close();
 
@@ -140,11 +138,7 @@ function logp_init($logroot, $default_ctl)
   }
 
   // handle default control string
-//print "seting up default\n";
   $_base['log']['_default'] = logp_int_ctlstring($default_ctl);
-//print_r($_base);
-//print "complete with default\n";
-
 
   return;
 }
@@ -198,9 +192,6 @@ function logp($ctl, $message)
   //  parse control options
   $ctlarr = logp_int_ctlstring($ctl);
 
-//print $message . "\n" . "Ctl ";
-//print_r($ctlarr);
-
   // set EOL character for file and echo
   if ($ctlarr['nl'] === FALSE)
   {
@@ -240,29 +231,18 @@ function logp($ctl, $message)
   //    follow flag or defaultto TRUE if not debug_logged
   if ( isset($ctlarr['log_ctl']))
   {
-  //  if ( $ctlarr['log_ctl'] === TRUE )
-    // logp_int_write("log", $message, NULL, $eol);
-//    $log_exec = TRUE;
     if ( $ctlarr['log_ctl'] === FALSE ) $log_exec = FALSE;
     else $log_exec = TRUE;
-    // $log_exec === FALSE;
-//      $log_exec === FALSE;
-//      $types = array('log');
   }
-  //elseif ( $debug_logged === FALSE || $log_exec === TRUE )
   elseif ( $debug_logged === FALSE ) $log_exec = TRUE;
-  //logp_int_write("log", $message, NULL, $eol);
-//    $log_exec = TRUE;
 
+  // execute log
   if ( $log_exec === TRUE )
   {
     logp_int_write("log", $message, NULL, $eol);
     // write debug log if debug is on
     if ( $debug_logged === FALSE && debug() )
-    {
-      print "in debug on, print log\n";
       logp_int_write("debug", $message, NULL, $eol);
-    }
   }
 
   // determine echo
@@ -296,8 +276,7 @@ function logp($ctl, $message)
   {
     // log message
     logp_int_write("log", "Exit {$ctlarr['exit']}", NULL, $eol);
-//print "in exit\n";
-//print_r($ctlarr);
+
     // close log files
     logp_close();
 
@@ -505,6 +484,8 @@ function logp_int_ctlstring ($ctl)
     }
   }
 
+//print "ctl ";
+//print_r($ctl_array);
   return $ctl_array;
 }
 

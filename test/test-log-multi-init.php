@@ -5,7 +5,7 @@ require "MusicRequire.inc";
 print "Testing Log System - Multiple Inits\n\n";
 
 //logp_init("Test-Log-Multi", NULL);
-logp_init("Test-Log-Multi", "echo,nonl");
+logp_init("Test-Log-Multi", "echo");
 
 logp("echo,info","Explicit first log statement, multi-init");
 

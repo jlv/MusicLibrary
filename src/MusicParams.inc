@@ -119,7 +119,7 @@ if (! isset($logdir)) $logdir=$homedir . "/Log";
 //
 // Log print flag: if set to TRUE, prints log messages to screen
 //  and to log file
-if (! isset($logprint)) $logprint = TRUE;
+//if (! isset($logprint)) $logprint = TRUE;
 //$logprint = FALSE;
 
 // source directory of wave files and cue files
@@ -134,6 +134,9 @@ if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 //
 // other parameters, non-host-based
 //
+
+// default log root
+$log_default_name = $"MsLib-Generic";
 
 // location of coverter binary to be invoked through system call
 if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
