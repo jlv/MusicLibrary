@@ -8,10 +8,31 @@
 // Library functions used by multiple routines
 //
 
+// global _base for base system, including logs
+$_base = array();
+
+// global _logctl for log system
+$_base['log']['_types'] = array("log"=>"log", "debug"=>"dbg", "error"=>"err", "info"=>"info",
+                                 "notify"=>"not", "complete"=>"cmplt" );
+
+//
+// load params
+//
 require "MusicParams.inc";
 
+///
+/// globals definitions
+///
+
 // software release version
-$release_version="0.5";
+$_base["release_version"]="0.5";
+
+
+// Set endofline char based on OStype
+if ($OStype == "Windows")
+  $_base['EOL'] = "\r\n";
+else
+  $_base['EOL']="\n";
 
 //
 // set time zone
@@ -24,12 +45,11 @@ date_default_timezone_set($sys_time_zone);
 //
 //  use in programming: if (debug()) {}
 $debug=FALSE;
-$debug=TRUE;
+//$debug=TRUE;
 //
 function debug()
 {
     global $debug;
-
     if ( $debug === TRUE ) return(TRUE); else return(FALSE);
 }
 
@@ -39,9 +59,439 @@ function debug()
 /// Log Functions
 ///
 ///
-/// Use log_init() to set up logging at the first of the routine
-/// Use plog to log individual messages
+/// logp_init() sets up logging at the first of the routine
+/// logp() - log individual messages
+/// logp_close() - closes log files. Not needed if an "exit" is used with
+///                logp
 ///
+/// Global array _logctl is populated with control information for all
+///  log types.
+///   Structure:
+///     ["_default"] - default control settings
+///     ['_file'] - filename root -- also used to identify where log has been initialized
+///     ['_logroot'] - $logroot part of _file
+///     ['_types'] - indexed array of types that are open
+///     [$logtype] - structure for each type of log
+///          ["open"] - TRUE means file has been opened
+///          ['handle'] - FILE handle
+///     ['_log_err'] - set to true if logging a log message had already been attempted
+///     ['_err_err'] - set to true if logging an err has been attempted
+
+// function log_init($logroot)
+//   $logroot - rootname of log file, after which date and extension are added
+//              example: mylog produces file mylog-20181228-074823.log
+//
+// initializes log control for further use by logp
+// Uses globals:
+//   - $logdir: directory for log files set in musicparams.inc
+//   - $_base
+//
+
+function logp_init($logroot, $default_ctl)
+{
+  global $logdir;
+  global $_base;
+
+  // check if $logdir is a directory
+  if (! is_dir($logdir))
+  {
+    print "LOG ERROR: log directory $logdir does not exist.\n";
+    print "    Please create or adjust logdir in the parameters file.\n";
+    exit(1);
+  }
+
+  // check $logroot is set or apply
+  if (! isset($logroot) || $logroot == "")
+    if (isset($log_default_name)) $logroot = $log_default_name;
+    else $logroot = "Log-Default";
+
+  // check if file (open indicator) is already set.  If set, log a warning
+  // but proceed
+  if (isset ($_base['log']['_file']))
+  {
+    logp("log",
+      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
+
+    // check if file root has changed
+    if ( $_base['log']['_logroot'] != $logroot )
+    {
+      logp("log",
+        array("WARNING: additional logp_init call does not match file from previous call:",
+            "  Previous file: ". $_base['log']['_file'],
+            "  New file in call: " . $logdir . "/" . $logroot . "-" . date("Ymd-His"),
+            " Closing previous files and opening new log files.",
+            " Continuing logging with new file."));
+
+      // close current logs in preparation for new file
+      logp_close();
+
+      // set time and full logfile name, logroot
+      $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+      $_base['log']['_logroot'] = $logroot;
+    }
+  }
+  else
+  {
+    // set time and full logfile name, logroot
+    $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
+    $_base['log']['_logroot'] = $logroot;
+  }
+
+  // handle default control string
+  $_base['log']['_default'] = logp_int_ctlstring($default_ctl);
+
+  return;
+}
+
+// function logp($control_string, $message)
+//  $message - text string of message
+//  returns nothing
+//
+// logs message to appropriate files and echos to terminal if set
+//
+// Control string is a comma-separated list of options:
+// options:
+//  log - just log a message.  Not needed if other options besides debug are
+//        called as all messages are logged.
+//  nolog - do not log to regular logfile
+//  echo  - echo/print to terminal
+//  noecho - do not print to terminal
+//  nnl or nonl  - no newline on echo to terminal statement
+//  error - log in error log as well as regular log (.err).  Will be picked up
+//           in next error log roll-up (w/in 24 hrs)
+//  notify - log in notification log (.not).  Will be picked up for notification
+//           in next run, usually hourly
+//  info - log in "info" log
+//  exitX - exit entire routine with code X. If no code, 0 assumed
+//  exit-nologX - exit with code X  without creating a log entry
+//  complete - script complete.  Logs in logfile and creates .cmplt file with
+//              message and ==COMPLETE== at end
+//  debug - debugging line, only returned if debug() != 0
+//
+// Example: plog("echo,error", "This is a log message.")
+//     Logs in log file, error file, and echos to screen
+//
+
+function logp($ctl, $message)
+{
+  global $_base;
+
+  // flags initial state
+  $log_exec = FALSE;
+  $debug_logged = FALSE;
+  $echo_exec = FALSE;
+  $prefix = NULL;
+
+  // check for initialization
+  if (! isset($_base['log']['_file']))
+  {
+    print "LOG ERROR: function logp called without first initializing with logp_init.\n";
+    print "    Exiting.\n";
+    exit(1);
+  }
+  //  parse control options
+  $ctlarr = logp_int_ctlstring($ctl);
+
+  // set EOL character for file and echo
+  if ($ctlarr['nl'] === FALSE)
+  {
+    $eol = "";
+    $echo_eol = "";
+  }
+  else
+  {
+    $eol = $_base['EOL'];
+    $echo_eol = "\n";
+  }
+
+  // handle debug logging
+  if ( $ctlarr['debug'] === TRUE )
+  {
+    // signal logger not to log based on just this line
+    $debug_logged = TRUE;
+    // write debug if in debug state
+    if ( debug() ) logp_int_write("debug", $message, "DEBUG:", $eol);
+  }
+
+  // loop through non-logging types and if set, log message
+  foreach (array("info", "complete", "notify", "error" ) as $type)
+    if ( isset($ctlarr[$type]) && $ctlarr[$type] === TRUE)
+    {
+      logp_int_write($type, $message, NULL, $eol);
+      // set log flag
+      $log_exec = TRUE;
+    }
+
+  // add complete tag if needed
+  if ( isset($ctlarr['complete']) && $ctlarr['complete'] === TRUE )
+    logp_int_write("complete", "==COMPLETE==", NULL, $eol);
+
+  // determine if log needed
+  //  logic: follow if explicitly set, otherwise,
+  //    follow flag or defaultto TRUE if not debug_logged
+  if ( isset($ctlarr['log_ctl']))
+  {
+    if ( $ctlarr['log_ctl'] === FALSE ) $log_exec = FALSE;
+    else $log_exec = TRUE;
+  }
+  elseif ( $debug_logged === FALSE ) $log_exec = TRUE;
+
+  // execute log
+  if ( $log_exec === TRUE )
+  {
+    logp_int_write("log", $message, NULL, $eol);
+    // write debug log if debug is on
+    if ( $debug_logged === FALSE && debug() )
+      logp_int_write("debug", $message, NULL, $eol);
+  }
+
+  // determine echo
+  //  logic: follow if explicitly set, otherwise,
+  //         if debug, output
+  if ( isset($ctlarr['echo_ctl']))
+  {
+    // log was explicitly set
+    if ( $ctlarr['echo_ctl'] === TRUE )
+      $echo_exec = TRUE;
+  }
+  elseif ( $debug_logged === TRUE && debug() )
+  {
+    $echo_exec = TRUE;
+    $prefix = "DEBUG:";
+  }
+
+  // execute echo
+  if ( $echo_exec === TRUE )
+  {
+    // normalize message into array
+    if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
+
+    // echo message
+    foreach ($msgarr as $msg)
+      print $prefix . $msg . $echo_eol;
+  }
+
+  // handle exit
+  if ( isset($ctlarr['exit']) && $ctlarr['exit'] === TRUE )
+  {
+    // log message
+    logp_int_write("log", "Exit {$ctlarr['exit']}", NULL, $eol);
+
+    // close log files
+    logp_close();
+
+    // exit
+    exit ($ctlarr['exit_level']);
+  }
+
+  return;
+}
+
+
+// logp_close
+
+function logp_close ()
+{
+  global $_base;
+
+  // close all log files
+  foreach ( $_base['log']['_types'] as $type )
+    if ( isset($_base['log'][$type]['handle'] ))
+    {
+      $log_handle = $_base['log'][$type]['handle'];
+
+      if(! fclose ($log_handle))
+        logp_int_error(array("LOG ERROR: logp could not close file",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Skipping close."), FALSE);
+
+      // unset handle and open
+      unset($_base['log'][$type]['handle']);
+      unset($_base['log'][$type]['open']);
+    }
+
+  // unset file params
+  unset( $_base['log']['_file'] );
+  unset( $_base['log']['_logroot'] );
+  unset( $_base['log']['_basectl'] );
+  unset( $_base['log']['_default'] );
+
+  return;
+}
+
+
+// internal function: logp_int_write ($type, $message, $prefix, $eol)
+//  $type - log type (e.g. log, error, ...)
+//  $message - message string or array of strings to log
+//  $prefix - printed before each message line
+//  $eol - end-of-line (OS specific and controlled by param)
+//
+
+function logp_int_write($type, $message, $prefix, $eol)
+{
+  global $_base;
+
+//  print "logp_int_write {$type}\n";
+//  print_r($_base['log']);
+
+  // check for type and get file suffix, or error
+  if (isset($_base['log']['_types'][$type]))
+    $suffix = $_base['log']['_types'][$type];
+  else
+    logp_int_error("LOG ERROR in logp: type \"{$type}\" was not found. Exiting.", TRUE);
+
+  $filename = $_base['log']['_file'] . '/' . $suffix;
+  $logdate = date("Y-m-d-H:i:s: ");
+
+  // if file has not been opened, start the file
+  if (( ! isset($_base['log'][$type]['open'])) ||
+       $_base['log'][$type]['open'] !== TRUE)
+  {
+    // open the file
+    if (! ($_base['log'][$type]['handle'] =
+        fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
+      logp_int_error(array("LOG ERROR: logp could not open",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
+
+    // write log header
+    if (! fwrite($_base['log'][$type]['handle'],
+                  "{$logdate}MusicLib Log - {$_base['log']['_file']}.{$_base['log']['_types'][$type]}{$eol}" .
+                  "{$logdate} Software Release {$_base['release_version']}{$eol}"))
+      logp_int_error(array("LOG ERROR: logp could not write to,",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
+
+    if (! fflush($_base['log'][$type]['handle']))
+      logp_int_error(array("LOG ERROR: logp could not flush to",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting"), TRUE);
+
+    // set open bit
+    $_base['log'][$type]['open'] = TRUE;
+  }
+
+  // normalize message into array
+  if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
+
+  // write log message
+  foreach ($msgarr as $msg)
+    if (! fwrite($_base['log'][$type]['handle'],"{$logdate}{$prefix}{$msg}{$eol}"))
+      logp_int_error(array("LOG ERROR: logp could not write to",
+                          "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                          "    Exiting."), TRUE);
+
+  if (! fflush($_base['log'][$type]['handle']))
+    logp_int_error(array("LOG ERROR: logp could not flush to",
+                        "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
+                        "    Exiting."), TRUE);
+
+  return;
+}
+
+// internal function: logp_int_error ($message, $fatal)
+//  $message - message to log or print
+//  $fatal - TRUE means routine will close when log/print attempts have been completed
+//
+// logs an error message if possible, otherwise prints to terminal
+//
+
+function logp_int_error ($message, $fatal)
+{
+  global $_base;
+  $print = FALSE;
+
+  // if already tried error, then set $print
+  if (isset($_base['log']['_err_err']) && ($_base['log']['_err_err'] === TRUE))
+    $print = TRUE;
+  else
+  {
+    $_base['log']['_err_err'] = TRUE;
+    logp_int_write("error", $message, NULL, $_base['EOL']);
+  }
+
+  // if already tried log, then set $print
+  if (isset($_base['log']['_log_err']) && ($_base['log']['_log_err'] === TRUE))
+    $print = TRUE;
+  else
+  {
+    $_base['log']['_log_err'] = TRUE;
+    logp_int_write("log", $message, NULL, $_base['EOL']);
+  }
+
+  if ($print === TRUE || $fatal === TRUE)
+  {
+    // normalize message into array
+    if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
+
+    // write log message
+    foreach ($msgarr as $msg) print "$msg\n";
+  }
+
+  // exit if $fatal or $print
+  if ($print === TRUE || $fatal === TRUE)
+    exit(1);
+}
+
+
+// internal function: logp_int_ctlstring ($ctl)
+//  $ctl - comma-separated list of control options (see logp for details on controls)
+//
+
+function logp_int_ctlstring ($ctl)
+{
+  global $_base;
+
+  $ctl_index = explode(",", $ctl);
+
+  /* set up defaults in ctl_array */
+  if (isset($_base['log']['_default']))
+    $ctl_array = $_base['log']['_default'];
+  else
+    $ctl_array = array();
+
+  // defaults if not set
+  if (! isset($ctl_array['nl']) ) $ctl_array['nl'] = TRUE;
+  if (! isset($ctl_array['debug']) ) $ctl_array['debug'] = FALSE;
+
+  foreach ($ctl_index as $option)
+  {
+  //  print "ctlstring option:{$option}\n";
+    switch ($option)
+    {
+      case "": break;
+      case "log": $ctl_array["log_ctl"] = TRUE; break;
+      case "nolog": $ctl_array["log_ctl"] = FALSE; break;
+      case "echo": $ctl_array["echo_ctl"] = TRUE; break;
+      case "noecho": $ctl_array["echo_ctl"] = FALSE; break;
+      case "error": $ctl_array["error"] = TRUE; break;
+      case "debug": $ctl_array["debug"] = TRUE; break;
+      case "notify": $ctl_array["notify"] = TRUE; break;
+      case "info": $ctl_array["info"] = TRUE; break;
+      case "complete": $ctl_array["complete"] = TRUE; break;
+      case "nl": $ctl_array["nl"] = TRUE; break;
+      case "nonl": $ctl_array["nl"] = FALSE; break;
+      case "nnl": $ctl_array["nl"] = FALSE; break;
+      case (preg_match('/^exit\d*$/',$option) ? TRUE : FALSE):
+        $ctl_array["exit"] = TRUE;
+        $ctl_array["exit_level"] = intval(substr($option, 4));
+        if ($ctl_array["exit_level"] == "") $ctl_array["exit_level"] = 0;
+        break;
+      default:
+        logp_int_error(array("LOG ERROR: logp_int_ctlstring called with unrecognizable option \"$option\".",
+                            "     Exiting."), TRUE);
+        break;
+    }
+  }
+
+//print "ctl ";
+//print_r($ctl_array);
+  return $ctl_array;
+}
+
+//
+// BACKWARD COMPATIBLE - TEMPORARY - Old Log Functions
+//
 
 // function log_init($logroot)
 //   $logroot - rootname of log file, after which date and extension are added
@@ -90,19 +540,49 @@ function log_init($logroot)
 }
 
 
-// function plog($message)
-//  $error_msg - text string with message
+// function plog($control_string, $message)
+//  $error_msg - text string of message
 //  returns nothing
 //
 // logs error to log file and prints if $logprint is set to TRUE
+//
+// Control string is a comma-separated list of array_of_options
+//
+// options:
+//  log - just log a message.  Not needed if other options besides debug are
+//        called. Just a value for the variable placeholder
+//  nolog - do not log to regular logfile
+//  echo/noecho  - echo/print to terminal
+//  nnl  - no newline on echo to terminal statement
+//  error - log in error log as well as regular log (.err).  Will be picked up
+//           in next error log roll-up (w/in 24 hrs)
+//  notify - log in notification log (.not).  Will be picked up for notification
+//           in next run, usually hourly
+//  exitX - exit entire routine with code X. If no code, 0 assumed
+//  exit-nologX - exit with code X  without creating a log entry
+//  complete - script complete.  Logs in logfile and creates .cmplt file
+//  debug - debugging line, only returned if $debug != 0
+//
+// Example: logp("echo,error", "This is a log message.")
+//     Logs in log file, logs message in error file, and echo's to screen
+//
 
-function plog($message)
+function plog($ctl, $message)
 {
   global $logfile;
   global $logprint;
 
+  // TTD:
+  //  write tests
+  //  use array to mark file writing?
+  //  open log file and keep open?  can you make an array of streams for different file types?
+  //  use explde on control structure, then move to associate array?
+  //
+
+  // if file hasn't been written, start file
+
   // date-stamp message
-  $lmessage = date("Ymd-His: ") . $message . "\r\n";
+  $lmessage = date("Y-m-d-H:i:s: ") . $message . "\r\n";
 
   // append to end of log
   file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
@@ -144,6 +624,7 @@ function plog($message)
 //
 // Note: uses '/' to delimit directories.  This works on windows platforms as well.
 //
+
 function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options)
 {
   global $debug;	// global debug flag
@@ -219,7 +700,5 @@ function fileAge($file_name)
 	$daydiff = ($systime - $filetime ) / (60*60*24);
 	return $daydiff;
 }// end of function
-
-
 
 ?>
