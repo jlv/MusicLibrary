@@ -136,7 +136,7 @@ if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 //
 
 // default log root
-$log_default_name = $"MsLib-Generic";
+$log_default_name = "MsLib-Generic";
 
 // location of coverter binary to be invoked through system call
 if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";

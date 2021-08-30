@@ -492,6 +492,54 @@ function logp_int_ctlstring ($ctl)
 //
 // BACKWARD COMPATIBLE - TEMPORARY - Old Log Functions
 //
+
+// function log_init($logroot)
+//   $logroot - rootname of log file, after which date and extension are added
+//              example: mylog produces file mylog.20181228-074823.log
+//
+// initializes log file for further use by plog
+//
+//
+// Uses the following globals:
+//   - logdir: directory for log files
+//   - logroot: root name of logfile
+//   - logfilehdl:
+// requires that $logdir be defined.  Uses $logroot as the name of the logfile.
+//
+function log_init($logroot)
+{
+  global $logdir;
+  global $logfile;
+  global $logprint;
+
+  // check if $logdir is a directory
+  if (! is_dir($logdir))
+  {
+    print "ERROR: log directory $logdir does not exist.\n";
+    print "       Please create or adjust logdir in the parameters file.\n";
+    exit;
+  }
+
+  // look for $logroot and assign generic root if $logroot not assigned
+  if ( $logroot == "" ) $logroot = "MsLib-Generic";
+
+  // set time and full logfile name
+  $logfile = $logdir . "/" . $logroot . "-" . date("Ymd-His") . ".log";
+
+  // add initial message to log file
+  $logtext = "Music Library Log File - " . $logroot . "  " . date("Y M d H:i:s") . "\n";
+
+  file_put_contents($logfile, $logtext , FILE_APPEND | LOCK_EX);
+
+  // if $logprint, print to std out
+  if ( $logprint === TRUE )
+    print $logtext;
+
+  return;
+
+}
+
+
 // function plog($control_string, $message)
 //  $error_msg - text string of message
 //  returns nothing
