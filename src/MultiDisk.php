@@ -4,7 +4,7 @@ require "MusicRequire.inc";
 
 require "MultiDisk.inc";
 
-log_init("MultiDisk");
+logp_init("MultiDisk", "");
 
 // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
 // $finalDir - directory of combined multi-disk
@@ -32,7 +32,7 @@ function intro(){
   // checks that all cds actually exist
   foreach($multiDisks as $disk){
     if(!is_dir($disk)){
-      plog("ERROR: given directory handle does not exist: {$disk}");
+      logp("error", "ERROR: given directory handle does not exist: {$disk}");
       return 0;
     }
   }
@@ -185,13 +185,13 @@ function combine($finalDir, $multiDisks){
         }
 
         if($newSong == ""){
-          plog("ERROR: Failure on changing song title in {$disk}");
+          logp("error", "ERROR: Failure on changing song title in {$disk}");
           return 0;
         }
 
         $goodWav = rename($disk . "/" . $song, $finalDir . "/" . $newSong);
         if(!$goodWav){
-          plog("ERROR: Could not rename {$song} as {$newSong}");
+          logp("error", "ERROR: Could not rename {$song} as {$newSong}");
           return 0;
         }
 
@@ -210,7 +210,7 @@ function combine($finalDir, $multiDisks){
       $dir = opendir($disk);
       while(($file = readdir($dir)) !== false){
         if(getSuffix($file) === "cue" || getSuffix($file) === "wav"){
-          plog("ERROR: Found {$file} still in {$disk} when it should have been moved/deleted");
+          logp("error", "ERROR: Found {$file} still in {$disk} when it should have been moved/deleted");
           return 0;
         }else if($file != "." && $file != ".."){
           $cdNum = $num + 1;
@@ -223,7 +223,9 @@ function combine($finalDir, $multiDisks){
 
       // deletes $disk directory
       unlink($disk);
+      logp("info", "{$disk} has been deleted. Moving onto next disk");
     }
+    logp("info", "{$finalDir} has been compiled. Function combine completed");
 
   }
 

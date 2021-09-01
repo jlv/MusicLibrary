@@ -4,7 +4,7 @@
 
   require "Rename.inc";
 
-  log_init("Rename");
+  logp_init("Rename", "");
 
   // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
   //  $oldDir - old album name to be changed
@@ -38,7 +38,7 @@
 
     // first, much check that $oldDir exists
     if(!is_dir($oldDir)){
-      plog("ERROR: given directory handle does not exist");
+      logp("error", "ERROR: given directory handle does not exist");
       return 0;
     }
     print $oldDir . "  ---->  " . $newDir . "\n";
@@ -149,7 +149,7 @@
 
     // next, works on cuefile. Errors if no Cue file
     if(!file_exists($newDir . "/" . $oldDir . ".cue")){
-      plog("ERROR: .cue file does not exist");
+      logp("error", "ERROR: .cue file does not exist");
       return 0;
     }
     $newCue = file($newDir . "/" . $oldDir . ".cue", FILE_IGNORE_NEW_LINES);
@@ -192,7 +192,7 @@
     foreach ($wav as $index) {
       $goodWav = rename($newDir . "/" . $index["old"], $newDir . "/" . $index["new"]);
       if(!$goodWav){
-        plog("ERROR: failure on renaming .wav file");
+        logp("error", "ERROR: failure on renaming .wav file");
       }
     }
   }

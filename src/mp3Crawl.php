@@ -2,7 +2,7 @@
 
 require "MusicRequire.inc";
 
-log_init("mp3Crawl");
+logp_init("mp3Crawl", "");
 
 // function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options)
 //  $base_folder - initial root folder
@@ -10,13 +10,20 @@ log_init("mp3Crawl");
 //       full path name.  $add_folder can be blank to start (and usually is).  Used by
 //       recursive function to crawl.
 //  $new_base_folder - target base folder for functions that are moving/writing files
-//       from a base to a new_base
+//       from a base to a new_base; in this case, will be endpoint of mp3 files
 //  $file - name of file passed to function
 //  $options - array of options passed to function
 //
 // mp3Crawl function - converts each .wav file into a .mp3 file by feeding it to an mp3 converter
 function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
-  
+  // first much check if the album and songs exist in $new_base_folder
+  $list = preg_split("/\//", $add_folder);
+  $album = $list[count($list) - 1];
+  $artist = $list[count($list) - 2];
+  if(file_exists("{$new_base_folder}/{$artist}/{$album}/{$file}")){
+    logp("notify", "{$artist}/{$album}/{$file} found to already exist in mp3 folder");
+    return;
+  }
 }
 
 // function verify($base_folder, $add_folder, $new_base_folder, $file, $options)
@@ -37,8 +44,7 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options){
   $album = $list[count($list) - 1];
 
   if(!file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue')){
-    plog("ERROR: no .cue file found");
-    plog("\t{$base_folder}/{$add_folder}/{$file}");
+    logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}")
   }
 
   else if(preg_match('/\.cue/i', $file)){
@@ -68,48 +74,34 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options){
 
         //checks backslash
         if(preg_match('/\\\/', $title)){
-          plog("ERROR: has \ in title");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} has \ in {$base_folder}/{$add_folder}");
         }
 
         //$num3 = "/\d\d\d /";
         else if(!preg_match($num2, $title)){
-          plog("ERROR: does not start with a number followed by a space");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} does not start with a number followed by a space in {$base_folder}/{$add_folder}/{$file}");
         }
 
         //$character2 = "/\d\d\d -/";
         else if(preg_match($character1, $title)){
-          plog("ERROR: has - after number");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} has - after number in {$base_folder}/{$add_folder}");
         }
 
         else if(preg_match($character, $title)){
-          plog("ERROR: two white spaces in a row");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} has two white spaces in a row in {$base_folder}/{$add_folder}");
         }
 
         //"
         else if(preg_match($special, $title)){
-          plog("ERROR: invalid special character");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} has invalid special character in {$base_folder}/{$add_folder}");
         }
 
         else if(!preg_match($wav,$title)){
-          plog("ERROR: does not end in .wav");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} does not end in .wav in {$base_folder}/{$add_folder}");
         }
 
         else if(!$fileExists){
-          plog("ERROR: file does not exist");
-          plog("\t{$base_folder}/{$add_folder}/{$file}");
-          plog("\t{$title}");
+          logp("error", "ERROR: {$title} file does not exist in {$base_folder}/{$add_folder}");
         }
 
         else{

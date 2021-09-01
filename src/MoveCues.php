@@ -2,7 +2,7 @@
 
 require 'MusicRequire.inc';
 
-log_init("MoveCues");
+logp_init("MoveCues", "");
 
 // function scanCues($directory, $trashBin)
 //  $directory - target directory which the function checks
@@ -318,9 +318,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 
       // checks if the track number in the FILE line matches the track number in TRACK
       if(!preg_match("/^0*{$numTrack}/", $song)){
-        plog("ERROR: FILE song number does not match TRACK number");
-        plog("\t{$array[$i-1]}");
-        plog("\t  TRACK {$numTrack} AUDIO");
+        logp("error", "ERROR: FILE song number {$array[$i-1]} does not match TRACK number: {$numTrack}");
       }
 
       $array[$i] = "  TRACK " . $numTrack . " AUDIO";
@@ -334,9 +332,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 
       // checks if the track number in the FILE line matches the track number in TRACK
       if(!preg_match("/^0*{$numTrack}/", $song)){
-        plog("ERROR: FILE song number does not match TRACK number");
-        plog("\t{$array[$i-1]}");
-        plog("\t  TRACK 0{$numTrack} AUDIO");
+        logp("error", "ERROR: FILE song number {$array[$i-1]} does not match TRACK number: {$numTrack}");
       }
 
       $array[$i] = "  TRACK 0" . $numTrack . " AUDIO";
@@ -350,9 +346,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 
       // checks if the track number in the FILE line matches the track number in TRACK
       if(!preg_match("/^0*{$numTrack}/", $song)){
-        plog("ERROR: FILE song number does not match TRACK number");
-        plog("\t{$array[$i-1]}");
-        plog("\t  TRACK {$numTrack} AUDIO");
+        logp("error", "ERROR: FILE song number {$array[$i-1]} does not match TRACK number: {$numTrack}");
       }
 
       $array[$i] = "  TRACK " . $numTrack . " AUDIO";
@@ -366,9 +360,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 
       // checks if the track number in the FILE line matches the track number in TRACK
       if(!preg_match("/^0*{$numTrack}/", $song)){
-        plog("ERROR: FILE song number does not match TRACK number");
-        plog("\t{$array[$i-1]}");
-        plog("\t  TRACK 0{$numTrack} AUDIO");
+        logp("error", "ERROR: FILE song number {$array[$i-1]} does not match TRACK number: {$numTrack}");
       }
 
       $array[$i] = "  TRACK 0" . $numTrack . " AUDIO";
@@ -382,9 +374,7 @@ function changeTracks(&$track, &$trackNum, &$array){
 
       // checks if the track number in the FILE line matches the track number in TRACK
       if(!preg_match("/^0*{$numTrack}/", $song)){
-        plog("ERROR: FILE song number does not match TRACK number");
-        plog("\t{$array[$i-1]}");
-        plog("\t  TRACK 00{$numTrack} AUDIO");
+        logp("error", "ERROR: FILE song number {$array[$i-1]} does not match TRACK number: {$numTrack}");
       }
 
       $array[$i] = "  TRACK 00" . $numTrack . " AUDIO";
@@ -433,9 +423,7 @@ function cleanCue($directory, &$file){
       // double checks if wave file of song actually exists. ERROR if doesn't
       $song = preg_replace("/\".*$/", '', $song);
       if(!file_exists($directory . "/" . $artist . "/" . $album . "/" . $song)){
-        plog("ERROR: .wav files does not exist");
-        plog("\t{$directory}/{$artist}/{$album}");
-        plog("\t{$song}");
+        logp("error", "ERROR: {$song} files does not exist in {$directory}/{$artist}/{$album}");
       }
 
     }

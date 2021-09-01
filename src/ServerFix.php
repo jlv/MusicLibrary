@@ -2,7 +2,7 @@
 
   require "MusicRequire.inc";
 
-  log_init("ServerFix");
+  logp_init("ServerFix", "");
 
   // funtion serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
   //  $base_folder - initial root folder
@@ -27,8 +27,7 @@
 
     // checks if there is a cue file. if there isn't, ERROR
     if(!file_exists($album . '.cue')){
-      plog("ERROR: no .cue file found");
-      plog("\t{$base_folder}/{$add_folder}/{$file}");
+      logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}/{$file}");
     }
 
     if(preg_match('/\.cue$/i', $file)){
@@ -39,7 +38,7 @@
         $checkSpecial = specialFix($base_folder, $add_folder, $file);
         // checks for fixCUE using specialFix
         if($checkSpecial === 1){
-          plog("Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
+          logp("notify", "Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
         }
       }
     }
@@ -127,6 +126,7 @@
   // specialFix function - new fix function to see if it works. Go back to GitHub if there are big problems
   // returns 0 on failure
   function specialFix($base_folder, $add_folder, $file){
+    logp("info", "SpecialFix has started on {$base_folder}/{$add_folder}");
     // $wav is a 2D aray of [tracknum][old/new]
     $wav = array();
 
@@ -149,7 +149,7 @@
     // checks if in artist/album directory
     $checkDir = "/{$artist}\/{$album}/";
     if(!preg_match($checkDir, $add_folder)){
-      plog("ERROR: cue file in incorrect directory");
+      logp("error", "ERROR: cue file in incorrect directory");
       return 0;
     }
 
@@ -188,13 +188,13 @@
           $wav[$wavIndex]["old"] = $tooLong;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }else{
-          plog("ERROR: {$song} or {$tooLong} file does not exist");
+          logp("error", "ERROR: {$song} or {$tooLong} file does not exist");
           return 0;
         }
 
         // double checks that fixFILE worked
         if($cuefile[$i] === 0 && $i < count($cuefile)){
-          plog("ERROR: fixFILE function has failed");
+          logp("error", "ERROR: fixFILE function has failed");
           return 0;
         }
 
@@ -208,7 +208,7 @@
         }
         $trackCheck = $i + 1;
         if(!preg_match("/{$trackNum}/", $cuefile[$trackCheck])){
-          plog("ERROR: TRACK number does not match song number");
+          logp("error", "ERROR: {$trackNum} does not match song number {$cuefile[$trackCheck]}");
         }
       }
     }
@@ -255,7 +255,7 @@
     // checks to see that $album and $artist are correctly in $song. ERROR and exit if not
     if((!preg_match("/{$artist} /", $song) || !preg_match("/{$album} /", $song))
         && ((preg_match("/ ~ .* ~ /", $song) || preg_match("/ - .* - /", $song)))){
-      plog("ERROR: artist/album in .cue file does not match .wav file");
+      logp("error", "ERROR: {$artist}/{$album} in .cue file does not match .wav file");
       return 0;
     }
     // checks for ~ or - delimeter, then fixes song title
@@ -285,7 +285,7 @@
     $song = preg_replace("/\.+/", ".", $song);
     // checks if replacement proccess worked. if not, return failure
     if($song == null){
-      plog("ERROR: preg_replace failure in .cue");
+      logp("error", "ERROR: preg_replace failure in .cue");
       return 0;
     }
     $line = "FILE \"{$song}\" WAVE";
@@ -306,7 +306,7 @@
       $goodRename = rename($type["old"],
                             $type["new"]);
       if(!$goodRename){
-        plog("ERROR: failure on renaming .wav file");
+        logp("error", "ERROR: failure on renaming {$type["old"]} file");
       }
     }
   }
