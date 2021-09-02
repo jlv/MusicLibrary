@@ -2,7 +2,7 @@
 
   require "MusicRequire.inc";
 
-  log_init("ServerReport");
+  logp_init("ServerReport", "");
 
   $crawlDir = "D:/A";
 
@@ -21,7 +21,7 @@
     $wav = "/\.wav$/";
     $cue = "/\.cue$/";
     if(preg_match($wav, $filename) || preg_match($cue, $filename)){
-      plog($add_folder . "/" . $filename);
+      logp("notify", $add_folder . "/" . $filename);
     }
   }
 
