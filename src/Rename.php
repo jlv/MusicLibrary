@@ -182,17 +182,25 @@
 
     addLines($newCue);
 
-    // renames old .cue file
-    rename($newDir . "/" . $oldDir . ".cue", $newDir . "/" . $oldDir . ".cue.old");
-
-    // now puts $newCue back into a .cue file
-    file_put_contents($newDir . "/" . $newDir . ".cue", $newCue);
+    if(isDryRun()){
+      logp("notify", "Would be renaming {$oldDir}.cue as {$oldDir}.cue.old");
+      logp("notify", "Would be making new cue file as {$newDir}.cue");
+    }else{
+      // renames old .cue file
+      rename($newDir . "/" . $oldDir . ".cue", $newDir . "/" . $oldDir . ".cue.old");
+      // now puts $newCue back into a .cue file
+      file_put_contents($newDir . "/" . $newDir . ".cue", $newCue);
+    }
 
     // now fixes .wav files in $newDir
     foreach ($wav as $index) {
-      $goodWav = rename($newDir . "/" . $index["old"], $newDir . "/" . $index["new"]);
-      if(!$goodWav){
-        logp("error", "ERROR: failure on renaming .wav file");
+      if(isDryRun()){
+        logp("notify", "Would be renaming {$index["old"]} as {$index["new"]}");
+      }else{
+        $goodWav = rename($newDir . "/" . $index["old"], $newDir . "/" . $index["new"]);
+        if(!$goodWav){
+          logp("error", "ERROR: failure on renaming {$index["old"]} file");
+        }
       }
     }
   }
@@ -208,6 +216,16 @@
     for($i = 0; $i < count($array); $i++){
       $array[$i] .= "\r\n";
     }
+  }
+
+  // function isDryRun()
+  //  no input parameters
+  //
+  // isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
+  // returns global $isDryRun
+  function isDryRun(){
+    global $isDryRun;
+    return $isDryRun;
   }
 
   intro();

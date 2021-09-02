@@ -213,11 +213,21 @@
       }
     }
 
-    // renames old cue file
-    rename($file, $file . ".old");
+    if(isDryRun()){
+      logp("notify", "Would be renaming {$file} as {$file}.old");
+    }else{
+      // renames old cue file
+      rename($file, $file . ".old");
+    }
     // writes array $cuefile into an actual cue file
     addLines($cuefile);
-    $goodCue = file_put_contents($file, $cuefile);
+
+    if(isDryRun()){
+      logp("notify", "Would be puting $cuefile as {$file}");
+    }else{
+      // puts cue file as all good
+      $goodCue = file_put_contents($file, $cuefile);
+    }
 
     fixWAV($base_folder, $add_folder, $wav);
   }
@@ -303,10 +313,13 @@
   // fixWAV function - fixes the .wav files in the album
   function fixWAV($base_folder, $add_folder, &$wav){
     foreach ($wav as $type) {
-      $goodRename = rename($type["old"],
-                            $type["new"]);
-      if(!$goodRename){
-        logp("error", "ERROR: failure on renaming {$type["old"]} file");
+      if(isDryRun()){
+        logp("notify", "Would be renaming {$type["old"]} as {$type["new"]}");
+      }else{
+        $goodRename = rename($type["old"], $type["new"]);
+        if(!$goodRename){
+          logp("error", "ERROR: failure on renaming {$type["old"]} file");
+        }
       }
     }
   }
@@ -354,6 +367,16 @@
   function fixDot($str){
     $str = preg_replace("/\./", "\\.", $str);
     return $str;
+  }
+
+  // function isDryRun()
+  //  no input parameters
+  //
+  // isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
+  // returns global $isDryRun
+  function isDryRun(){
+    global $isDryRun;
+    return $isDryRun;
   }
 
   // TONTO directory starts

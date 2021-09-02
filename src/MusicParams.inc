@@ -8,6 +8,8 @@
 // Parameters
 //
 
+$isDryRun=true;
+
 //
 // Timezone setting
 //  -- the string must come from a PHP list found here:

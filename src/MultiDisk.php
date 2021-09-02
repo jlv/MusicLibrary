@@ -189,10 +189,15 @@ function combine($finalDir, $multiDisks){
           return 0;
         }
 
-        $goodWav = rename($disk . "/" . $song, $finalDir . "/" . $newSong);
-        if(!$goodWav){
-          logp("error", "ERROR: Could not rename {$song} as {$newSong}");
-          return 0;
+        if(isDryRun()){
+          logp("notify", "Would be renaming {$newSong}");
+        }else{
+          // actually moves the .wav file to $finalDir
+          $goodWav = rename($disk . "/" . $song, $finalDir . "/" . $newSong);
+          if(!$goodWav){
+            logp("error", "ERROR: Could not rename {$song} as {$newSong}");
+            return 0;
+          }
         }
 
         $trackNum++;
@@ -202,7 +207,11 @@ function combine($finalDir, $multiDisks){
 
     // now cue should be all good to add and discard $oldCue
     $newCue = array_merge($newCue, $oldCue);
-    unlink($disk . "/" . $disk . ".cue");
+    if(isDryRun()){
+      logp("notify", "Would be deleting {$disk}.cue");
+    }else{
+      unlink($disk . "/" . $disk . ".cue");
+    }
 
     // must check if $disk = $finalDir because this will happen sometimes
     if($disk != $finalDir){
@@ -213,17 +222,25 @@ function combine($finalDir, $multiDisks){
           logp("error", "ERROR: Found {$file} still in {$disk} when it should have been moved/deleted");
           return 0;
         }else if($file != "." && $file != ".."){
-          $cdNum = $num + 1;
-          $end = getSuffix($file);
-          $name = preg_replace("/\....$/", "", $file);
-          rename($disk . "/" . $file, $finalDir . "/" . $name . "-" . $cdNum . "." . $end);
+          if(isDryRun()){
+            logp("notify", "Would be renaming {$disk}/{$file} as {$disk}/{$file}-{$cdNum}.{$end}");
+          }else{
+            $cdNum = $num + 1;
+            $end = getSuffix($file);
+            $name = preg_replace("/\....$/", "", $file);
+            rename($disk . "/" . $file, $finalDir . "/" . $name . "-" . $cdNum . "." . $end);
+          }
         }
       }
       closedir($dir);
 
-      // deletes $disk directory
-      unlink($disk);
-      logp("info", "{$disk} has been deleted. Moving onto next disk");
+      if(isDryRun()){
+        logp("notify", "Would be deleting {$disk} folder");
+      }else{
+        // deletes $disk directory
+        unlink($disk);
+        logp("info", "{$disk} has been deleted. Moving onto next disk");
+      }
     }
     logp("info", "{$finalDir} has been compiled. Function combine completed");
 
@@ -231,7 +248,11 @@ function combine($finalDir, $multiDisks){
 
   // puts $newCue back into a .cue file and puts it in the $finalDir folder
   addLines($newCue);
-  file_put_contents($finalDir . "/" . $finalDir . ".cue", $newCue);
+  if(isDryRun()){
+    logp("notify", "Would be making {$finalDir}.cue from $newCue");
+  }else{
+    file_put_contents($finalDir . "/" . $finalDir . ".cue", $newCue);
+  }
 }
 
 // function addLines(&$array)
@@ -245,6 +266,16 @@ function addLines(&$array){
   for($i = 0; $i < count($array); $i++){
     $array[$i] .= "\r\n";
   }
+}
+
+// function isDryRun()
+//  no input parameters
+//
+// isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
+// returns global $isDryRun
+function isDryRun(){
+  global $isDryRun;
+  return $isDryRun;
 }
 
 intro();
