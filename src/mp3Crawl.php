@@ -17,6 +17,7 @@ logp_init("mp3Crawl", "");
 //
 // mp3Crawl function - converts each .wav file into a .mp3 file by feeding it to an mp3 converter
 function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
+  print "Accessed mp3Crawl\n";
   global $xrecodeDest;
   // makes it so that the program will not run if it doesn't have a .cue file
   if(!preg_match('/\.cue$/i', $file)){

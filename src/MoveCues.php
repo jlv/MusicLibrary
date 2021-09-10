@@ -438,9 +438,9 @@ function cleanCue($directory, &$file){
   // changes all INDEX to be correct for mp3
   for($i = 0; $i < count($fixing); $i++){
     if(preg_match("/INDEX 00 /", $fixing[$i])){
-      $fixing[$i] = "    INDEX 01 00:00:00\n";
-    }
-    if(preg_match("/INDEX 0[1-9]/", $fixing[$i]) && !preg_match("/INDEX 0[1-9] 00:00:00/", $fixing[$i])){
+      $cuefile[$i] = "    INDEX 01 00:00:00\n";
+    }else
+    if(preg_match("/INDEX \d\d/", $fixing[$i]) && !preg_match("/INDEX 01 00:00:00/", $fixing[$i])){
       array_splice($fixing, $i, 1);
       $i--;
     }

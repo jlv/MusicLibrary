@@ -226,7 +226,7 @@
       logp("notify", "Would be puting $cuefile as {$file}.ori");
     }else{
       // puts cue file as all good
-      $goodCue = file_put_contents($file . "ori", $cuefile);
+      $goodCue = file_put_contents($file . ".ori", $cuefile);
     }
 
     // finally gets to making a .cue file that is mp3 converter friendly
@@ -338,8 +338,8 @@
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match("/INDEX 00 /", $cuefile[$i])){
         $cuefile[$i] = "    INDEX 01 00:00:00\n";
-      }
-      if(preg_match("/INDEX 0[1-9]/", $cuefile[$i]) && !preg_match("/INDEX 0[1-9] 00:00:00/", $fixing[$i])){
+      }else
+      if(preg_match("/INDEX \d\d/", $cuefile[$i]) && !preg_match("/INDEX 01 00:00:00/", $cuefile[$i])){
         array_splice($cuefile, $i, 1);
         $i--;
       }
