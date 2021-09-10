@@ -8,7 +8,7 @@
 // Parameters
 //
 
-$isDryRun=true;
+$isDryRun=false;
 
 //
 // Timezone setting

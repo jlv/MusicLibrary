@@ -219,9 +219,18 @@
       // renames old cue file
       rename($file, $file . ".old");
     }
-    // writes array $cuefile into an actual cue file
+    // writes array $cuefile into a .cue.ori file
     addLines($cuefile);
 
+    if(isDryRun()){
+      logp("notify", "Would be puting $cuefile as {$file}.ori");
+    }else{
+      // puts cue file as all good
+      $goodCue = file_put_contents($file . "ori", $cuefile);
+    }
+
+    // finally gets to making a .cue file that is mp3 converter friendly
+    makeCue($cuefile);
     if(isDryRun()){
       logp("notify", "Would be puting $cuefile as {$file}");
     }else{
@@ -320,6 +329,19 @@
         if(!$goodRename){
           logp("error", "ERROR: failure on renaming {$type["old"]} file");
         }
+      }
+    }
+  }
+
+  function makeCue(&$cuefile){
+    // changes all INDEX to be correct for mp3
+    for($i = 0; $i < count($cuefile); $i++){
+      if(preg_match("/INDEX 00 /", $cuefile[$i])){
+        $cuefile[$i] = "    INDEX 01 00:00:00\n";
+      }
+      if(preg_match("/INDEX 0[1-9]/", $cuefile[$i]) && !preg_match("/INDEX 0[1-9] 00:00:00/", $fixing[$i])){
+        array_splice($cuefile, $i, 1);
+        $i--;
       }
     }
   }

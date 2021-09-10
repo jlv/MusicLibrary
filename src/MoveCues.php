@@ -432,10 +432,22 @@ function cleanCue($directory, &$file){
   // fix up array for turning back into file
   addLines($fixing);
 
-  // puts $fixing back into a cue file
-  $file = file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue", $fixing);
+  // puts $fixing into a .cue.ori, where it has all INDEX as the orignal .cue
+  file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue.ori", $fixing);
 
-  // verifies the cue file to make sure it's working well NOTE finish later
+  // changes all INDEX to be correct for mp3
+  for($i = 0; $i < count($fixing); $i++){
+    if(preg_match("/INDEX 00 /", $fixing[$i])){
+      $fixing[$i] = "    INDEX 01 00:00:00\n";
+    }
+    if(preg_match("/INDEX 0[1-9]/", $fixing[$i]) && !preg_match("/INDEX 0[1-9] 00:00:00/", $fixing[$i])){
+      array_splice($fixing, $i, 1);
+      $i--;
+    }
+  }
+
+  // puts $fixing into a .cue file
+  $file = file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue", $fixing)
 
 }
 
