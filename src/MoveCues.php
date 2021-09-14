@@ -49,10 +49,19 @@ function scanCues($directory, $trashBin){
             }
           }
 
-        }else{
-
-
         }
+    }
+
+    // chekcs for .jpg file and if it is named folder
+    if(preg_match("/\.jpg$/", $file)){
+      if(!preg_match("/folder.jpg/", $file)){
+        $check = rename($file, "folder.jpg");
+      }else{
+        $check = true;
+      }
+      if($check === false){
+        logp("error", "ERROR: Failure on renaming {$file}, probably multiple .jpg in director");
+      }
     }
 
   }
@@ -433,7 +442,7 @@ function cleanCue($directory, &$file){
   addLines($fixing);
 
   // puts $fixing into a .cue.ori, where it has all INDEX as the orignal .cue
-  file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue.ori", $fixing);
+  file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue.orig", $fixing);
 
   // changes all INDEX to be correct for mp3
   for($i = 0; $i < count($fixing); $i++){

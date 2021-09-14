@@ -30,6 +30,18 @@
       logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}/{$file}");
     }
 
+    // chekcs for .jpg file and if it is named folder
+    if(preg_match("/\.jpg$/", $file)){
+      if(!preg_match("/folder.jpg/", $file)){
+        $check = rename($file, "folder.jpg");
+      }else{
+        $check = true;
+      }
+      if($check === false){
+        logp("error", "ERROR: Failure on renaming {$file}, probably multiple .jpg in director");
+      }
+    }
+
     if(preg_match('/\.cue$/i', $file)){
 
       // checks to see if cue file needs any fixing
@@ -226,7 +238,7 @@
       logp("notify", "Would be puting $cuefile as {$file}.ori");
     }else{
       // puts cue file as all good
-      $goodCue = file_put_contents($file . ".ori", $cuefile);
+      $goodCue = file_put_contents($file . ".orig", $cuefile);
     }
 
     // finally gets to making a .cue file that is mp3 converter friendly

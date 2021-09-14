@@ -32,8 +32,8 @@ function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
   $list = preg_split("/\//", $add_folder);
   $album = $list[count($list) - 1];
   $artist = $list[count($list) - 2];
-  if(file_exists("{$new_base_folder}/{$artist}/{$album}/{$file}")){
-    logp("notify", "{$artist}/{$album}/{$file} found to already exist in mp3 folder");
+  if(file_exists("{$new_base_folder}/{$artist}/{$album}")){
+    logp("notify", "{$artist}/{$album} found to already exist in mp3 folder");
     return;
   }
   // changes the directory to $base_folder because we will always stay in it
@@ -56,14 +56,14 @@ function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
 //
 // fixUp function - changes the album directory name and the mp3 song titles to correct format
 function fixUp($new_base_folder, $artist, $album){
+  print "Artist : {$artist}, Album : {$album}\n";
   if(!is_dir($new_base_folder . '/' . $artist)){
     logp("error", "ERROR: {$new_base_folder}/{$artist} does not exist");
     return;
   }
   chdir($new_base_folder . '/' . $artist);
-  // fixes the album directory name by removing $artist-
+  // fixes the album directory name by removing $artist -
   rename($artist . " - " . $album, $album);
-
 
   // checks if $album directory exists
   if(!is_dir($album)){
