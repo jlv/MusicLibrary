@@ -1,12 +1,16 @@
 To Do Items
 ===========
 
+Do a code review together
+
 Move common functions to single include (generally Music REquire)
 
-Functional definitions in all fileExists
+Functional definitions in all files that are uniquely run
 
-UPdate/create user doc with the various Functions
+Update/create user doc with the various Functions
 
 Update config checker
 
-Check uniform log usage
+Check uniform log usage, log type, etc.
+
+build tests and document tests for each function
