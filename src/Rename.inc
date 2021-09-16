@@ -1,5 +1,7 @@
 <?php
 
+  // functional definition
+
   print "Accessed Rename.inc\n\n";
   // $oldDir - old album name to be changed
   $oldDir = "Open Your Eyes (Limited Edition Surround Sound)";

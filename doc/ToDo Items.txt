@@ -1,0 +1,12 @@
+To Do Items
+===========
+
+Move common functions to single include (generally Music REquire)
+
+Functional definitions in all fileExists
+
+UPdate/create user doc with the various Functions
+
+Update config checker
+
+Check uniform log usage

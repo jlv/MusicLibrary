@@ -1,11 +1,19 @@
 <?php
 
+// functional definition
+
+
 require "MusicRequire.inc";
-
-require "MultiDisk.inc";
-
 logp_init("MultiDisk", "");
 
+// check if Rename.inc exists in local directory, then require if exists
+if (file_exists("MultiDisk.inc"))
+  require "./MultiDisk.inc";
+else
+{
+  logp ("echo,error,exit1",
+        "Could not find variables file \"Rename.inc\" in working directory. Exiting");
+}
 // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
 // $finalDir - directory of combined multi-disk
 // $multiDisks - array of all dist add ones (i.e. Disc 1, (Disc 1), or nothing)

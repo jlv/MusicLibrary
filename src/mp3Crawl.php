@@ -1,5 +1,7 @@
 <?php
 
+// functional definition
+
 require "MusicRequire.inc";
 require "mp3Crawl.inc";
 
@@ -55,8 +57,9 @@ function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
 //  $album - name of album
 //
 // fixUp function - changes the album directory name and the mp3 song titles to correct format
+//                   and renames file
 function fixUp($new_base_folder, $artist, $album){
-  print "Artist : {$artist}, Album : {$album}\n";
+//  print "Artist : {$artist}, Album : {$album}\n";
   if(!is_dir($new_base_folder . '/' . $artist)){
     logp("error", "ERROR: {$new_base_folder}/{$artist} does not exist");
     return;

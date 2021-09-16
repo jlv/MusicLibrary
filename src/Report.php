@@ -1,5 +1,7 @@
 <?php
 
+  // functional definition
+
   require 'MusicRequire.inc';
 
   logp_init("Reporting", "");
@@ -18,7 +20,7 @@
   //  reporting function: logs all files in a folder to Report folder. Use in tandem to crawl function
   function reporting($base_folder, $add_folder, $new_base_folder, $file, $options){
 
-    logp("notify", $file);
+    logp("info", $file);
 
   }
 

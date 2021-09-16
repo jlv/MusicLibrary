@@ -1,5 +1,7 @@
 <?php
 
+  // functional definition
+
   require "MusicRequire.inc";
 
   logp_init("ServerReport", "");
@@ -21,7 +23,7 @@
     $wav = "/\.wav$/";
     $cue = "/\.cue$/";
     if(preg_match($wav, $filename) || preg_match($cue, $filename)){
-      logp("notify", $add_folder . "/" . $filename);
+      logp("info", $add_folder . "/" . $filename);
     }
   }
 

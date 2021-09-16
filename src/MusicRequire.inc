@@ -1,4 +1,5 @@
 <?php
+
 //
 // Music Library
 // Tools and to maintain music library
@@ -77,9 +78,11 @@ function debug()
 ///     ['_log_err'] - set to true if logging a log message had already been attempted
 ///     ['_err_err'] - set to true if logging an err has been attempted
 
-// function log_init($logroot)
+// function logp_init($logroot, $default_ctl)
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
+//   $default_ctl - control string used as a default. For control options, see
+//              logp function below.
 //
 // initializes log control for further use by logp
 // Uses globals:
@@ -168,7 +171,7 @@ function logp_init($logroot, $default_ctl)
 //              message and ==COMPLETE== at end
 //  debug - debugging line, only returned if debug() != 0
 //
-// Example: plog("echo,error", "This is a log message.")
+// Example: logp("echo,error", "This is a log message.")
 //     Logs in log file, error file, and echos to screen
 //
 
@@ -489,112 +492,6 @@ function logp_int_ctlstring ($ctl)
   return $ctl_array;
 }
 
-//
-// BACKWARD COMPATIBLE - TEMPORARY - Old Log Functions
-//
-
-// function log_init($logroot)
-//   $logroot - rootname of log file, after which date and extension are added
-//              example: mylog produces file mylog.20181228-074823.log
-//
-// initializes log file for further use by plog
-//
-//
-// Uses the following globals:
-//   - logdir: directory for log files
-//   - logroot: root name of logfile
-//   - logfilehdl:
-// requires that $logdir be defined.  Uses $logroot as the name of the logfile.
-//
-function log_init($logroot)
-{
-  global $logdir;
-  global $logfile;
-  global $logprint;
-
-  // check if $logdir is a directory
-  if (! is_dir($logdir))
-  {
-    print "ERROR: log directory $logdir does not exist.\n";
-    print "       Please create or adjust logdir in the parameters file.\n";
-    exit;
-  }
-
-  // look for $logroot and assign generic root if $logroot not assigned
-  if ( $logroot == "" ) $logroot = "MsLib-Generic";
-
-  // set time and full logfile name
-  $logfile = $logdir . "/" . $logroot . "-" . date("Ymd-His") . ".log";
-
-  // add initial message to log file
-  $logtext = "Music Library Log File - " . $logroot . "  " . date("Y M d H:i:s") . "\n";
-
-  file_put_contents($logfile, $logtext , FILE_APPEND | LOCK_EX);
-
-  // if $logprint, print to std out
-  if ( $logprint === TRUE )
-    print $logtext;
-
-  return;
-
-}
-
-
-// function plog($control_string, $message)
-//  $error_msg - text string of message
-//  returns nothing
-//
-// logs error to log file and prints if $logprint is set to TRUE
-//
-// Control string is a comma-separated list of array_of_options
-//
-// options:
-//  log - just log a message.  Not needed if other options besides debug are
-//        called. Just a value for the variable placeholder
-//  nolog - do not log to regular logfile
-//  echo/noecho  - echo/print to terminal
-//  nnl  - no newline on echo to terminal statement
-//  error - log in error log as well as regular log (.err).  Will be picked up
-//           in next error log roll-up (w/in 24 hrs)
-//  notify - log in notification log (.not).  Will be picked up for notification
-//           in next run, usually hourly
-//  exitX - exit entire routine with code X. If no code, 0 assumed
-//  exit-nologX - exit with code X  without creating a log entry
-//  complete - script complete.  Logs in logfile and creates .cmplt file
-//  debug - debugging line, only returned if $debug != 0
-//
-// Example: logp("echo,error", "This is a log message.")
-//     Logs in log file, logs message in error file, and echo's to screen
-//
-
-function plog($ctl, $message)
-{
-  global $logfile;
-  global $logprint;
-
-  // TTD:
-  //  write tests
-  //  use array to mark file writing?
-  //  open log file and keep open?  can you make an array of streams for different file types?
-  //  use explde on control structure, then move to associate array?
-  //
-
-  // if file hasn't been written, start file
-
-  // date-stamp message
-  $lmessage = date("Y-m-d-H:i:s: ") . $message . "\r\n";
-
-  // append to end of log
-  file_put_contents($logfile, $lmessage , FILE_APPEND | LOCK_EX);
-
-  // if $logprint, print to std out
-  if ( $logprint === TRUE )
-    print $lmessage;
-
-  return;
-}
-
-
 ///
 ///
 /// Shared Functions
@@ -664,14 +561,14 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
         if (is_callable($ufunction, FALSE))
           call_user_func($ufunction, $base_folder, $add_folder, $new_base_folder, $file, $options);
         else
-          plog("User function '" . $ufunction . "' is not callable.");
+          logp("echo,error,exit1","User function '" . $ufunction . "' is not callable.");
 
      // close directory
      closedir($dir);
   }
   else
     // If selected file is not a folder, print error
-    plog("Error: shouldn't call crawl function without a folder.");
+    logp("echo","Error: shouldn't call crawl function without a folder.");
 
 } // end of crawl function
 
@@ -700,5 +597,8 @@ function fileAge($file_name)
 	$daydiff = ($systime - $filetime ) / (60*60*24);
 	return $daydiff;
 }// end of function
+
+// show that we're debugging as an example
+if (debug()) logp("echo","Debugging turned on.");
 
 ?>

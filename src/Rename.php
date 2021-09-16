@@ -1,10 +1,19 @@
 <?php
 
+  // functional definition
+
+
   require "MusicRequire.inc";
-
-  require "Rename.inc";
-
   logp_init("Rename", "");
+
+  // check if Rename.inc exists in local directory, then require if exists
+  if (file_exists("Rename.inc"))
+    require "./Rename.inc";
+  else
+  {
+    logp ("echo,error,exit1",
+          "Could not find variables file \"Rename.inc\" in working directory. Exiting");
+  }
 
   // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
   //  $oldDir - old album name to be changed

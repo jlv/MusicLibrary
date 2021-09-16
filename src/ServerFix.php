@@ -1,5 +1,7 @@
 <?php
 
+  // functional definition
+
   require "MusicRequire.inc";
 
   logp_init("ServerFix", "");
@@ -50,7 +52,7 @@
         $checkSpecial = specialFix($base_folder, $add_folder, $file);
         // checks for fixCUE using specialFix
         if($checkSpecial === 1){
-          logp("notify", "Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
+          logp("info", "Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
         }
       }
     }
@@ -225,27 +227,36 @@
       }
     }
 
-    if(isDryRun()){
-      logp("notify", "Would be renaming {$file} as {$file}.old");
-    }else{
+    if(isDryRun())
+    {
+      logp("info", "Would be renaming {$file} as {$file}.old");
+    }
+    else
+    {
       // renames old cue file
       rename($file, $file . ".old");
     }
     // writes array $cuefile into a .cue.ori file
     addLines($cuefile);
 
-    if(isDryRun()){
-      logp("notify", "Would be puting $cuefile as {$file}.ori");
-    }else{
+    if(isDryRun())
+    {
+      logp("info", "Would be puting $cuefile as {$file}.ori");
+    }
+    else
+    {
       // puts cue file as all good
       $goodCue = file_put_contents($file . ".orig", $cuefile);
     }
 
     // finally gets to making a .cue file that is mp3 converter friendly
     makeCue($cuefile);
-    if(isDryRun()){
-      logp("notify", "Would be puting $cuefile as {$file}");
-    }else{
+    if(isDryRun())
+    {
+      logp("info", "Would be write $cuefile as {$file}");
+    }
+    else
+    {
       // puts cue file as all good
       $goodCue = file_put_contents($file, $cuefile);
     }

@@ -1,5 +1,7 @@
 <?php
 
+// functional definition
+
 require "MusicRequire.inc";
 
 logp_init("Verify", "");

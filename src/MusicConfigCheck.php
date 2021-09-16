@@ -7,22 +7,20 @@
 require "MusicRequire.inc";
 
 // initialize log file
-log_init("MusicExample");
+logp_init("MusicExample","");
 
 // show that we're debugging as an example
-if (debug()) print "Debug is turned on.\n\n";
+if (debug()) logp("echo", "Debug is turned on.");
 
-plog("A test log message");
+logp("","A test log message");
 
 // check machine name
 
-print "Hostname: $hostname\n";
-
-print "Logfile: $logfile\n";
+logp("echo","Hostname: $hostname");
 
 //
 // process complete
 //
-print "Check Complete.\n";
+logp("echo","Check Complete.");
 
 ?>
