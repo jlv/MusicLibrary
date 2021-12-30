@@ -27,6 +27,16 @@ $sys_time_zone='America/Los_Angeles';
 // OStype is a system global that should be set with each host
 //
 
+//
+// Default params (which can be overwritten by host-specification below)
+//
+// OStype  Values: Windows, Linux
+$OStype="Windows";
+
+//////////////
+//
+// Host-based Params
+//
 // get $hostname to determine host-based parameters
 $hostname = gethostname();
 
@@ -34,16 +44,12 @@ if ($hostname == "ProdHost")
 {
   // Production Host
 
-  // OStype  Values: Windows, Linux
-  $OStype="Windows";
-
-  //
   // $homedir - for systems that are built around a single home directory
   $homedir="E:\MusicLibrary";
 
   //
   // Log file directory
-  $logdir = "e:/MusicLibrary/Log";
+  //$logdir = "e:/MusicLibrary/Log";
   //
   // Log print flag: if set to TRUE, prints log messages to screen
   //  and to log file
@@ -61,34 +67,31 @@ if ($hostname == "ProdHost")
 }
 elseif ($hostname == "Rising-Sun")
 {
-  // Rising-Sun
-
-  // OStype
-  $OStype="Windows";
 
   // $homedir - for systems that are built around a single home directory
   $homedir="D:\MusicLibrary";
+
+  // source directory of wave files and cue files
+  $srcdir = "N:/A";
+
+  // source directory of wave files and cue files
+  $cuedir = "N:/Cuefiles";
+
+  // destimation MP3 directory
+  $mp3dir = "e:/MP3";
 
 }
 elseif ($hostname == "Hector")
 {
   // hector development machine
 
-  // OStype
-  $OStype="Windows";
-
   // $homedir - for systems that are built around a single home directory
   $homedir="D:/Quentin/MusicProgramming";
 
-  // Lob file direcotry
-  $logdir = "D:/Quentin/MusicProgramming/Log";
 }
 elseif ($hostname == "tonto")
 {
   // tonto development machine
-
-  // OStype
-  $OStype="Windows";
 
   // $homedir - for systems that are built around a single home directory
   $homedir="C:Quentin\MusicLibrary";
@@ -96,8 +99,6 @@ elseif ($hostname == "tonto")
   // source directory of wave files and cue files
   $cuedir = "c:/quentin/MusicWorking/cuefiles";
 
-  // Log file directory
-  $logdir = "c:/quentin/MusicWorking/Log";
 }
 else
 {
@@ -116,24 +117,19 @@ if (! isset($OStype)) $OStype="Windows";
 
 //
 // $HomeDir - for systems that are built around a single home directory
-if (! isset($homedir)) $homedir="c:\MusicLibrary";
+if (! isset($homedir)) $homedir="C:\MusicLibrary";
 
 //
-// Log file directory
+// Log file directory, as default
 if (! isset($logdir)) $logdir=$homedir . "/Log";
-//
-// Log print flag: if set to TRUE, prints log messages to screen
-//  and to log file
-//if (! isset($logprint)) $logprint = TRUE;
-//$logprint = FALSE;
 
-// source directory of wave files and cue files
+// source directory of wave files and cue files, as default
 if (! isset($srcdir)) $srcdir=$homedir . "/MusicWav";
 
-// destimation MP3 directory
+// destimation MP3 directory, as default
 if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 
-// trash directory
+// trash directory, as default
 if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 
 //

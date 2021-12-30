@@ -147,7 +147,7 @@ function logp_init($logroot, $default_ctl)
 }
 
 // function logp($control_string, $message)
-//  $message - text string of message
+//  $message - text string of message, or array of strings to log
 //  returns nothing
 //
 // logs message to appropriate files and echos to terminal if set
@@ -568,7 +568,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
   }
   else
     // If selected file is not a folder, print error
-    logp("echo","Error: shouldn't call crawl function without a folder.");
+    logp("echo,error,exit1","Error: folder \"$catfolder\" is not a folder. Exiting.");
 
 } // end of crawl function
 
