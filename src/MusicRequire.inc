@@ -598,6 +598,148 @@ function fileAge($file_name)
 	return $daydiff;
 }// end of function
 
+
+// function checkNoCue($base_folder, $add_folder, $file)
+//  $base_folder - initial root folder
+//  $add_folder - the folder path to added to $base_folder as crawl proceeds
+//
+//  checNoCue checks if cue file exists in directory. If $album.nocue exists
+//   returns success even though there is not a cue file.
+//
+//  returns FALSE if cue file is needed, TRUE if not needed
+
+function checkNoCue($base_folder, $add_folder) {
+  // $flist - array of $add_folder split between every /
+  $flist = preg_split("/\//", $add_folder);
+
+  // $album - last input of $list, which will be the album title
+  $fcnt=count($flist);
+  $album = $flist[$fcnt - 1];
+
+  // look for cuefile if file depth greater than 2 (album level in file heirachy)
+  if( $fcnt > 2 &&
+    ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue') &&
+    ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+  {
+    logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}");
+    return false;
+  }
+  return true;
+}
+
+
+// function verifyCue($base_folder, $add_folder, $file)
+//  $base_folder - initial root folder
+//  $add_folder - the folder path to added to $base_folder as crawl proceeds
+//  $file - filename within containing folder
+//
+//  verifyCue verifies that if the file is a cuefile, it is well-formed
+//   and the files it references exist.
+
+function verifyCue($base_folder, $add_folder, $file) {
+  //
+  // regex definitions used to qualify below
+  //
+  //checks if it starts with a number and space
+  $num2 = "/^\d{2,3} /";
+  //checks for - after beginning number
+  $character1 = "/^\d{2,3} -/";
+  //checks if character after whitespace is non-whitespace
+  $character = "/^\d{2,3} \s/";
+  //checks for all other special characters
+  $special = "/[~\?\*\+\[\]\{\}\^\$\|<>:;\/\"]/";
+  //checks for ending in .wav
+  $wav = "/\.wav/i";
+
+  // start with no error
+  $return = true;
+
+  // if .nocue file exists, we don't check anything.  Just return.
+  //
+  // $flist - array of $add_folder split between every /
+  $flist = preg_split("/\//", $add_folder);
+  // $album - last input of $list, which will be the album title
+  $album = $flist[count($flist) - 1];
+  // check for .nocue existance
+  if(file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+  {
+    logp("log","Verify found .nocue file. Skipping verification of {$base_folder}/{$add_folder}");
+    return true;
+  }
+
+  // if file is a cue file
+  if(preg_match('/\.cue/i', $file)){
+    //
+    // check if cue file matches folder album name
+    //
+    if ( $file != $album . ".cue")
+    {
+       logp("error",
+         array("ERROR: .cue file found that does not match containing folder:",
+             "  {$base_folder}/{$add_folder}/{$file}"));
+       return false;
+    }
+
+    // read file
+    $cuefile = file($base_folder . '/' . $add_folder . '/' . $file, FILE_IGNORE_NEW_LINES);
+    if ( $cuefile === false )
+      logp("error,exit1","Error: could not read cue file {$base_folder}/{}$add_folder}/{$file}. Exiting.");
+
+    // loop through each line
+    foreach ($cuefile as $input) {
+      if (preg_match ( '/^\a*FILE/', $input ) === 1 )
+      {
+        //gets part just between quotes
+        $ftitle = preg_replace("/FILE \"/", '', $input);
+        $ftitle = preg_replace("/\".*$/", '', $ftitle);
+
+        //checks if name exists in directory
+        $fileExists = file_exists($base_folder . '/' . $add_folder . '/' . $ftitle);
+        if(! $fileExists){
+          logp("error", "ERROR: {$ftitle} file does not exist in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+
+        //checks backslash
+        if(preg_match('/\\\/', $ftitle)){
+          logp("error", "ERROR: {$ftitle} has \ in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+
+        //$num3 = "/\d\d\d /";
+        if(!preg_match($num2, $ftitle)){
+          logp("error", "ERROR: {$ftitle} does not start with a number followed by a space in {$base_folder}/{$add_folder}/{$file}");
+          $return = FALSE;
+        }
+
+        //$character2 = "/\d\d\d -/";
+        if(preg_match($character1, $ftitle)){
+          logp("error", "ERROR: {$ftitle} has - after number in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+
+        if(preg_match($character, $ftitle)){
+          logp("error", "ERROR: {$ftitle} has two white spaces in a row in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+
+        //"
+        if(preg_match($special, $ftitle)){
+          logp("error", "ERROR: {$ftitle} has invalid special character in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+
+        if(!preg_match($wav,$ftitle)){
+          logp("error", "ERROR: {$ftitle} does not end in .wav in {$base_folder}/{$add_folder}");
+          $return = FALSE;
+        }
+      } // if preg
+    }  // foreach line of file
+  }  // if cue file
+ return $return;
+} // end of function
+
+
 // show that we're debugging as an example
 if (debug()) logp("echo","Debugging turned on.");
 

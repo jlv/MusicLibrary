@@ -5,8 +5,6 @@
 
 require 'MusicRequire.inc';
 
-logp_init("MoveCues", "");
-
 // function scanCues($directory, $trashBin)
 //  $directory - target directory which the function checks
 //  $trashBin - target directory for old cue files
@@ -463,11 +461,14 @@ function cleanCue($directory, &$file){
 
 }
 
+//
+// begin function - main
+//
+logp_init("MoveCues", "");
+
 $testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
 $trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
 
 scanCues($testDir, $trashDir);
-
-
 
 ?>

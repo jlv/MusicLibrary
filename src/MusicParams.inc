@@ -8,14 +8,6 @@
 // Parameters
 //
 
-$isDryRun=false;
-
-//
-// Timezone setting
-//  -- the string must come from a PHP list found here:
-//       http://php.net/manual/en/timezones.php
-$sys_time_zone='America/Los_Angeles';
-
 //
 // Host-based Param Section
 //  Params can change as hostname changes
@@ -144,6 +136,17 @@ if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 
 // parameters to feed converter
 $convparams = "/dest mp3 /cbr 192 /pfilename %track2%";
+
+//
+// Timezone setting
+//  -- the string must come from a PHP list found here:
+//       http://php.net/manual/en/timezones.php
+$sys_time_zone='America/Los_Angeles';
+
+//
+// isDryRun - used by ServerFix to trial run vs. real thing
+$isDryRun=false;
+$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

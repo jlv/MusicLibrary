@@ -7,9 +7,6 @@
 
   require 'MusicRequire.inc';
 
-  logp_init("Reporting", "");
-
-
   //  function reporting($base_folder, $add_folder, $new_base_folder, $file, $options)
   //  $base_folder - initial root folder
   //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
@@ -26,6 +23,11 @@
     // use info log to generate report
     logp("info", $add_folder . "/" . $file);
   }
+
+  //
+  // begin function - main
+  //
+  logp_init("Reporting", "");
 
   // execute through crawl
   crawl($srcdir, '', '', "reporting", array());
