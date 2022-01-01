@@ -255,7 +255,7 @@ function combine($finalDir, $multiDisks){
   }
 
   // puts $newCue back into a .cue file and puts it in the $finalDir folder
-  addLines($newCue);
+  addLineTerm($newCue);
   if(isDryRun()){
     logp("notify", "Would be making {$finalDir}.cue from $newCue");
   }else{
@@ -263,18 +263,6 @@ function combine($finalDir, $multiDisks){
   }
 }
 
-// function addLines(&$array)
-//  &$array - array of strings that will make up a file
-//  NOTE &$array is a reference variable
-// returns nothing
-//
-// addLines function - adds \n (aka line breaks) to an array of strings in order for it to be passed
-//   into a cue file correctly
-function addLines(&$array){
-  for($i = 0; $i < count($array); $i++){
-    $array[$i] .= "\r\n";
-  }
-}
 
 // function isDryRun()
 //  no input parameters

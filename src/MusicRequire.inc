@@ -740,6 +740,20 @@ function verifyCue($base_folder, $add_folder, $file) {
 } // end of function
 
 
+// function addLineTerm(&$array)
+//  &$array - array of strings that will make up a file
+//  NOTE &$array is a reference variable
+// returns nothing
+//
+// addLineTerm function - line break / EOL character to each line in array
+function addLineTerm(&$array){
+  global _base;
+  for($i = 0; $i < count($array); $i++){
+    $array[$i] .= $_base['EOL'];
+  }
+}
+
+
 // show that we're debugging as an example
 if (debug()) logp("echo","Debugging turned on.");
 

@@ -187,7 +187,7 @@ function multiMove($directory, $trashBin, $file){
     }
 
     // adds lines to cue file array
-    addLines($newCue);
+    addLineTerm($newCue);
 
     // puts $newCue into an actual cue file
     $finished = file_put_contents($directory . "/" . $album . ".cue", $newCue);
@@ -283,7 +283,7 @@ function multiMove($directory, $trashBin, $file){
     }
 
     // adds lines to cue file array
-    addLines($newCue);
+    addLineTerm($newCue);
 
     // puts $newCue into an actual cue file
     $finished = file_put_contents($directory . "/" . $album . ".cue", $newCue);
@@ -294,19 +294,6 @@ function multiMove($directory, $trashBin, $file){
   }
 
 
-}
-
-// function addLines(&$array)
-//  &$array - array of strings that will make up a file
-//  NOTE &$array is a reference variable
-// returns nothing
-//
-// addLines function - adds \n (aka line breaks) to an array of strings in order for it to be passed
-//   into a cue file correctly
-function addLines(&$array){
-  for($i = 0; $i < count($array); $i++){
-    $array[$i] .= "\r\n";
-  }
 }
 
 // function changeTracks(&$track, &$array)
@@ -440,7 +427,7 @@ function cleanCue($directory, &$file){
   }
 
   // fix up array for turning back into file
-  addLines($fixing);
+  addLineTerm($fixing);
 
   // puts $fixing into a .cue.ori, where it has all INDEX as the orignal .cue
   file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue.orig", $fixing);

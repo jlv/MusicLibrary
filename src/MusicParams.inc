@@ -145,8 +145,19 @@ $sys_time_zone='America/Los_Angeles';
 
 //
 // isDryRun - used by ServerFix to trial run vs. real thing
+//
 $isDryRun=false;
 $isDryRun=true;
+
+// function isDryRun()
+//
+// isDryRun function - used to exctract global in conditionals
+// returns global $isDryRun
+function isDryRun(){
+  global $isDryRun;
+  return $isDryRun;
+}
+
 
 // end of MusicParams.inc
 ?>
