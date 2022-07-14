@@ -499,6 +499,15 @@ function logp_int_ctlstring ($ctl)
 ///
 
 
+// function isDryRun()
+//
+// isDryRun function - used to exctract global in conditionals
+// returns global $isDryRun
+function isDryRun(){
+  global $isDryRun;
+  return $isDryRun;
+}
+
 // function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
@@ -599,16 +608,20 @@ function fileAge($file_name)
 }// end of function
 
 
-// function checkNoCue($base_folder, $add_folder, $file)
+// function checkCueExists($base_folder, $add_folder, $file)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
+//  $check_type - "continue" - will continue if cuefile is found and depth at $cue_file_dir_depth, 
+//                   "error" will error if cuefile is not found and .nocue is not present. 
 //
-//  checNoCue checks if cue file exists in directory. If $album.nocue exists
+//  checkCueExists checks if cue file exists in directory. If $album.nocue exists
 //   returns success even though there is not a cue file.
 //
 //  returns FALSE if cue file is needed, TRUE if not needed
 
-function checkNoCue($base_folder, $add_folder) {
+function checkCueExists($base_folder, $add_folder, $check_type = "error") {
+  global $cue_file_dir_depth;
+  
   // $flist - array of $add_folder split between every /
   $flist = preg_split("/\//", $add_folder);
 
@@ -617,14 +630,30 @@ function checkNoCue($base_folder, $add_folder) {
   $album = $flist[$fcnt - 1];
 
   // look for cuefile if file depth greater than 2 (album level in file heirachy)
-  if( $fcnt > 2 &&
-    ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue') &&
-    ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+  if( $check_type == "continue" )
+    if ( $fcnt >= $cue_file_dir_depth &&
+       file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue'))
+      return true;
+    else 
+    {
+      logp("error","checkCueExists: cue file not found: {$base_folder}/{$add_folder}/{$album}.cue, Fcnt:{$fcnt}");
+      return false;
+    }
+  elseif( $check_type == "error" )
+    if ( $fcnt >= $cue_file_dir_depth &&
+       ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue') &&
+       ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+    {
+      logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}");
+      return false;
+    }
+    else
+      return true;
+  else // back $check_type
   {
-    logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}");
-    return false;
+    logp("error", "ERROR in checkCueExists: $check_type \"{$check_type}\" must be either 'continue' or 'error'.");
+    return false;  
   }
-  return true;
 }
 
 
@@ -696,41 +725,41 @@ function verifyCue($base_folder, $add_folder, $file) {
         //checks if name exists in directory
         $fileExists = file_exists($base_folder . '/' . $add_folder . '/' . $ftitle);
         if(! $fileExists){
-          logp("error", "ERROR: {$ftitle} file does not exist in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' file does not exist in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
 
         //checks backslash
         if(preg_match('/\\\/', $ftitle)){
-          logp("error", "ERROR: {$ftitle} has \ in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' has \ in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
 
         //$num3 = "/\d\d\d /";
         if(!preg_match($num2, $ftitle)){
-          logp("error", "ERROR: {$ftitle} does not start with a number followed by a space in {$base_folder}/{$add_folder}/{$file}");
+          logp("error", "ERROR: '{$ftitle}' does not start with a number followed by a space in {$base_folder}/{$add_folder}/{$file}");
           $return = FALSE;
         }
 
         //$character2 = "/\d\d\d -/";
         if(preg_match($character1, $ftitle)){
-          logp("error", "ERROR: {$ftitle} has - after number in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' has - after number in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
 
         if(preg_match($character, $ftitle)){
-          logp("error", "ERROR: {$ftitle} has two white spaces in a row in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' has two white spaces in a row in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
 
         //"
         if(preg_match($special, $ftitle)){
-          logp("error", "ERROR: {$ftitle} has invalid special character in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' has invalid special character in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
 
         if(!preg_match($wav,$ftitle)){
-          logp("error", "ERROR: {$ftitle} does not end in .wav in {$base_folder}/{$add_folder}");
+          logp("error", "ERROR: '{$ftitle}' does not end in .wav in {$base_folder}/{$add_folder}");
           $return = FALSE;
         }
       } // if preg
@@ -742,12 +771,13 @@ function verifyCue($base_folder, $add_folder, $file) {
 
 // function addLineTerm(&$array)
 //  &$array - array of strings that will make up a file
+//
 //  NOTE &$array is a reference variable
 // returns nothing
 //
 // addLineTerm function - line break / EOL character to each line in array
 function addLineTerm(&$array){
-  global _base;
+  global $_base;
   for($i = 0; $i < count($array); $i++){
     $array[$i] .= $_base['EOL'];
   }

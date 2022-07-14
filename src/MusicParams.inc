@@ -64,14 +64,18 @@ elseif ($hostname == "Rising-Sun")
   $homedir="D:\MusicLibrary";
 
   // source directory of wave files and cue files
-  $srcdir = "N:/A";
+  //$srcdir = "N:/A";
+  //$srcdir = "N:/B";  
+  //$srcdir = "N:/Q-Ref";   
+  $srcdir = "N:/QT";     
 
   // source directory of wave files and cue files
   $cuedir = "N:/Cuefiles";
 
   // destimation MP3 directory
-  $mp3dir = "e:/MP3";
-
+  //$mp3dir = "e:/MP3";
+  $mp3dir = "N:/MP3";
+  
 }
 elseif ($hostname == "Hector")
 {
@@ -124,6 +128,10 @@ if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 // trash directory, as default
 if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 
+// cue file directory depth: cuefiles expected for this depth or greater
+//   Example: genre/artist/album is cue_file_dir_depth = 3
+$cue_file_dir_depth = 3;
+
 //
 // other parameters, non-host-based
 //
@@ -146,17 +154,17 @@ $sys_time_zone='America/Los_Angeles';
 //
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
-$isDryRun=false;
+//$isDryRun=false;
 $isDryRun=true;
 
 // function isDryRun()
 //
 // isDryRun function - used to exctract global in conditionals
 // returns global $isDryRun
-function isDryRun(){
-  global $isDryRun;
-  return $isDryRun;
-}
+//function isDryRun(){
+//  global $isDryRun;
+//  return $isDryRun;
+//}
 
 
 // end of MusicParams.inc

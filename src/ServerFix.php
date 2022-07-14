@@ -5,6 +5,7 @@
   require "MusicRequire.inc";
 
   logp_init("ServerFix", "");
+  logp("log","ServerFix Routine Launched");
 
   // funtion serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
   //  $base_folder - initial root folder
@@ -21,38 +22,56 @@
   function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options){
     // only looks at cue files
     // changes the directory to $base_folder because we will always stay in it
+    logp("log","ServerFix func for {$base_folder}, {$file}");
     chdir($base_folder . '/' . $add_folder);
+
     // $list - array of $add_folder split between every /
     $list = preg_split("/\//", $add_folder);
+
     // $album - last input of $list, which will be the album title
     $album = $list[count($list) - 1];
 
+    // if there is a .$album.nocue file, return out of function (.nocue signals no work in this directory)
+
     // checks if there is a cue file. if there isn't, ERROR
-    if(!file_exists($album . '.cue')){
-      logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}/{$file}");
+    //if(!file_exists($album . '.cue')){
+    //  logp("error", "ERROR: no .cue file found associated with {$base_folder}/{$add_folder}/{$file}");
+    //}
+    if (! checkCueExists($base_folder, $add_folder, "continue"))
+    {
+      logp("log","Returning. Failed checkCueExists.");
+      return false;
     }
 
-    // chekcs for .jpg file and if it is named folder
-    if(preg_match("/\.jpg$/", $file)){
-      if(!preg_match("/folder.jpg/", $file)){
-        $check = rename($file, "folder.jpg");
-      }else{
-        $check = true;
-      }
-      if($check === false){
-        logp("error", "ERROR: Failure on renaming {$file}, probably multiple .jpg in director");
-      }
-    }
+    // check for .jpg file and if it is named folder
+    if(preg_match("/\.jpg$/", $file))
+      if ( ! file_exists("folder.jpg"))
+        if ( ! rename($file, "folder.jpg"))
+          logp("error", "ERROR: Failure on renaming {$file} to folder.jpg in {$base_folder}/{$add_folder}");
 
+//      if(! preg_match("/folder.jpg/", $file))
+//      {
+//        $check = rename($file, "folder.jpg");
+//      }
+//      else
+//      {
+//        $check = true;
+//      }
+//      if($check === false){
+//        logp("error", "Warning: Failure on renaming {$file}, Probably multiple .jpg in directory");
+//      }
+//    }
+
+    // if cue file, check then fix if needed
     if(preg_match('/\.cue$/i', $file)){
-
       // checks to see if cue file needs any fixing
-      if(!cueGood($base_folder, $add_folder, $file)){
+//      if(!cueGood($base_folder, $add_folder, $file)){
+      if(! verifyCue($base_folder, $add_folder, $file)){
         // if !cueGood, runs cueFix function
-        $checkSpecial = specialFix($base_folder, $add_folder, $file);
-        // checks for fixCUE using specialFix
+        $checkSpecial = cueFileFix($base_folder, $add_folder, $file);
+        // checks for fixCUE using cueFileFix
         if($checkSpecial === 1){
-          logp("info", "Warning: fixCUE ran specialFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
+          logp("info", "Warning: fixCUE ran cueFileFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
         }
       }
     }
@@ -67,11 +86,12 @@
   //
   // cueGood function - verifys cue file
   //  returns true if cue file has no ERRORs, else returns false
+
+  // JLV: replace wtih function in Require
   function cueGood($base_folder, $add_folder, $file){
     $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
     foreach ($cuefile as $input) {
-
       if (preg_match ( '/^\a*FILE/', $input ) === 1 )
       {
         //gets part just between quotes
@@ -130,21 +150,21 @@
     }
   }
 
-  // function specialFix($base_folder, $add_folder, $file)
+  // function cueFileFix($base_folder, $add_folder, $file)
   //  $base_folder - initial root folder
   //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
   //       full path name.  $add_folder can be blank to start (and usually is).  Used by
   //       recursive function to crawl.
   //  $line - FILE line from .cue file
   //
-  // specialFix function - new fix function to see if it works. Go back to GitHub if there are big problems
+  // cueFileFix function - new fix function to see if it works. Go back to GitHub if there are big problems
   // returns 0 on failure
-  function specialFix($base_folder, $add_folder, $file){
-    logp("info", "SpecialFix has started on {$base_folder}/{$add_folder}");
+  function cueFileFix($base_folder, $add_folder, $file){
+    logp("info", "cueFileFix starting on: {$base_folder}/{$add_folder}/{$file}");
     // $wav is a 2D aray of [tracknum][old/new]
     $wav = array();
 
-    // $cuefile is array of outdated cue file
+    // $cuefile is array of orig cue file
     $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
     // gets $artist and $album
@@ -162,17 +182,19 @@
 
     // checks if in artist/album directory
     $checkDir = "/{$artist}\/{$album}/";
-    if(!preg_match($checkDir, $add_folder)){
-      logp("error", "ERROR: cue file in incorrect directory");
-      return 0;
+    if(! preg_match($checkDir, $add_folder)){
+      logp("error,info", "ERROR: cue file in incorrect directory {$add_folder}");
+      return false;
     }
 
-    // $cuefile is array of outdated cue file
+    // $cuefile is array of current cue file
     $cuefile = file($file, FILE_IGNORE_NEW_LINES);
 
     // crawls through lines in $cuefile
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match ( '/^\a*FILE/', $cuefile[$i] ) === 1){
+        $tooLong = "";
+
         // defines $song
         $song = preg_replace("/^FILE \"/", '', $cuefile[$i]);
         $song = preg_replace("/\" WAVE$/", '', $song);
@@ -190,21 +212,29 @@
         }
         // reassigns $artist to artist name without \
         $tooLongArtist = $list[count($list) - 2];
-        // begins making $tooLong
+
+        // begin making $tooLong
         $wavIndex = intval($tooLong);
         $wav[$wavIndex] = array();
         $tooLong = $tooLong .  "-" . strtoupper(substr($tooLongArtist, 0, 3)) . "~" . "1.wav";
         // as long as a song file exists, will assign old name of track to $wav array
-        if(file_exists($song)){
+        if(file_exists($song))
+        {
           $wav[$wavIndex]["old"] = $song;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
-        }else if(file_exists($tooLong)){
+        }
+        elseif(file_exists($tooLong))
+        {
           $wav[$wavIndex]["old"] = $tooLong;
           $cuefile[$i] = fixFILE($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
-        }else{
-          logp("error", "ERROR: {$song} or {$tooLong} file does not exist");
+        }
+        else
+        {
+          logp("error", "ERROR: file '{$song}' or '{$tooLong}' specified in cuefile does not exist");
           return 0;
         }
+
+// JLV: check?
 
         // double checks that fixFILE worked
         if($cuefile[$i] === 0 && $i < count($cuefile)){
@@ -227,21 +257,20 @@
       }
     }
 
+    // renames old cue file
     if(isDryRun())
-    {
-      logp("info", "Would be renaming {$file} as {$file}.old");
-    }
+      logp("info", "DryRun: rename {$file} as {$file}.old");
     else
-    {
-      // renames old cue file
       rename($file, $file . ".old");
-    }
-    // writes array $cuefile into a .cue.ori file
-    addLines($cuefile);
 
+    // writes array $cuefile into a .cue.ori file
+    addLineTerm($cuefile);
+
+    // Write a cue file
     if(isDryRun())
     {
-      logp("info", "Would be puting $cuefile as {$file}.ori");
+      logp("info", "DryRun: Writing pre-converatble cuefile as {$file}.orig");
+      $goodCue = file_put_contents($file . ".orig.new", $cuefile);
     }
     else
     {
@@ -250,10 +279,13 @@
     }
 
     // finally gets to making a .cue file that is mp3 converter friendly
-    makeCue($cuefile);
+    //makeCueConvertable($cuefile);
+
+
     if(isDryRun())
     {
-      logp("info", "Would be write $cuefile as {$file}");
+      logp("info", "DryRun: writing cuefile as {$file}.new");
+      $goodCue = file_put_contents($file . ".new", $cuefile);
     }
     else
     {
@@ -263,6 +295,7 @@
 
     fixWAV($base_folder, $add_folder, $wav);
   }
+
 
   // function fixFILE($base_folder, $add_folder, $file, &$wav)
   //  $base_folder - initial root folder
@@ -345,10 +378,14 @@
   // fixWAV function - fixes the .wav files in the album
   function fixWAV($base_folder, $add_folder, &$wav){
     foreach ($wav as $type) {
-      if(isDryRun()){
-        logp("notify", "Would be renaming {$type["old"]} as {$type["new"]}");
-      }else{
+      if(isDryRun())
+      {
+        logp("log", "DryRun: renaming \"{$type["old"]}\" as \"{$type["new"]}\"");
+      }
+      else
+      {
         $goodRename = rename($type["old"], $type["new"]);
+        log("log", "Renamed {$type["old"]} as {$type["new"]}.");
         if(!$goodRename){
           logp("error", "ERROR: failure on renaming {$type["old"]} file");
         }
@@ -356,7 +393,12 @@
     }
   }
 
-  function makeCue(&$cuefile){
+
+  // function: makeCueConvertable(&$cuefile)
+  //
+  // Apparently, the converter
+
+  function makeCueConvertable(&$cuefile){
     // changes all INDEX to be correct for mp3
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match("/INDEX 00 /", $cuefile[$i])){
@@ -369,14 +411,14 @@
     }
   }
 
-  // function addLines(&$array)
+  // function addLineTerm(&$array)
   //  &$array - array of strings that will make up a file
   //  NOTE &$array is a reference variable
   // returns nothing
   //
-  // addLines function - adds \n (aka line breaks) to an array of strings in order for it to be passed
+  // addLineTerm function - adds \n (aka line breaks) to an array of strings in order for it to be passed
   //   into a cue file correctly
-  function addLines(&$array){
+  function addLineTerm_DEPR(&$array){
     for($i = 0; $i < count($array); $i++){
       $array[$i] .= "\r\n";
     }
@@ -419,10 +461,10 @@
   //
   // isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
   // returns global $isDryRun
-  function isDryRun(){
-    global $isDryRun;
-    return $isDryRun;
-  }
+//  function isDryRun(){
+//    global $isDryRun;
+//    return $isDryRun;
+//  }
 
   // TONTO directory starts
   // $test = "C:/Quentin/MusicReference/Music";
@@ -432,6 +474,7 @@
   // $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
   $test = "D:/Quentin/MusicProgramming/ServerFixTest";
 
-  crawl($test, '', '', "serverFix", array());
+  //crawl($test, '', '', "serverFix", array());
+  crawl($srcdir, '', '', "serverFix", array());
 
  ?>
