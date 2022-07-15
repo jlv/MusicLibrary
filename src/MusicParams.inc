@@ -25,7 +25,7 @@
 // OStype  Values: Windows, Linux
 $OStype="Windows";
 
-//////////////
+////////////// ========================================================
 //
 // Host-based Params
 //
@@ -104,6 +104,8 @@ else
   $homedir="C:\MusicLibrary";
 }
 
+////////////// ========================================================
+
 //
 // Default parameters if not set on a host basis
 //
@@ -128,22 +130,53 @@ if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 // trash directory, as default
 if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 
-// cue file directory depth: cuefiles expected for this depth or greater
-//   Example: genre/artist/album is cue_file_dir_depth = 3
-$cue_file_dir_depth = 3;
 
 //
 // other parameters, non-host-based
 //
 
-// default log root
-$log_default_name = "MsLib-Generic";
 
 // location of coverter binary to be invoked through system call
 if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 
+//
+// Converter parameter array
+//
+// This array drives how files are converted. The overall array contained
+//   one assoc array per conversion type. The following elements must
+//   be defined.
+//    ID - Unique name for the conversion used in various places. Ex: mp3-192
+//    convert - true/false - Flag to turn on/off conversion
+//    converter - path to converter exe. The conversion command line is formed
+//                of the following:
+//                  $converter $pre-cue $cuefile $pre-out $output_dir $post-out
+//    pre-cue,pre-out,post-out - strings per format above
+//    image - true/false - true to include folder.jpg in target directory
+//
+// $conversions["ID"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+//      "base_folder"=>$dflt_converion_base . "/X",
+//      "pre-cue"=>"", "pre-out"=>"", "post-out"=>"", "image"=>"FALSE");
+
+$conversions=array();
+
+// mp3-128 converter
+$conversions["ID"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+      "base_folder"=>$dflt_converion_base . "/X",
+      "pre-cue"=>"", "pre-out"=>"", "post-out"=>"", "image"=>"FALSE");
+
+
+
 // parameters to feed converter
 $convparams = "/dest mp3 /cbr 192 /pfilename %track2%";
+
+// cue file directory depth: cuefiles expected for this depth or greater
+//   Example: genre/artist/album is cue_file_dir_depth = 3
+$cue_file_dir_depth = 3;
+
+
+// default log root
+$log_default_name = "MsLib-Generic";
+
 
 //
 // Timezone setting
@@ -156,17 +189,6 @@ $sys_time_zone='America/Los_Angeles';
 //
 $isDryRun=false;
 $isDryRun=true;
-
-
-// function isDryRun()
-//
-// isDryRun function - used to exctract global in conditionals
-// returns global $isDryRun
-//function isDryRun(){
-//  global $isDryRun;
-//  return $isDryRun;
-//}
-
 
 // end of MusicParams.inc
 ?>
