@@ -193,10 +193,7 @@
     // $cuefile is array of current cue file
     $cuefile = file($file, FILE_IGNORE_NEW_LINES);
     if ( $cuefile === false )
-    {
       logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
-      exit(1);
-    }
 
     // crawls through lines in $cuefile
     for($i = 0; $i < count($cuefile); $i++){
@@ -293,10 +290,7 @@
 
     logp("log","Writing candidate cuefile a '${file}.new'");
     if ( ! file_put_contents($file . ".new", $cuefile))
-    {
-      logp("error","FATAL ERROR: could not write candidate cuefile '${file}.new'");
-      exit(1);
-    }
+      logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${file}.new'");
 
     // rewrite wav files
     fixWav($base_folder, $add_folder, $wav);
@@ -307,18 +301,12 @@
       // rename old cue file
       logp("log", "rename current cue '{$file}' as '{$file}.old'");
       if ( ! rename($file, $file . ".old"))
-      {
-        logp("error","FATAL ERROR: could not rename current cue '{$file}' as '{$file}.old'");
-        exit(1);
-      }
+        logp("error,exit1","FATAL ERROR: could not rename current cue '{$file}' as '{$file}.old'");
 
       // rename .new to cue file
       logp("log", "rename new cue '{$file}.new' as '{$file}'");
       if ( ! rename($file . ".new", $file))
-      {
-        logp("error","FATAL ERROR: could not rename new cue '{$file}.new' as '{$file}'");
-        exit(1);
-      }
+        logp("error,exit1","FATAL ERROR: could not rename new cue '{$file}.new' as '{$file}'");
 
       // if verify, rename files, log and complete
       logp("log","Verifying new cue file...");
@@ -333,18 +321,12 @@
         // undo rename .new to cue file
         logp("log", "rename undo cue '{$file}' as '{$file}.new'");
         if ( ! rename($file, $file . ".new"))
-        {
-          logp("error","FATAL ERROR: could not rename cue '{$file}' as '{$file}.new'");
-          exit(1);
-        }
+          logp("error,exit1","FATAL ERROR: could not rename cue '{$file}' as '{$file}.new'");
 
         // undo rename old cue file
 	      logp("log", "rename undo old '{$file}.old' as '{$file}'");
         if ( ! rename($file . ".old", $file))
-        {
-          logp("error","FATAL ERROR: could not rename (undo) old '{$file}.old' as '{$file}'");
-          exit(1);
-        }
+          logp("error,exit1","FATAL ERROR: could not rename (undo) old '{$file}.old' as '{$file}'");
 
         logp("error","Attempting to restore wav files...");
         fixWav($base_folder, $add_folder, $wav, TRUE);
