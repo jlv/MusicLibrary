@@ -65,9 +65,9 @@ elseif ($hostname == "Rising-Sun")
 
   // source directory of wave files and cue files
   //$srcdir = "N:/A";
-  //$srcdir = "N:/B";  
-  //$srcdir = "N:/Q-Ref";   
-  $srcdir = "N:/QT";     
+  //$srcdir = "N:/B";
+  //$srcdir = "N:/Q-Ref";
+  $srcdir = "N:/QT";
 
   // source directory of wave files and cue files
   $cuedir = "N:/Cuefiles";
@@ -75,7 +75,7 @@ elseif ($hostname == "Rising-Sun")
   // destimation MP3 directory
   //$mp3dir = "e:/MP3";
   $mp3dir = "N:/MP3";
-  
+
 }
 elseif ($hostname == "Hector")
 {
@@ -154,8 +154,9 @@ $sys_time_zone='America/Los_Angeles';
 //
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
-//$isDryRun=false;
+$isDryRun=false;
 $isDryRun=true;
+
 
 // function isDryRun()
 //

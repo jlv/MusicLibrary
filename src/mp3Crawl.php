@@ -25,9 +25,9 @@ function mp3Crawl($base_folder, $add_folder, $new_base_folder, $file, $options){
     return;
   }
   // Makes sure that the cue file is all good
-  if(verify($base_folder, $add_folder, $new_base_folder, $file, $options) !== 0){
-    logp("error", "ERROR: {$file} failed on verify call");
-    return;
+  if(verify($base_folder, $add_folder, $new_base_folder, $file, $options) !== true){
+    logp("error", "ERROR: '{add_folder}', '{$file}' failed on verify call");
+    return false;
   }
 
   // first much check if the album and songs exist in $new_base_folder

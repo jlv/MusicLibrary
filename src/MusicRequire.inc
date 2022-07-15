@@ -71,29 +71,42 @@ function debug()
 ///     ["_default"] - default control settings
 ///     ['_file'] - filename root -- also used to identify where log has been initialized
 ///     ['_logroot'] - $logroot part of _file
-///     ['_types'] - indexed array of types that are open
+///     ['_types'] - indexed array of log types available (set as a constant)
 ///     [$logtype] - structure for each type of log
-///          ["open"] - TRUE means file has been opened
+///          ['open'] - TRUE means file has been opened
 ///          ['handle'] - FILE handle
+///          ['echo'] - TRUE means option set to echo when this type of log is output
 ///     ['_log_err'] - set to true if logging a log message had already been attempted
 ///     ['_err_err'] - set to true if logging an err has been attempted
+///     ['_default_str'] - copy of latest _default_ctl string from logp_init
+///     ['_options_str'] - copy of latest options string from logp_init
 
-// function logp_init($logroot, $default_ctl)
+// function logp_init($logroot, $default_ctl, $options)
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
-//   $default_ctl - control string used as a default. For control options, see
+//   $default_ctl - control string that sets defaults. For control options, see
 //              logp function below.
+//              To clear current options, use "clear" or "none"
+//   $options - options that are set globally for log system, generally of the form
+//              option1[=foo],option2[=bar],..., or just option,option2,...
+//              To clear current options, use "clear" or "none"
+//              Options available:
+//                echo[$logtype][=false] - if specified, echos messages for logtype.
 //
-// initializes log control for further use by logp
+// initializes or changes log control for further use by logp. Can also be used to change options.
+//   - if values are set to null, no changes take place
+//
 // Uses globals:
 //   - $logdir: directory for log files set in musicparams.inc
 //   - $_base
 //
 
-function logp_init($logroot, $default_ctl)
+function logp_init($logroot, $default_ctl=NULL, $options=NULL)
 {
   global $logdir;
   global $_base;
+
+  $initial = TRUE;
 
   // check if $logdir is a directory
   if (! is_dir($logdir))
@@ -103,20 +116,19 @@ function logp_init($logroot, $default_ctl)
     exit(1);
   }
 
-  // check $logroot is set or apply
-  if (! isset($logroot) || $logroot == "")
-    if (isset($log_default_name)) $logroot = $log_default_name;
-    else $logroot = "Log-Default";
 
-  // check if file (open indicator) is already set.  If set, log a warning
+
+  // check if file (initialized indicator) is already set.  If set, log a warning
   // but proceed
   if (isset ($_base['log']['_file']))
   {
-    logp("log",
-      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
+    // remove initial flag
+    $initial = FALSE;
+//    logp("log",
+//      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
 
     // check if file root has changed
-    if ( $_base['log']['_logroot'] != $logroot )
+    if ( $logroot != NULL && $logroot != "" && $_base['log']['_logroot'] != $logroot )
     {
       logp("log",
         array("WARNING: additional logp_init call does not match file from previous call:",
@@ -133,16 +145,86 @@ function logp_init($logroot, $default_ctl)
       $_base['log']['_logroot'] = $logroot;
     }
   }
-  else
+  else  // not already initialized
   {
+    // check $logroot is set or apply defaults
+    if (! isset($logroot) || $logroot == "")
+      if (isset($log_default_name)) $logroot = $log_default_name;
+      else $logroot = "Log-Default";
+
     // set time and full logfile name, logroot
     $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
     $_base['log']['_logroot'] = $logroot;
   }
 
-  // handle default control string
-  $_base['log']['_default'] = logp_int_ctlstring($default_ctl);
+  // handle default control string array
+  if ( $initial === TRUE || $default_ctl != NULL )
+  {
+    // check for clear
+    if ( $default_ctl == "clear" || $default_ctl == "CLEAR" || $default_ctl == "none"
+          || $default_ctl == "NONE")
+      $def_str=NULL; else $def_str=$default_ctl;
+    $_base['log']['_default_str'] = $def_str;
+    $_base['log']['_default'] = logp_int_ctlstring($def_str);
+  }
 
+  // handle options string
+  if ( $initial === TRUE || $default_ctl != NULL )
+  {
+    // check for clear
+    if ( $options == "clear" || $options == "CLEAR" || $options == "none"
+          || $options == "NONE")
+      $opt_str=NULL; else $opt_str=$options;
+
+    // log in string
+    $_base['log']['_options_str'] = $opt_str;
+
+    // parse options and set
+    $opt_index = explode(",", $opt_str);
+    foreach ($opt_index as $sub_opt)
+    {
+      $opt_parts = explode("=", $sub_opt);
+
+      // test only 1 =
+      if ( isset($opt_parts[2]))
+        logp("error,echo,exit1", "FATAL ERROR: logp_init called with two = in param, '$sub_opt'");
+
+      // split var
+      $var_parts = explode("[", $opt_parts[0]);
+      $var = $var_parts[0];
+      if (isset($var_parts[1]))
+        $ind = rtrim($var_parts[1], "]");
+      else $ind = NULL;
+
+//      printf("var:{$var}, ind:{$ind}, val:{$opt_parts[1]}");
+
+      // dispatch
+      switch ($var)
+      {
+       case NULL: break;
+       case "echo":
+         // check if valid $ind
+         if (! isset($_base['log']['_types']["$ind"]))
+           logp_int_error(array("LOG ERROR: logp_init called with unrecognizable log type \"$sub_opt\".",
+                                "     Exiting."), TRUE);
+         // assign
+         if (isset($opt_parts[1])) $val=$opt_parts[1]; else $val=TRUE;
+         $_base['log']["$ind"]['echo'] = $val;
+         break;
+
+       default:
+         logp_int_error(array("LOG ERROR: logp_init called with unrecognizable option \"$sub_opt\".",
+                                "     Exiting."), TRUE);
+         break;
+      }  // switch
+    }  // foreach
+  } // if option
+
+  // if log is open, log the init call
+//  if (( isset($_base['log']['log']['open'])) || $_base['log']['log']['open'] == TRUE)
+  if ( isset($_base['log']['log']['open']))
+    logp("log",
+      "logp_init: Default_ctl:{$_base['log']['_default_str']}  Options:{$_base['log']['_options_str']}");
   return;
 }
 
@@ -171,8 +253,8 @@ function logp_init($logroot, $default_ctl)
 //              message and ==COMPLETE== at end
 //  debug - debugging line, only returned if debug() != 0
 //
-// Example: logp("echo,error", "This is a log message.")
-//     Logs in log file, error file, and echos to screen
+// Example: logp("echo,info", "This is a log message.")
+//     Logs in log file, info file, and echos to screen
 //
 
 function logp($ctl, $message)
@@ -221,6 +303,11 @@ function logp($ctl, $message)
     if ( isset($ctlarr[$type]) && $ctlarr[$type] === TRUE)
     {
       logp_int_write($type, $message, NULL, $eol);
+
+      // check for echo option set
+      if (isset($_base['log']["$type"]['echo']))
+            $echo_exec = $_base['log']["$type"]['echo'];
+
       // set log flag
       $log_exec = TRUE;
     }
@@ -239,7 +326,7 @@ function logp($ctl, $message)
   }
   elseif ( $debug_logged === FALSE ) $log_exec = TRUE;
 
-  // execute log
+  // execute log and debug write as well
   if ( $log_exec === TRUE )
   {
     logp_int_write("log", $message, NULL, $eol);
@@ -253,9 +340,12 @@ function logp($ctl, $message)
   //         if debug, output
   if ( isset($ctlarr['echo_ctl']))
   {
-    // log was explicitly set
-    if ( $ctlarr['echo_ctl'] === TRUE )
+    // echo was explicitly set or explicitly not set
+//    if ( $ctlarr['echo_ctl'] === TRUE )
+    if ( $ctlarr['echo_ctl'] == TRUE )
       $echo_exec = TRUE;
+    elseif ( $ctlarr['echo_ctl'] == FALSE )
+      $echo_exec = FALSE;
   }
   elseif ( $debug_logged === TRUE && debug() )
   {
@@ -350,7 +440,7 @@ function logp_int_write($type, $message, $prefix, $eol)
   if (( ! isset($_base['log'][$type]['open'])) ||
        $_base['log'][$type]['open'] !== TRUE)
   {
-    // open the file
+    // open the file, or use logp_int_error to report fail
     if (! ($_base['log'][$type]['handle'] =
         fopen( $_base['log']['_file'] . "." . $_base['log']['_types'][$type], 'a')))
       logp_int_error(array("LOG ERROR: logp could not open",
@@ -360,6 +450,7 @@ function logp_int_write($type, $message, $prefix, $eol)
     // write log header
     if (! fwrite($_base['log'][$type]['handle'],
                   "{$logdate}MusicLib Log - {$_base['log']['_file']}.{$_base['log']['_types'][$type]}{$eol}" .
+                  "{$logdate} Default_ctl:{$_base['log']['_default_str']}  Options:{$_base['log']['_options_str']}{$eol}" .
                   "{$logdate} Software Release {$_base['release_version']}{$eol}"))
       logp_int_error(array("LOG ERROR: logp could not write to,",
                           "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
@@ -440,6 +531,7 @@ function logp_int_error ($message, $fatal)
 // internal function: logp_int_ctlstring ($ctl)
 //  $ctl - comma-separated list of control options (see logp for details on controls)
 //
+// return array with default options
 
 function logp_int_ctlstring ($ctl)
 {
@@ -453,7 +545,7 @@ function logp_int_ctlstring ($ctl)
   else
     $ctl_array = array();
 
-  // defaults if not set
+  // defaults inherent in system if not set
   if (! isset($ctl_array['nl']) ) $ctl_array['nl'] = TRUE;
   if (! isset($ctl_array['debug']) ) $ctl_array['debug'] = FALSE;
 
@@ -487,8 +579,6 @@ function logp_int_ctlstring ($ctl)
     }
   }
 
-//print "ctl ";
-//print_r($ctl_array);
   return $ctl_array;
 }
 
@@ -611,8 +701,8 @@ function fileAge($file_name)
 // function checkCueExists($base_folder, $add_folder, $file)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
-//  $check_type - "continue" - will continue if cuefile is found and depth at $cue_file_dir_depth, 
-//                   "error" will error if cuefile is not found and .nocue is not present. 
+//  $check_type - "continue" - will continue if cuefile is found and depth at $cue_file_dir_depth,
+//                   "error" will error if cuefile is not found and .nocue is not present.
 //
 //  checkCueExists checks if cue file exists in directory. If $album.nocue exists
 //   returns success even though there is not a cue file.
@@ -621,7 +711,7 @@ function fileAge($file_name)
 
 function checkCueExists($base_folder, $add_folder, $check_type = "error") {
   global $cue_file_dir_depth;
-  
+
   // $flist - array of $add_folder split between every /
   $flist = preg_split("/\//", $add_folder);
 
@@ -634,7 +724,7 @@ function checkCueExists($base_folder, $add_folder, $check_type = "error") {
     if ( $fcnt >= $cue_file_dir_depth &&
        file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue'))
       return true;
-    else 
+    else
     {
       logp("error","checkCueExists: cue file not found: {$base_folder}/{$add_folder}/{$album}.cue, Fcnt:{$fcnt}");
       return false;
@@ -652,20 +742,21 @@ function checkCueExists($base_folder, $add_folder, $check_type = "error") {
   else // back $check_type
   {
     logp("error", "ERROR in checkCueExists: $check_type \"{$check_type}\" must be either 'continue' or 'error'.");
-    return false;  
+    return false;
   }
 }
 
 
-// function verifyCue($base_folder, $add_folder, $file)
+// function verifyCue($base_folder, $add_folder, $file, $silent = false)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
 //  $file - filename within containing folder
+//  $silent - performs function without producing errors in logs
 //
 //  verifyCue verifies that if the file is a cuefile, it is well-formed
 //   and the files it references exist.
 
-function verifyCue($base_folder, $add_folder, $file) {
+function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   //
   // regex definitions used to qualify below
   //
@@ -683,14 +774,20 @@ function verifyCue($base_folder, $add_folder, $file) {
   // start with no error
   $return = true;
 
+  // build $full_path
+  $pre_path = "";
+  if ( $base_folder != "" ) $pre_path = $base_folder . '/';
+  if ( $add_folder != "" ) $pre_path = $pre_path . $add_folder . '/';
+
   // if .nocue file exists, we don't check anything.  Just return.
   //
   // $flist - array of $add_folder split between every /
   $flist = preg_split("/\//", $add_folder);
   // $album - last input of $list, which will be the album title
   $album = $flist[count($flist) - 1];
+
   // check for .nocue existance
-  if(file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+  if(file_exists($pre_path . $album . '.nocue'))
   {
     logp("log","Verify found .nocue file. Skipping verification of {$base_folder}/{$add_folder}");
     return true;
@@ -701,18 +798,21 @@ function verifyCue($base_folder, $add_folder, $file) {
     //
     // check if cue file matches folder album name
     //
-    if ( $file != $album . ".cue")
+    if ( $album != "" && $file != $album . ".cue")
     {
        logp("error",
-         array("ERROR: .cue file found that does not match containing folder:",
-             "  {$base_folder}/{$add_folder}/{$file}"));
+         array("ERROR: '{$file}' cue file found has name that does not match containing folder:",
+             "  '{$base_folder}/{$add_folder}/{$file}'"));
        return false;
     }
 
     // read file
-    $cuefile = file($base_folder . '/' . $add_folder . '/' . $file, FILE_IGNORE_NEW_LINES);
+    $cuefile = file($pre_path. $file, FILE_IGNORE_NEW_LINES);
     if ( $cuefile === false )
-      logp("error,exit1","Error: could not read cue file {$base_folder}/{}$add_folder}/{$file}. Exiting.");
+    {
+      logp("error,exit1","FATAL ERROR: could not read cue file {$base_folder}/{}$add_folder}/{$file}. Exiting.");
+      exit(1);
+    }
 
     // loop through each line
     foreach ($cuefile as $input) {
@@ -723,43 +823,50 @@ function verifyCue($base_folder, $add_folder, $file) {
         $ftitle = preg_replace("/\".*$/", '', $ftitle);
 
         //checks if name exists in directory
-        $fileExists = file_exists($base_folder . '/' . $add_folder . '/' . $ftitle);
+        $fileExists = file_exists($pre_path . $ftitle);
         if(! $fileExists){
-          logp("error", "ERROR: '{$ftitle}' file does not exist in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' file does not exist in '{$pre_path}'");
           $return = FALSE;
         }
 
         //checks backslash
         if(preg_match('/\\\/', $ftitle)){
-          logp("error", "ERROR: '{$ftitle}' has \ in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' has \ in '{$pre_path}'");
           $return = FALSE;
         }
 
         //$num3 = "/\d\d\d /";
         if(!preg_match($num2, $ftitle)){
-          logp("error", "ERROR: '{$ftitle}' does not start with a number followed by a space in {$base_folder}/{$add_folder}/{$file}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' does not start with a number followed by a space in '{$pre_path}'/{$file}");
           $return = FALSE;
         }
 
         //$character2 = "/\d\d\d -/";
         if(preg_match($character1, $ftitle)){
-          logp("error", "ERROR: '{$ftitle}' has - after number in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' has - after number in '{$pre_path}'");
           $return = FALSE;
         }
 
         if(preg_match($character, $ftitle)){
-          logp("error", "ERROR: '{$ftitle}' has two white spaces in a row in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' has two white spaces in a row in '{$pre_path}'");
           $return = FALSE;
         }
 
         //"
         if(preg_match($special, $ftitle)){
-          logp("error", "ERROR: '{$ftitle}' has invalid special character in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' has invalid special character in '{$pre_path}'");
           $return = FALSE;
         }
 
         if(!preg_match($wav,$ftitle)){
-          logp("error", "ERROR: '{$ftitle}' does not end in .wav in {$base_folder}/{$add_folder}");
+          if ( $silent == false )
+            logp("error", "ERROR: '{$ftitle}' does not end in .wav in '{$pre_path}'");
           $return = FALSE;
         }
       } // if preg
