@@ -51,23 +51,31 @@ if ($hostname == "ProdHost")
   // source directory of wave files and cue files
   $srcdir = "e:/MusicLibrary/Music Ref";
 
-  // source directory of wave files and cue files
+  // DEPR? source directory of wave files and cue files
   $cuedir = "c:/quentin/MusicWorking/cuefiles";
 
-  // destimation MP3 directory
+  // output/conversion top directory.  Types of conversions usually housed
+  //  bloew this directory
+  $conversion_base_dir = "e:/MusicLibrary/Conversion";
+
+  // DEPR? destimation MP3 directory
   $mp3dir = "e:/MusicLibrary/Music Out";
 }
 elseif ($hostname == "Rising-Sun")
 {
 
   // $homedir - for systems that are built around a single home directory
-  $homedir="D:\MusicLibrary";
+  $homedir="D:/MusicLibrary";
 
   // source directory of wave files and cue files
   //$srcdir = "N:/A";
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   $srcdir = "N:/QT";
+
+  // output/conversion top directory.  Types of conversions usually housed
+  //  bloew this directory
+  $conversion_base_dir = "D:/Music/conversion";
 
   // source directory of wave files and cue files
   $cuedir = "N:/Cuefiles";
@@ -124,6 +132,10 @@ if (! isset($logdir)) $logdir=$homedir . "/Log";
 // source directory of wave files and cue files, as default
 if (! isset($srcdir)) $srcdir=$homedir . "/MusicWav";
 
+// output/conversion top directory.  Types of conversions usually housed
+//  beloww this directory
+if (! isset($conversion_base_dir)) $conversion_base_dir=$homedir . "/Conversion";
+
 // destimation MP3 directory, as default
 if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 
@@ -135,9 +147,9 @@ if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 // other parameters, non-host-based
 //
 
-
 // location of coverter binary to be invoked through system call
-if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
+if (! isset($dflt_converter)) $dflt_converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
+
 
 //
 // Converter parameter array
@@ -150,20 +162,36 @@ if (! isset($converter)) $converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 //    converter - path to converter exe. The conversion command line is formed
 //                of the following:
 //                  $converter $pre-cue $cuefile $pre-out $output_dir $post-out
+//    base_folder - top-of-tree base folder to place converted filesize
+//    cd_dir - TRUE/FALSE - if true, routine cd's to src directory before
+//              issueing conversion
 //    pre-cue,pre-out,post-out - strings per format above
 //    image - true/false - true to include folder.jpg in target directory
 //
 // $conversions["ID"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
 //      "base_folder"=>$dflt_converion_base . "/X",
-//      "pre-cue"=>"", "pre-out"=>"", "post-out"=>"", "image"=>"FALSE");
+//      "pre-cue"=>"", "pre-out"=>"", "post-out"=>"",
+//      "image"=>"FALSE");
 
 $conversions=array();
 
 // mp3-128 converter
-$conversions["ID"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
-      "base_folder"=>$dflt_converion_base . "/X",
-      "pre-cue"=>"", "pre-out"=>"", "post-out"=>"", "image"=>"FALSE");
+$conversions["mp3-128"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+      "base_folder"=>$conversion_base_dir . "/MP3-128", "cd_dir"=>"TRUE",
+      "pre-cue"=>"/dest mp3 /cbr 128", "pre-out"=>"/usesource", "post-out"=>"",
+      "image"=>"FALSE");
 
+// mp3-192 converter
+$conversions["mp3-192"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+      "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>"TRUE",
+      "pre-cue"=>"/dest mp3 /cbr 192", "pre-out"=>"/usesource", "post-out"=>"",
+      "image"=>"FALSE");
+
+// mp3-128 converter
+$conversions["mp3-320"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+      "base_folder"=>$conversion_base_dir . "/MP3-128", "cd_dir"=>"TRUE",
+      "pre-cue"=>"/dest mp3 /cbr 320", "pre-out"=>"/usesource", "post-out"=>"",
+      "image"=>"FALSE");
 
 
 // parameters to feed converter
@@ -187,7 +215,7 @@ $sys_time_zone='America/Los_Angeles';
 //
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
-$isDryRun=false;
+//$isDryRun=false;
 $isDryRun=true;
 
 // end of MusicParams.inc

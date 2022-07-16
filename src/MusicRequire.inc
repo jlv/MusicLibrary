@@ -801,7 +801,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
     if ( $album != "" && $file != $album . ".cue")
     {
        logp("error",
-         array("ERROR: '{$file}' cue file found has name that does not match containing folder:",
+         array("ERROR: '{$file}' cue file found has name that does not match containing folder album:",
              "  '{$base_folder}/{$add_folder}/{$file}'"));
        return false;
     }
@@ -874,6 +874,68 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   }  // if cue file
  return $return;
 } // end of function
+
+// function: makeCueConvertable(&$cuefile)
+//
+// Makes a cue file convertable by xrecode3.
+//
+//  To convert property, INDEX 01 must be at 00:00:00.  Comments out INDEX 01,
+//   and uses that figure for a PREGAP setting that must occur before
+//   the first INDEX statement
+
+function makeCueConvertable(&$cuefile){
+  global $_base;
+
+  // changes all INDEX to be correct for mp3
+  $cue_count=count($cuefile);
+  for($i = 0; $i < $cue_count; $i++){
+    $matches = array();
+    if(preg_match("/(INDEX 00 )([0-9:]*)(.*)/", $cuefile[$i], $matches)){
+      // safety check NN:NN:NN
+      if ($matches[2] != "00:00:00")
+        logp("info","WARNING: Non-standard INDEX 00 '{$matches[2]}' found in current cuefile. Check log for file.");
+
+      // look at INDEX 01 and capture time
+      $matches = array();
+      if (preg_match("/(INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i+1], $matches))
+      {
+        // if INDEX 01 not, 00:00:00, then add PREGAP before INDEX 00
+        if ($matches[2] != "00:00:00")
+        {
+          // add PREGAP
+          array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}{$_base['EOL']}"));
+          $cue_count++;
+          $i++;
+
+          // skip 00 line and remark INDEX 1 line
+          $i++;
+          $cuefile[$i] = "    REM orig: " . $cuefile[$i];
+
+          // move to next line and add new index line starting at 00:00:00
+          $i++;
+          array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00{$_base['EOL']}"));
+          $cue_count++;
+        } // matches not 00:00:00
+      }  // preg match 01
+    }   // preg match 00
+
+    // safety check for an INDEX 01 that is not 00:00:00.
+    //  Currently returns false aborting conversion.
+    $matches = array();
+    if(preg_match("/(INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i], $matches) && $matches[2] != "00:00:00")
+    {
+      logp("error,info",array(
+             "WARNING: Non-converted INDEX 01 with value '{$matches[2]}' found in current",
+             "  cuefile.  Value should be '00:00:00'.",
+             "  Check log above or info file below this warning for offending file.",
+             "  Stopping conversion process for this file.")
+          );
+      return FALSE;
+    }
+  }  // loop
+  return TRUE;
+}
+
 
 
 // function addLineTerm(&$array)

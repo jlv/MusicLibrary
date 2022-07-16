@@ -278,8 +278,17 @@
 //      $goodCue = file_put_contents($file . ".orig", $cuefile);
 //    }
 
+    // write original, pre-Convertable cuefile
+    logp("log","Writing original, pre-convertable cuefile as '${file}.orig'");
+    if ( ! file_put_contents($file . ".orig", $cuefile))
+      logp("error,exit1","FATAL ERROR: could not write original cuefile '${file}.orig'");
+
     // finally gets to making a .cue file that is mp3 converter friendly
-    //makeCueConvertable($cuefile);
+    if (! makeCueConvertable($cuefile))
+    {
+      logp("error,info","ERROR: could not make file '{$file}' to a convertable file. Check errors.");
+      return FALSE;
+    }
 
     // Sequence:
     //  - write candidate .cue.new file
@@ -288,7 +297,7 @@
     //  - verify .cue.new file with files, etc.
     //  - if verify fails, attempt to reverse renames
 
-    logp("log","Writing candidate cuefile a '${file}.new'");
+    logp("log","Writing candidate cuefile as '${file}.new'");
     if ( ! file_put_contents($file . ".new", $cuefile))
       logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${file}.new'");
 
@@ -315,20 +324,26 @@
         logp("info","ServerFix successfully transformed '{$file}' in '{$add_folder}'");
       else  // cleanup
       {
-        // reverse wav files
+        // unwind all the files to original state
         logp("error","Verify failed on '{$file}.new' in '{$add_folder}'");
 
         // undo rename .new to cue file
-        logp("log", "rename undo cue '{$file}' as '{$file}.new'");
+        logp("log", "  rename undo cue '{$file}' as '{$file}.new'");
         if ( ! rename($file, $file . ".new"))
           logp("error,exit1","FATAL ERROR: could not rename cue '{$file}' as '{$file}.new'");
 
         // undo rename old cue file
-	      logp("log", "rename undo old '{$file}.old' as '{$file}'");
+	      logp("log", "  rename undo old '{$file}.old' as '{$file}'");
         if ( ! rename($file . ".old", $file))
           logp("error,exit1","FATAL ERROR: could not rename (undo) old '{$file}.old' as '{$file}'");
 
-        logp("error","Attempting to restore wav files...");
+        // remove .orig file
+        logp("log", "  remove '{$file}.orig'");
+        if ( ! unlink($file . ".orig"))
+          logp("error,exit1","FATAL ERROR: could not remove '{$file}.orig'");
+
+        // reverse wav files
+        logp("error","  Attempting to restore wav files...");
         fixWav($base_folder, $add_folder, $wav, TRUE);
 
         logp("info","ServerFix failed to transform '{$file}' in '{$add_folder}'. Check if undo was successful.");
@@ -455,7 +470,7 @@
   //
   // Apparently, the converter
 
-  function makeCueConvertable(&$cuefile){
+  function makeCueConvertable_DEPR(&$cuefile){
     // changes all INDEX to be correct for mp3
     for($i = 0; $i < count($cuefile); $i++){
       if(preg_match("/INDEX 00 /", $cuefile[$i])){
