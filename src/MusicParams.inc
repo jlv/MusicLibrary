@@ -178,19 +178,19 @@ $conversions=array();
 // mp3-128 converter
 $conversions["mp3-128"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
       "base_folder"=>$conversion_base_dir . "/MP3-128", "cd_dir"=>"TRUE",
-      "pre-cue"=>"/dest mp3 /cbr 128", "pre-out"=>"/usesource", "post-out"=>"",
+      "pre-cue"=>" /dest mp3 /cbr 128 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
       "image"=>"FALSE");
 
 // mp3-192 converter
-$conversions["mp3-192"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+$conversions["mp3-192"] = array("convert"=>"FALSE", "converter"=>$dflt_converter,
       "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>"TRUE",
-      "pre-cue"=>"/dest mp3 /cbr 192", "pre-out"=>"/usesource", "post-out"=>"",
+      "pre-cue"=>" /dest mp3 /cbr 192 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
       "image"=>"FALSE");
 
-// mp3-128 converter
+// mp3-320 converter
 $conversions["mp3-320"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
-      "base_folder"=>$conversion_base_dir . "/MP3-128", "cd_dir"=>"TRUE",
-      "pre-cue"=>"/dest mp3 /cbr 320", "pre-out"=>"/usesource", "post-out"=>"",
+      "base_folder"=>$conversion_base_dir . "/MP3-320", "cd_dir"=>"TRUE",
+      "pre-cue"=>" /dest mp3 /cbr 320 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
       "image"=>"FALSE");
 
 
@@ -215,8 +215,8 @@ $sys_time_zone='America/Los_Angeles';
 //
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
-//$isDryRun=false;
-$isDryRun=true;
+$isDryRun=false;
+//$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

@@ -4,7 +4,7 @@
 
   require "MusicRequire.inc";
 
-  logp_init("ServerFix", NULL, "echo[error],echo[log]");
+  logp_init("ServerFix", NULL, "echo[error],echo[info]");
   logp("log","ServerFix Beginning");
 
   // funtion serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)

@@ -936,6 +936,102 @@ function makeCueConvertable(&$cuefile){
   return TRUE;
 }
 
+// function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $options)
+//  $base_folder - initial root folder
+//  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
+//       full path name.  $add_folder can be blank to start (and usually is).  Used by
+//       recursive function to crawl.
+//  $new_base_folder - target base folder for functions that are moving/writing files
+//       from a base to a new_base; in this case, will be endpoint of mp3 files
+//  $file - name of file passed to function
+//  $options - array of options passed to function
+//
+// uses cuefile to look up individual wav files and convert to formats
+//
+// Future work:
+//  could implement $options to do things like only convert one of the conversion options
+//
+
+function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $options){
+  global $conversions;
+
+  // return if not a .cue file
+  if(!preg_match('/\.cue$/i', $file)){
+    return;
+  }
+  // Makes sure that the cue file is all good
+  if(verifyCue($base_folder, $add_folder, $file) !== true){
+    logp("error", "ERROR: '{add_folder}', '{$file}' failed on verifyCue call. Returning.");
+    return false;
+  }
+
+  // first much check if the album and songs exist in $new_base_folder
+  $list = preg_split("/\//", $add_folder);
+  if (count($list) < 2)
+    log("error,exit2",array(
+          "FATAL ERROR in convertFromCue: $add_folder param must have an artist level",
+          "  and album level. Offending value is: '{$add_folder}'")
+        );
+  $album = $list[count($list) - 1];
+  $artist = $list[count($list) - 2];
+
+  // check if new base_folder exists
+//  if (! file_exists($new_base_folder))
+//    log("error,exit1","FATAL ERROR in convertFromCue: base folder '{$new_base_folder}' does not exist.");
+
+  // cycle through each conversion in $conversions
+  foreach ($conversions as $key=>$conversion)
+  {
+    // only process if convert is TRUE
+    if ($conversion["convert"] == TRUE)
+    {
+      // logp
+      logp("log","Converting to {$key}: {$base_folder}, {$add_folder}, {$file}");
+
+      // change directory if specified in params
+      if ($conversion["cd_dir"] == TRUE) chdir($base_folder . '/' . $add_folder);
+
+      // make base_folder if needed
+      if (isDryRun())
+        logp("log","mkdir, recursive: {$conversion["base_folder"]}");
+      elseif (! file_exists($conversion["base_folder"]) && ! mkdir($conversion["base_folder"],NULL,TRUE))
+          logp("error,exit1",array(
+                 "FATAL ERROR in convertFromCue: could not create base folder",
+                 " '{$conversion["base_folder"]}'.")
+               );
+
+      // make base_folder if needed
+      $out_dir = $conversion["base_folder"] . "/" . $add_folder;
+      if (isDryRun())
+        logp("log","mkdir, recursive: {$out_dir}");
+      elseif (! file_exists($out_dir) && ! mkdir($out_dir,NULL,TRUE))
+         logp("error,exit1",array(
+               "FATAL ERROR in convertFromCue: could not create output folder",
+               " '{$outdir}'.")
+                    );
+      // execute the conversion on the command line
+      $command = "{$conversion["converter"]}{$conversion["pre-cue"]}\"{$file}\"{$conversion["pre-out"]}";
+      $command = $command . "\"{$out_dir}\"{$conversion["post-out"]}";
+
+      logp("log", "Command:" . $command);
+      // exec command
+      if (! isDryRun())
+      {
+        $rescode=0;
+        system($command,$rescode);
+        if ($rescode != 0)
+        {
+          logp("error","ERROR: conversion command failed for '{$add_folder}', file '{$file}'");
+          return FALSE;
+        }
+      } // DryRun
+    } // if convert
+  }  // foreach
+
+  // inform
+  logp("info","Converted '{$add_folder}', '{$file}', from '{$base_folder}'");
+  return;
+}
 
 
 // function addLineTerm(&$array)
