@@ -1034,6 +1034,51 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 }
 
 
+
+  // function fixWav($base_folder, $add_folder, &$wav, $reverse = false)
+  //  $base_folder - initial root folder
+  //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
+  //       full path name.  $add_folder can be blank to start (and usually is).  Used by
+  //       recursive function to crawl.
+  //  &$wav - array of file names needed to rename .wav files in album
+  //  $reverse - optional parameter when set to "reverse" renames the files in the other direction.
+  //
+  // fixWav function - fixes the .wav files in the album
+
+  //function fixWav($base_folder, $add_folder, &$wav, $reverse = false)
+  // JLV cleanup
+  function fixWav(&$wav, $reverse = false)
+  {
+    foreach ($wav as $type) {
+      if(isDryRun())
+      {
+        logp("log", "DryRun: renaming '{$type["old"]}' as '{$type["new"]}', reverse={$reverse}");
+      }
+      else
+      {
+        // if same, no need to rewrite
+        if ($type["old"] == $type["new"])
+          logp("log","Old/New the same. No rewrite: {$type["old"]}");
+        // rename based on direction
+        elseif ( $reverse != true )
+        {
+          logp("log", "Renaming '{$type["old"]}' as '{$type["new"]}'.");
+
+          if (! rename($type["old"], $type["new"]))
+            logp("error", "ERROR fixWav: failure on renaming '{$type["old"]}' to '{$type["new"]}'");
+        }
+        else  // reverse the rename
+        {
+          logp("log", "Reverse renaming '{$type["new"]}' as '{$type["old"]}'.");
+
+          if (! rename($type["new"], $type["old"]))
+            logp("error", "ERROR fixWav: failure on reverse renaming '{$type["new"]}' as '{$type["old"]}'");
+        }
+      }// DryRun
+    } // foreach
+  } // function
+
+
 // function addLineTerm(&$array)
 //  &$array - array of strings that will make up a file
 //
@@ -1048,6 +1093,22 @@ function addLineTerm(&$array){
   }
 }
 
+// function readline($prompt)
+//  $prompt - text before input
+//
+// reads line from prompt input
+// defines readline function if it doesn't exist
+
+if(!function_exists("readline")) {
+  function readline($prompt = null){
+    if($prompt){
+        echo $prompt;
+    }
+    $fp = fopen("php://stdin","r");
+    $line = rtrim(fgets($fp, 1024));
+    return $line;
+  }
+}
 
 // show that we're debugging as an example
 if (debug()) logp("echo","Debugging turned on.");

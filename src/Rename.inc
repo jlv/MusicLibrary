@@ -1,8 +1,7 @@
 <?php
 
-  // functional definition
+  // input parameters for rename.  Call rename.php to execute.
 
-  print "Accessed Rename.inc\n\n";
   // $oldDir - old album name to be changed
   $oldDir = "Open Your Eyes (Limited Edition Surround Sound)";
 

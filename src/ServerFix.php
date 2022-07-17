@@ -203,10 +203,15 @@
         // defines $song
         $song = preg_replace("/^FILE \"/", '', $cuefile[$i]);
         $song = preg_replace("/\" WAVE$/", '', $song);
+//        $song = preg_replace("/\\\/", '', $song);
+//        $song = preg_replace("/{$artist}{$album}/", '', $song);
+        $song = preg_replace("/{$artist}\\\/", '', $song);
+        $song = preg_replace("/{$album}\\\/", '', $song);
         $song = preg_replace("/\\\/", '', $song);
-        $song = preg_replace("/{$artist}{$album}/", '', $song);
 
-        // checks that .wav file exists for FILE line
+print("SONG:{$song}:\n");
+
+        // Calculate Long file name:
         // Also checks for too long file name (i.e. NN~AAA~1.wav)
         $tooLong = "";
         $wavIndex = 0;
@@ -222,28 +227,30 @@
         $wavIndex = intval($tooLong);
         $wav[$wavIndex] = array();
         $tooLong = $tooLong .  "-" . strtoupper(substr($tooLongArtist, 0, 3)) . "~" . "1.wav";
+
+        // If file exists, capture:
         // as long as a song file exists, will assign old name of track to $wav array
         if(file_exists($song))
         {
           $wav[$wavIndex]["old"] = $song;
-          $cuefile[$i] = fixFile($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
+          $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }
         elseif(file_exists($tooLong))
         {
           $wav[$wavIndex]["old"] = $tooLong;
-          $cuefile[$i] = fixFile($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
+          $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
         }
         else
         {
-          logp("error", "ERROR: file '{$song}' or '{$tooLong}' specified in cuefile does not exist");
+          logp("error", array("ERROR: file '{$song}' or", "  '{$tooLong}' specified in cuefile does not exist."));
           return false;
         }
 
 // JLV: check?
 
-        // double checks that fixFile worked
+        // double checks that fixFileLine worked
         if($cuefile[$i] === 0 && $i < count($cuefile)){
-          logp("error", "ERROR: fixFile function has failed");
+          logp("error", "ERROR: fixFileLine function has failed");
           return 0;
         }
 
@@ -302,7 +309,8 @@
       logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${file}.new'");
 
     // rewrite wav files
-    fixWav($base_folder, $add_folder, $wav);
+    fixWav($wav);
+//        fixWav($base_folder, $add_folder, $wav);
 
     // verify sequence
     if(! isDryRun())
@@ -344,7 +352,8 @@
 
         // reverse wav files
         logp("error","  Attempting to restore wav files...");
-        fixWav($base_folder, $add_folder, $wav, TRUE);
+//        fixWav($base_folder, $add_folder, $wav, TRUE);
+        fixWav($wav, TRUE);
 
         logp("info","ServerFix failed to transform '{$file}' in '{$add_folder}'. Check if undo was successful.");
       }
@@ -355,7 +364,7 @@
   }
 
 
-  // function fixFile($base_folder, $add_folder, $file, &$wav)
+  // function fixFileLine($base_folder, $add_folder, $file, &$wav)
   //  $base_folder - initial root folder
   //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
   //       full path name.  $add_folder can be blank to start (and usually is).  Used by
@@ -363,10 +372,11 @@
   //  $line - FILE line from .cue file
   //  &$wav - array of file names needed to rename .wav files in album
   //
-  // fixFILe function - fixes a previous file format to new, correct standard
+  // fixFileLine function - fixes a previous file format to new, correct standard
+  //
   // returns a string which is the correct line, else returns 0 on failure
 
-  function fixFile($base_folder, $add_folder, $line, &$wav){
+  function fixFileLine($base_folder, $add_folder, $line, &$wav){
     // gets $artist and $album
     $list = preg_split("/\//", $add_folder);
     $album = $list[count($list) - 1];
@@ -419,51 +429,13 @@
     $song = preg_replace("/\.+/", ".", $song);
     // checks if replacement proccess worked. if not, return failure
     if($song == null){
-      logp("error", "ERROR fixFILE: preg_replace failure in .cue");
+      logp("error", "ERROR fixFileLine: preg_replace failure in .cue");
       return false;
     }
     $line = "FILE \"{$song}\" WAVE";
     $wav["new"] = $song;
     return $line;
   }
-
-  // function fixWav($base_folder, $add_folder, &$wav, $reverse = false)
-  //  $base_folder - initial root folder
-  //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
-  //       full path name.  $add_folder can be blank to start (and usually is).  Used by
-  //       recursive function to crawl.
-  //  &$wav - array of file names needed to rename .wav files in album
-  //  $reverse - optional parameter when set to "reverse" renames the files in the other direction.
-  //
-  // fixWav function - fixes the .wav files in the album
-
-  function fixWav($base_folder, $add_folder, &$wav, $reverse = false)
-  {
-    foreach ($wav as $type) {
-      if(isDryRun())
-      {
-        logp("log", "DryRun: renaming '{$type["old"]}' as '{$type["new"]}', reverse={$reverse}");
-      }
-      else
-      {
-        // rename based on direction
-        if ( $reverse != true )
-        {
-          logp("log", "Renaming '{$type["old"]}' as '{$type["new"]}'.");
-
-          if (! rename($type["old"], $type["new"]))
-            logp("error", "ERROR fixWav: failure on renaming '{$type["old"]}' to '{$type["new"]}'");
-        }
-        else  // reverse the rename
-        {
-          logp("log", "Reverse renaming '{$type["new"]}' as '{$type["old"]}'.");
-
-          if (! rename($type["new"], $type["old"]))
-            logp("error", "ERROR fixWav: failure on reverse renaming '{$type["new"]}' as '{$type["old"]}'");
-        }
-      }// DryRun
-    } // foreach
-  } // function
 
 
   // function: makeCueConvertable(&$cuefile)

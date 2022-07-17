@@ -18,7 +18,7 @@ $verify_no_cue_dir="";
 
 
 function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
-  global $verify_no_cue_dir;
+//  global $verify_no_cue_dir;
 
   logp("log","Checking {$add_folder}/{$file}");
 
@@ -26,13 +26,14 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 
   // if we haven't already errored the directory, check for cue, then check cue
 
-  if ( $verify_no_cue_dir == "{$base_folder}/{$add_folder}" )
-    return $return;
-  elseif ( checkCueExists($base_folder, $add_folder))
+//  if ( $verify_no_cue_dir == "{$base_folder}/{$add_folder}" )
+//    return $return;
+//  elseif ( checkCueExists($base_folder, $add_folder))
+  if ( checkCueExists($base_folder, $add_folder))
     $return = verifyCue($base_folder, $add_folder, $file);
   else
   {
-    $verify_no_cue_dir = "{$base_folder}/{$add_folder}";
+//    $verify_no_cue_dir = "{$base_folder}/{$add_folder}";
     $return = false;
   }
   return $return;

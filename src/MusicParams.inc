@@ -75,7 +75,8 @@ elseif ($hostname == "Rising-Sun")
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory
-  $conversion_base_dir = "D:/Music/conversion";
+//  $conversion_base_dir = "D:/Music/conversion";
+  $conversion_base_dir = "N:/Q-Out";
 
   // source directory of wave files and cue files
   $cuedir = "N:/Cuefiles";
@@ -182,7 +183,7 @@ $conversions["mp3-128"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
       "image"=>"FALSE");
 
 // mp3-192 converter
-$conversions["mp3-192"] = array("convert"=>"FALSE", "converter"=>$dflt_converter,
+$conversions["mp3-192"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
       "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>"TRUE",
       "pre-cue"=>" /dest mp3 /cbr 192 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
       "image"=>"FALSE");
