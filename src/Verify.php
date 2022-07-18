@@ -41,7 +41,8 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 
 
 // begin function
-logp_init("Verify", "");
+//logp_init("Verify", "", "echo[error],echo[info]");
+logp_init("Verify", "", "echo[error]");
 
 // execute through crawl
 crawl($srcdir, '', '', "verify", array());

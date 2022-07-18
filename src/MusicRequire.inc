@@ -760,7 +760,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   //
   // regex definitions used to qualify below
   //
-  //checks if it starts with a number and space
+  //checks if it starts with a 2 or 3 digit number number and space
   $num2 = "/^\d{2,3} /";
   //checks for - after beginning number
   $character1 = "/^\d{2,3} -/";
@@ -769,10 +769,13 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   //checks for all other special characters
   $special = "/[~\?\*\+\[\]\{\}\^\$\|<>:;\/\"]/";
   //checks for ending in .wav
-  $wav = "/\.wav/i";
+//  $wav = "/\.wav/i";
+  $wav = "/\.wav$/i";
 
+  $matches=array();
   // start with no error
   $return = true;
+
 
   // build $full_path
   $pre_path = "";
@@ -785,6 +788,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   $flist = preg_split("/\//", $add_folder);
   // $album - last input of $list, which will be the album title
   $album = $flist[count($flist) - 1];
+  $artist = $flist[count($flist) - 2];
 
   // check for .nocue existance
   if(file_exists($pre_path . $album . '.nocue'))
@@ -794,7 +798,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
   }
 
   // if file is a cue file
-  if(preg_match('/\.cue/i', $file)){
+  if(preg_match('/\.cue$/i', $file)){
     //
     // check if cue file matches folder album name
     //
@@ -806,23 +810,91 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
        return false;
     }
 
-    // read file
+    // read cue file
     $cuefile = file($pre_path. $file, FILE_IGNORE_NEW_LINES);
     if ( $cuefile === false )
-    {
       logp("error,exit1","FATAL ERROR: could not read cue file {$base_folder}/{}$add_folder}/{$file}. Exiting.");
-      exit(1);
-    }
 
-    // loop through each line
-    foreach ($cuefile as $input) {
-      if (preg_match ( '/^\a*FILE/', $input ) === 1 )
+
+
+
+    // ToDo:
+    //  change to interate on $i so we can read ahead lines and compare track to starting number
+    //
+
+    // initialize state for scan
+    $in_tracks=FALSE;
+    $found_track_title=TRUE;
+    $found_track_index1=TRUE;
+
+    // loop through each line of file checking various attributes
+    //foreach ($cuefile as $input) {
+    for($i = 0; $i < count($cuefile); $i++)
+    {
+      $input=$cuefile[$i];
+
+      // check artist line
+      if($in_tracks == FALSE && preg_match("/(^\s*PERFORMER \")(.*)\".*/",$input,$matches))
       {
+//        print("in Perf:{$matches[2]}:{$artist}:\n");
+//        print_r($matches);
+        //
+        if ($matches[2] != $artist)
+        {
+          if ( $silent == false )
+            logp("error", array(
+              "ERROR: artist/performer from directory path, '{$artist}', does not",
+              "  match that from cufile, '{$matches[2]}'."));
+          $return = FALSE;
+        }
+}
+
+      // check album line
+      if($in_tracks == FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
+        if ($matches[2] != $album)
+        {
+          if ( $silent == false )
+          logp("error", array(
+            "ERROR: album from directory path, '{$album}', does not",
+            "  match that from cufile, '{$matches[2]}'."));
+          $return = FALSE;
+        }
+
+      // check each file line as a start of next track
+      if (preg_match ( '/^\a*FILE/', $input ))
+      {
+        // Check variables from last track, then reinitialize per-track vars
+        if ($found_track_title == FALSE)
+        {
+          logp("error","ERROR: Could not find track title in track {$track_no}");
+          $return=FALSE;
+        }
+        // Check variables from last track, then reinitialize per-track vars
+        if ($found_track_index1 == FALSE)
+        {
+          logp("error","ERROR: Could not find INDEX 01 in track {$track_no}");
+          $return=FALSE;
+        }
+
+        // (re)initialize
+        $in_tracks=TRUE;
+        $found_track_title=FALSE;
+        $found_track_index1=FALSE;
+        $track_no="";
+        $ftrack_no="";
+
         //gets part just between quotes
         $ftitle = preg_replace("/FILE \"/", '', $input);
         $ftitle = preg_replace("/\".*$/", '', $ftitle);
 
-        //checks if name exists in directory
+        $stitle = preg_replace("/.wav$/", '', $ftitle);
+        // get track no
+        if (preg_match("/(^\d{2,3}) /", $stitle, $matches))
+          $ftrack_no=$matches[1];
+
+        $stitle = preg_replace("/(^\d{2,3}) /", '', $stitle);
+
+        //checks if track file name exists in directory
         $fileExists = file_exists($pre_path . $ftitle);
         if(! $fileExists){
           if ( $silent == false )
@@ -869,7 +941,58 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false) {
             logp("error", "ERROR: '{$ftitle}' does not end in .wav in '{$pre_path}'");
           $return = FALSE;
         }
-      } // if preg
+
+        // look ahead up to two lines for TRACK directive
+        $j=1;
+        while($found_track_title == FALSE && $j < 3)
+          if(preg_match("/(^ *TRACK )(\d*)/", $cuefile[$i+$j++], $matches))
+          {
+
+            $track_no = $matches[2];
+            $found_track_title = TRUE;
+//            print("TRACK check {$ftrack_no}:{$track_no}\n");
+
+            // check against $ftrack_no
+            if (intval($track_no) != intval($ftrack_no))
+            {
+              if ( $silent == false )
+                logp("error",array(
+                  "ERROR: track number in file name, '{$ftrack_no}', does not match track number",
+                  "  in TRACK directive, '{$track_no}'"
+                   ));
+              $return=FALSE;
+            }
+          }
+
+      } // file line
+
+      // check for INDEX 00 for correct setting
+//      if(preg_match("/(^\s*INDEX 00 )([0-9:]*)(.*)/",$input,$matches))
+      if(preg_match("/(^\s*INDEX 00 )([\d:]*)(.*)/",$input,$matches))
+        if ($matches[2] != "00:00:00")
+        {
+          if ( $silent == false )
+            logp("error",
+              "WARNING: Non-standard INDEX 00 '{$matches[2]}' found in current cuefile. Check log for file.");
+          $return = FALSE;
+        }
+
+      // check for INDEX 01 for correct setting
+//      if(preg_match("/(^\s*INDEX 01 )([0-9:]*)(.*)/",$input,$matches))
+      if(preg_match("/(^\s*INDEX 01 )([\d:]*)(.*)/",$input,$matches))
+        if ($matches[2] == "00:00:00")
+          $found_track_index1=TRUE;
+        else
+        {
+          if ( $silent == false )
+            logp("error",
+              "WARNING: Non-standard INDEX 01 '{$matches[2]}' found in current cuefile. Check log for file.");
+          $return = FALSE;
+        }
+
+
+
+
     }  // foreach line of file
   }  // if cue file
  return $return;
@@ -890,14 +1013,14 @@ function makeCueConvertable(&$cuefile){
   $cue_count=count($cuefile);
   for($i = 0; $i < $cue_count; $i++){
     $matches = array();
-    if(preg_match("/(INDEX 00 )([0-9:]*)(.*)/", $cuefile[$i], $matches)){
+    if(preg_match("/(^ *INDEX 00 )([0-9:]*)(.*)/", $cuefile[$i], $matches)){
       // safety check NN:NN:NN
       if ($matches[2] != "00:00:00")
         logp("info","WARNING: Non-standard INDEX 00 '{$matches[2]}' found in current cuefile. Check log for file.");
 
       // look at INDEX 01 and capture time
       $matches = array();
-      if (preg_match("/(INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i+1], $matches))
+      if (preg_match("/(^ *INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i+1], $matches))
       {
         // if INDEX 01 not, 00:00:00, then add PREGAP before INDEX 00
         if ($matches[2] != "00:00:00")
@@ -922,7 +1045,7 @@ function makeCueConvertable(&$cuefile){
     // safety check for an INDEX 01 that is not 00:00:00.
     //  Currently returns false aborting conversion.
     $matches = array();
-    if(preg_match("/(INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i], $matches) && $matches[2] != "00:00:00")
+    if(preg_match("/(^ *INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i], $matches) && $matches[2] != "00:00:00")
     {
       logp("error,info",array(
              "WARNING: Non-converted INDEX 01 with value '{$matches[2]}' found in current",
