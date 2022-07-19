@@ -237,8 +237,8 @@ print("SONG:{$song}:\n");
       logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${file}.new'");
 
     // rewrite wav files
-    fixWav($wav);
-//        fixWav($base_folder, $add_folder, $wav);
+    moveWav($wav);
+//        moveWav($base_folder, $add_folder, $wav);
 
     // verify sequence
     if(! isDryRun())
@@ -280,8 +280,8 @@ print("SONG:{$song}:\n");
 
         // reverse wav files
         logp("error","  Attempting to restore wav files...");
-//        fixWav($base_folder, $add_folder, $wav, TRUE);
-        fixWav($wav, TRUE);
+//        moveWav($base_folder, $add_folder, $wav, TRUE);
+        moveWav($wav, TRUE);
 
         logp("info","ServerFix failed to transform '{$file}' in '{$add_folder}'. Check if undo was successful.");
       }
@@ -444,7 +444,7 @@ print("SONG:{$song}:\n");
   // HECTOR directory starts
   // $test = "D:/Quentin/MusicProgramming/RenameTest";
   // $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
-  $test = "D:/Quentin/MusicProgramming/ServerFixTest";
+//  $test = "D:/Quentin/MusicProgramming/ServerFixTest";
 
   //crawl($test, '', '', "serverFix", array());
   crawl($srcdir, '', '', "serverFix", array());

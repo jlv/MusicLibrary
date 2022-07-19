@@ -13,4 +13,8 @@
   // NOTE: do NOT put in Regex form
   $trackExcerpt = "";
 
+  // albumRename renames the " - album -" and "~ album ~" formats. When set to
+  //  TRUE, turns this feature off.
+  $albumRenameOff = FALSE;
+
  ?>
