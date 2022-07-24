@@ -26,7 +26,7 @@ require "MusicParams.inc";
 ///
 
 // software release version
-$_base["release_version"]="0.5";
+$_base["release_version"]="0.6";
 
 
 // Set endofline char based on OStype
@@ -86,24 +86,30 @@ function debug()
 //              example: mylog produces file mylog-20181228-074823.log
 //   $default_ctl - control string that sets defaults. For control options, see
 //              logp function below.
-//              To clear current options, use "clear" or "none"
+//              To clear current default_ctl, use "clear" or "none"
 //   $options - options that are set globally for log system, generally of the form
 //              option1[=foo],option2[=bar],..., or just option,option2,...
 //              To clear current options, use "clear" or "none"
 //              Options available:
 //                echo[$logtype][=false] - if specified, echos messages for logtype.
+//                                         Defaults to TRUE if no =. FALSE means doesn't
+//                                         echo messages as a results of calling logtype.
 //
-// initializes or changes log control for further use by logp. Can also be used to change options.
+// initializes or changes log control for further use by logp.
 //   - if values are set to null, no changes take place
 //
 // Uses globals:
 //   - $logdir: directory for log files set in musicparams.inc
-//   - $_base
+//   - $log_default_name - default Logroot name if not specified
+//   - $log_detault_options - default options if not specified on initial call
+//   - $_base: internal structure for base data
 //
 
 function logp_init($logroot, $default_ctl=NULL, $options=NULL)
 {
   global $logdir;
+  global $log_default_name;
+  global $log_default_options;
   global $_base;
 
   $initial = TRUE;
@@ -116,13 +122,10 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
     exit(1);
   }
 
-
-
-  // check if file (initialized indicator) is already set.  If set, log a warning
-  // but proceed
+  // check if file (initialized indicator) is already set and handle input as replacement
   if (isset ($_base['log']['_file']))
   {
-    // remove initial flag
+    // remove initial flag because it's set
     $initial = FALSE;
 //    logp("log",
 //      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
@@ -155,6 +158,10 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
     // set time and full logfile name, logroot
     $_base['log']['_file'] = $logdir . "/" . $logroot . "-" . date("Ymd-His");
     $_base['log']['_logroot'] = $logroot;
+
+    // look for log_default_options
+    if (! isset($options) || $options == "")
+      if (isset($log_default_options)) $options = $log_default_options;
   }
 
   // handle default control string array
@@ -169,7 +176,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
   }
 
   // handle options string
-  if ( $initial === TRUE || $default_ctl != NULL )
+  if ( $initial === TRUE || $options != NULL )
   {
     // check for clear
     if ( $options == "clear" || $options == "CLEAR" || $options == "none"
@@ -1021,13 +1028,13 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false, &$cuefile)
 // returns information element in file or FALSE for error in reading
 //
 
-function getCueInfo($file) {
+function getCueInfo($infotype, $file, &$cuefile=array()) {
   // initialize
   $matches=array();
   $filemsg = " File: '{$file}'";
 
   // check for file or cuefile
-  if (isset($cuefile))
+  if ($cuefile)
     $filemsg = "Cuefile provided, " . $filemsg;
   else
     if (file_exists($file)) {
@@ -1386,7 +1393,7 @@ function moveToTrash($trash) {
       logp("error,exit1",
             "FATAL ERROR: trash directory, '{$trash_name}' does not exist and cannot be made.");
 
-  return = TRUE;
+  $return = TRUE;
   // loop through and move files
   foreach($trash as $file) {
     // strip off precending path
@@ -1399,6 +1406,8 @@ function moveToTrash($trash) {
       $return = FALSE;
     }
   } // end of foreach
+
+  return $return;
 }
 
 // function addLineTerm(&$array)

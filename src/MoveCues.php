@@ -19,7 +19,7 @@ function scanCues($directory)  {
 
   // check that we are called from a ripping directory
   //  Requires that a "safe tag" file exists
-  if (! file_exists($diretory . "/" . $cue_rip_dir_tag))
+  if (! file_exists( $directory . "/" . $cue_rip_dir_tag))
     logp("error,exit1", array(
         "FATAL ERROR: not called from a ripping directory.",
         "  The file '{$cue_rip_dir_tag}' must exist in this directory. Exiting."));
@@ -30,7 +30,7 @@ function scanCues($directory)  {
 
   // sees if there are multiple cue files for album. Runs multiMove is there are
   $dir = opendir($directory);
-  while(($file = readdir($dir)) !== false){
+  while(($file = readdir($dir)) !== false) {
     // NOTE $file is name.cue
 
     // initialize variables to process each file
@@ -39,7 +39,7 @@ function scanCues($directory)  {
     $cuefile=array();
 
     // handle only cue files
-    if(getSuffix($file) === "cue"){
+    if(getSuffix($file) === "cue")  {
       // // initialize on every new cue file
       // $multi_files=array();
 
@@ -88,10 +88,10 @@ function scanCues($directory)  {
         // made it here.  It's a multi with this as the lead file.
         $setupRet = setupMulti($file, $cuefile, $wav, $trash);
 
-      }  // if match 1.cue
+      }  // if preg match 1.cue
 
       // multi check \d*.cue and matches, skip
-      elseif (preg_match("/(.*)(-?)\d+$/", $ftitle, $matches)) {
+      elseif (preg_match("/(.*)(-?)\d+$/", $ftitle, $matches))
         if ($matches[1] == $cue_title) continue;
 
       // multi: check if title[-][12] files exist,then skip for multi
@@ -164,6 +164,8 @@ function scanCues($directory)  {
       if (! verifyCue( '', $dir, $newfile, FALSE, $cuefile)) {
         logp("error", array(
                "ERROR: proposed cuefile did not verify. Skipping", " File '{$file}'"));
+        return FALSE;
+      }
 
       // move songs
       if (! moveWav($wav)) {
@@ -200,7 +202,7 @@ function scanCues($directory)  {
 //  part of a multi-disk rip
 //  Returns TRUE if one of the files matches for multi-disk
 
-function findMulti( $base_title, $endings) {
+function findMulti( $endings, $base_title )  {
   foreach ($endings as $ending)
     $cand_file = $base_title . $ending . ".cue";
     if ( file_exists($cand_file))
@@ -240,7 +242,8 @@ function setupSingle($file, $cuefile, $wav, $trash) {
 
   // check that directory exists
   if (! is_dir($dir))  {
-    logp("error", array("ERROR: artist/album directory does not exist. Skipping album.",
+    logp("error", array(
+          "ERROR in setupSingle: artist/album directory does not exist. Skipping album.",
           "  Dir: '{$dir}'"));
     return FALSE;
   }
@@ -283,7 +286,8 @@ function setupMulti($file, $cuefile, $wav, $trash) {
 
     // check that directory exists
     if (! is_dir($dir))  {
-      logp("error", array("ERROR: artist/album directory does not exist. Skipping album.",
+      logp("error", array(
+            "ERROR in setupMulti: artist/album directory does not exist. Skipping album.",
             "  Dir: '{$dir}'"));
       return FALSE;
     }
@@ -369,9 +373,10 @@ function setupMulti($file, $cuefile, $wav, $trash) {
 //  &$
 //  $cuefile - cuefile array to be returned
 //  $wav - wav array to transport wav files
-
+//  $pad - number of zero-padded digits for this album
 //
 //  Helper function to rewrite tracks in wav file
+
 function trackify(&$cuefile, &$wav, $pad)  {
   // initialize
   $matches = array();
@@ -416,7 +421,7 @@ function trackify(&$cuefile, &$wav, $pad)  {
                 "  Line: '{$cuefile[$i]}'"));
         return FALSE;
       }
-    } // end of if FILE
+    } // end of if preg FILE
 
     // replace TRACK
     if( preg_match("/^\s*TRACK\s+", $cuefile[$i])) {
@@ -787,9 +792,10 @@ function cleanCue($directory, &$file){
   }
 
   // puts $fixing into a .cue file
-  $file = file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue", $fixing)
+  $file = file_put_contents($directory . "/" . $artist . "/" . $album . "/" . $album . ".cue", $fixing);
 
 }
+
 
 //
 // begin function - main
@@ -801,8 +807,8 @@ logp_init("MoveCues", "");
 
 // scanCues($testDir, $trashDir)
 if (scanCues("."))
-  log("echo","MoveCues complete.")
+  logp("echo","MoveCues complete.");
 else
-  log("error,echo","MoveCues complete, but with errors.  Please check.")
+  logp("error,echo","MoveCues complete, but with errors.  Please check.");
 
 ?>

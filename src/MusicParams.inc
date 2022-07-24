@@ -153,7 +153,7 @@ if (! isset($dflt_converter)) $dflt_converter = "C:\Apps\xrecode3\xrecode3cx64.e
 
 
 // file name to designate cue ripping level directory
-$cue_rip_dir_tag = "Z CueRipDir.safe";
+$cue_rip_dir_tag = "Z CueRipDir.tag";
 
 //
 // Converter parameter array
@@ -206,9 +206,9 @@ $convparams = "/dest mp3 /cbr 192 /pfilename %track2%";
 $cue_file_dir_depth = 3;
 
 
-// default log root
+// default log root and optoinally set default ctl string (see log_init for doc)
 $log_default_name = "MsLib-Generic";
-
+$log_default_options = "echo[error],echo[info]";
 
 //
 // Timezone setting
