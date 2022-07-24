@@ -92,7 +92,7 @@
 
   function cueFileFix($base_folder, $add_folder, $file){
     logp("log", "cueFileFix starting on: {$base_folder}/{$add_folder}/{$file}");
-    // $wav is a 2D aray of [tracknum][old/new]
+    // $wav is a 2D aray of [tracknum][old/new/old_dir/new_dir]
     $wav = array();
 
     // $cuefile is array of orig cue file
@@ -123,18 +123,32 @@
     if ( $cuefile === false )
       logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
 
+    // check if over 99 tracks and set $pad
+    $count_arr = countTracks($cuefile);
+    if ($count_arr["return"] =! TRUE) return FALSE;
+    $pad = $count_arr["max_pad"];
+
+    print_r($count_arr);
+    $foo=7;
+    print "pad:" . str_pad($foo,$count_arr["cnt_pad"],"0",STR_PAD_LEFT);
+
     // crawls through lines in $cuefile
     for($i = 0; $i < count($cuefile); $i++){
-      if(preg_match ( '/^\a*FILE/', $cuefile[$i] ) === 1){
+
+      // file line
+      if(preg_match ( '/^\s*FILE/', $cuefile[$i] )) {
+        // initialize and increment vars
+
         $tooLong = "";
 
         // defines $song
-        $song = preg_replace("/^FILE \"/", '', $cuefile[$i]);
+        $song = preg_replace("/^\s*FILE \"/", '', $cuefile[$i]);
         $song = preg_replace("/\" WAVE$/", '', $song);
 //        $song = preg_replace("/\\\/", '', $song);
 //        $song = preg_replace("/{$artist}{$album}/", '', $song);
         $song = preg_replace("/{$artist}\\\/", '', $song);
         $song = preg_replace("/{$album}\\\/", '', $song);
+        // remove any file path
         $song = preg_replace("/\\\/", '', $song);
 
 print("SONG:{$song}:\n");
@@ -158,45 +172,40 @@ print("SONG:{$song}:\n");
 
         // If file exists, capture:
         // as long as a song file exists, will assign old name of track to $wav array
-        if(file_exists($song))
-        {
-          $wav[$wavIndex]["old"] = $song;
-          $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
-        }
-        elseif(file_exists($tooLong))
-        {
-          $wav[$wavIndex]["old"] = $tooLong;
-          $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex]);
-        }
+        if(file_exists($song)) $songfile=$song;
+        elseif(file_exists($tooLong)) $songfile=$tooLong;
         else
         {
           logp("error", array("ERROR: file '{$song}' or", "  '{$tooLong}' specified in cuefile does not exist."));
           return false;
         }
 
-// JLV: check?
-
-        // double checks that fixFileLine worked
+        // change FILE line and set $wav
+        $wav[$wavIndex]["old"] = $song;
+        $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex], $pad);
+        //if($cuefile[$i] === 0 && $i < count($cuefile)){
         if($cuefile[$i] === 0 && $i < count($cuefile)){
-          logp("error", "ERROR: fixFileLine function has failed");
-          return 0;
+          logp("error", array("ERROR: fixFileLine function has failed to write new songfile",
+                         "  {$songfile}"));
+          return FALSE;
         }
 
-        // checks that song num matches track num
-        $trackNum = "";
-        if(preg_match("/^\d\d\d/", $song)){
-          $trackNum = substr($song, 0, 3);
-          $trackNum = substr($song, 1, 2);
-        }else {
-          $trackNum = substr($song, 0, 2);
-        }
-        $trackCheck = $i + 1;
-        if(!preg_match("/{$trackNum}/", $cuefile[$trackCheck])){
-          logp("error", "ERROR: {$trackNum} does not match song number {$cuefile[$trackCheck]}");
-          return false;
-        }
-      }
-    }
+        // // checks that song num matches track num
+        // $trackNum = "";
+        // if(preg_match("/^\d\d\d/", $song)){
+        //   $trackNum = substr($song, 0, 3);
+        //   $trackNum = substr($song, 1, 2);
+        // }else {
+        //   $trackNum = substr($song, 0, 2);
+        // }
+        // $trackCheck = $i + 1;
+        // if(!preg_match("/{$trackNum}/", $cuefile[$trackCheck])){
+        //   logp("error", "ERROR: {$trackNum} does not match song number {$cuefile[$trackCheck]}");
+        //   return false;
+        // }
+
+      } // file line
+    } // for
 
     // add line terminators
     addLineTerm($cuefile);
@@ -292,19 +301,23 @@ print("SONG:{$song}:\n");
   }
 
 
-  // function fixFileLine($base_folder, $add_folder, $file, &$wav)
+  // function fixFileLine($base_folder, $add_folder, $file, &$wav, $pad)
   //  $base_folder - initial root folder
   //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
   //       full path name.  $add_folder can be blank to start (and usually is).  Used by
   //       recursive function to crawl.
   //  $line - FILE line from .cue file
   //  &$wav - array of file names needed to rename .wav files in album
+  //  $pad - pad width for track numbers
   //
   // fixFileLine function - fixes a previous file format to new, correct standard
   //
   // returns a string which is the correct line, else returns 0 on failure
 
-  function fixFileLine($base_folder, $add_folder, $line, &$wav){
+  function fixFileLine($base_folder, $add_folder, $line, &$wav, $pad){
+    // initialize
+    $matches = array();
+
     // gets $artist and $album
     $list = preg_split("/\//", $add_folder);
     $album = $list[count($list) - 1];
@@ -330,28 +343,42 @@ print("SONG:{$song}:\n");
       logp("error", "ERROR: {$artist}/{$album} in .cue file does not match .wav file");
       return 0;
     }
-    // checks for ~ or - delimeter, then fixes song title
-    $tilda = "/^\d*.* ~/";
-    $dash = "/^\d*.* -/";
 
-    if(preg_match($tilda, $song)){
+    // check for ~ or - delimeter, then fixes song title
+    if(preg_match("/^\d+.* ~/", $song)){
       $song = preg_replace("/~ {$artist} ~ /", '', $song);
       $song = preg_replace("/{$album} ~ /", '', $song);
       $song = preg_replace("/~ /", '', $song);
-    }else if(preg_match($dash, $song)){
+    }
+    elseif(preg_match("/^\d+.* -/", $song)){
       $song = preg_replace("/- {$artist} /", '', $song);
       $song = preg_replace("/{$artist} /", '', $song);
       $song = preg_replace("/- {$album} - /", '', $song);
     }
-    // finally replaces NN. or NNN.
-    $cutout = "/^\d{2,3}\./";
-    $replace = "";
-    if(preg_match("/^\d\d\d/", $song)){
-      $replace = substr($song, 0, 3);
-    }else {
-      $replace = substr($song, 0, 2);
+
+    // update tracknum
+    if (preg_match("/(^\d+)/", $song, $matches))
+      $track_no = intval($matches[1]);
+    else {
+      logp("error",array(
+               "ERROR fixFileLine: cannot find track number in song title.",
+               "  {$song}"));
+      return FALSE;
     }
-    $song = preg_replace($cutout, $replace, $song);
+    // cut tracknumber and potential . then add padded track no
+    $song = preg_replace("/^\d+\.*/", '', $song);
+    $song = str_pad($track_no, $pad, "0", STR_PAD_LEFT) . $song;
+
+    // // replace the track getprotobynumber
+    // $cutout = "/^\d{2,3}\./";
+    // $replace = "";
+    // if(preg_match("/^\d\d\d/", $song)){
+    //   $replace = substr($song, 0, 3);
+    // }else {
+    //   $replace = substr($song, 0, 2);
+    // }
+    // $song = preg_replace($cutout, $replace, $song);
+
     // cuts all double spaces and extra .
     $song = preg_replace("/\s+/", " ", $song);
     $song = preg_replace("/\.+/", ".", $song);
@@ -361,9 +388,11 @@ print("SONG:{$song}:\n");
       return false;
     }
     $line = "FILE \"{$song}\" WAVE";
+
+    // load new $song into $wav
     $wav["new"] = $song;
     return $line;
-  }
+  } // end of function
 
 
   // function: makeCueConvertable(&$cuefile)

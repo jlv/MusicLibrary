@@ -59,7 +59,7 @@ if ($hostname == "ProdHost")
   $conversion_base_dir = "e:/MusicLibrary/Conversion";
 
   // DEPR? destimation MP3 directory
-  $mp3dir = "e:/MusicLibrary/Music Out";
+//  $mp3dir = "e:/MusicLibrary/Music Out";
 }
 elseif ($hostname == "Rising-Sun")
 {
@@ -71,7 +71,8 @@ elseif ($hostname == "Rising-Sun")
   //$srcdir = "N:/A";
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
-  $srcdir = "N:/QT";
+  //$srcdir = "N:/QT";
+  $srcdir = "N:/QT-Rip2";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory
@@ -83,7 +84,7 @@ elseif ($hostname == "Rising-Sun")
 
   // destimation MP3 directory
   //$mp3dir = "e:/MP3";
-  $mp3dir = "N:/MP3";
+//  $mp3dir = "N:/MP3";
 
 }
 elseif ($hostname == "Hector")
@@ -138,11 +139,10 @@ if (! isset($srcdir)) $srcdir=$homedir . "/MusicWav";
 if (! isset($conversion_base_dir)) $conversion_base_dir=$homedir . "/Conversion";
 
 // destimation MP3 directory, as default
-if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
+//if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 
 // trash directory, as default
-if (! isset($trash)) $mpcdir=$homedir . "/Trash";
-
+if (! isset($trash_name)) $trash_name = "Z Old Cue Sheets";
 
 //
 // other parameters, non-host-based
@@ -151,6 +151,9 @@ if (! isset($trash)) $mpcdir=$homedir . "/Trash";
 // location of coverter binary to be invoked through system call
 if (! isset($dflt_converter)) $dflt_converter = "C:\Apps\xrecode3\xrecode3cx64.exe";
 
+
+// file name to designate cue ripping level directory
+$cue_rip_dir_tag = "Z CueRipDir.safe";
 
 //
 // Converter parameter array

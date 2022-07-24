@@ -11,4 +11,8 @@
     "Christmas Oratorio (Disk2)"
   );
 
+  // albumRename renames the " - album -" and "~ album ~" formats. When set to
+  //  TRUE, turns this feature off.
+  $albumRenameOff = FALSE;
+
  ?>

@@ -1,93 +1,436 @@
 <?php
 
 // functional definition
-
+//
+// After EAC ripping, scans each cuefile in a directory, touches up any issues
+//  and moves the cuefile to the appropriate directory.
 
 require 'MusicRequire.inc';
 
 // function scanCues($directory, $trashBin)
 //  $directory - target directory which the function checks
 //  $trashBin - target directory for old cue files
-function scanCues($directory, $trashBin){
+//function scanCues($directory, $trashBin){
+function scanCues($directory)  {
+  // initialize
+  global $cue_rip_dir_tag;
+  $matches = array();
+  $setup_reg = FALSE;
 
-  $goodCue = '';
+  // check that we are called from a ripping directory
+  //  Requires that a "safe tag" file exists
+  if (! file_exists($diretory . "/" . $cue_rip_dir_tag))
+    logp("error,exit1", array(
+        "FATAL ERROR: not called from a ripping directory.",
+        "  The file '{$cue_rip_dir_tag}' must exist in this directory. Exiting."));
+
+  // check that trash directory exists or can be made
+  if (! moveToTrash(array())) return FALSE;
+//  $goodCue = '';
 
   // sees if there are multiple cue files for album. Runs multiMove is there are
   $dir = opendir($directory);
   while(($file = readdir($dir)) !== false){
     // NOTE $file is name.cue
 
+    // initialize variables to process each file
+    $wav=array();
+    $trash=array();
+    $cuefile=array();
+
+    // handle only cue files
     if(getSuffix($file) === "cue"){
-        // gets album title of cue file
-        $title = substr($file, 0, strlen($file) - 4);
+      // // initialize on every new cue file
+      // $multi_files=array();
 
-        // checks if the cd is part of a multi cd
-        if(preg_match("/1$/", $title)){
+      // ftitle
+      $ftitle = substr($file, 0, strlen($file) - 4);
+      // get title from cue file (errors will have already displayed)
+      if (($cue_title = getCueInfo("album",$file)) == FALSE) continue;
 
-          // sees if there's a second cue file with a 2 at the end
-          $yesDash = substr($file, 0, strlen($file) - 6);
-          $noDash = substr($file, 0, strlen($file) - 5);
-          if(file_exists($directory . "/" . $yesDash . "2.cue") || file_exists($directory . "/" . $noDash . "2.cue")){
-            $goodCue = multiMove($directory, $trashBin, $file);
+      // logic for establishing multi mode
+      //  - if ends in [-]1:
+      //     - check if title matches with the [-]1, and process as single
+      //     - elseif check if other files exist (and title matches)
+      //     - else error
+      //  - elseif ends in \d, check if a [-]1 exists and title matches & skip
+      //  - elseif title[-][12] files exist, check titles & skip (going multi)
+      //  - elseif title matches, process as single
+      //  - else error
+      //
+      // multi check [-]1
+      if(preg_match("/(.*)(-?)1$/", $ftitle, $matches)){
+        // set vars
+        $base_title = $matches[1];
+        if(isset($matches[2])) $ifdash = $matches[2]; else $ifdash="";
 
-          }else
-          // loops through cuefile itself to see if real album title matches with cue file name
-          {
-            $cue = file($directory . "/" . $file, FILE_IGNORE_NEW_LINES);
-            $album = '';
-            foreach($cue as $line){
-              if(preg_match( '/^\a*FILE/', $line ) === 1 ){
-                // $list - array of $add_folder split between every \
-                $list = preg_split("/\\\/", $line);
-
-                $album = $list[count($list) - 2];
-
-              }
-
-            }
-            if(!($album == $title)){
-              $goodCue = multiMove($directory, $trashBin, $file);
-            }
-          }
-
+        // check cue title
+        if ($cue_title == $ftitle)
+          $setupRet = setupSingle($file, $cuefile, $wav, $trash);
+        elseif ($cue_title != $base_title) {
+          // orphaned file
+          logp("error", array(
+            "ERROR: TITLE in file does not match file or match multidisk pattern.",
+            "  File: '{$file}'"));
+          continue;
         }
-    }
 
-    // chekcs for .jpg file and if it is named folder
-    if(preg_match("/\.jpg$/", $file)){
-      if(!preg_match("/folder.jpg/", $file)){
-        $check = rename($file, "folder.jpg");
-      }else{
-        $check = true;
+        // if we can find a file with the $base, or $base[-]2, then we have
+        //  a multi file
+        if(findMulti(array("","2", "-2"), $base_title) == FALSE) {
+          // not multi, not single. Error.
+          logp("error", array(
+                  "ERROR: file does not qualify as a single file or multifile. Skipping.",
+                  "  File: '{$file}'"));
+          continue;
+        }
+
+        // made it here.  It's a multi with this as the lead file.
+        $setupRet = setupMulti($file, $cuefile, $wav, $trash);
+
+      }  // if match 1.cue
+
+      // multi check \d*.cue and matches, skip
+      elseif (preg_match("/(.*)(-?)\d+$/", $ftitle, $matches)) {
+        if ($matches[1] == $cue_title) continue;
+
+      // multi: check if title[-][12] files exist,then skip for multi
+      elseif (findMulti(array("1", "-1", "2", "-2"), $ftitle) == TRUE)
+        continue;
+
+      // multi: if title matches, process as single
+      elseif  ($ftitle = $cue_title)
+        $setupRet = setupSingle($file, $cuefile, $wav, $trash);
+
+      // multi: none of the normal conditions apply. Error.
+      else {
+        logp("error", array(
+                "ERROR: file does not qualify as a single file or multifile. Skipping.",
+                "  File and in-cue title don't match.",
+                "  File: '{$file}'"));
+        continue;
       }
-      if($check === false){
-        logp("error", "ERROR: Failure on renaming {$file}, probably multiple .jpg in director");
+
+      // multi or single is set up. Now to process:
+      //  - check that setup succeeded
+      //  - check that cuefile does not already exist
+      //  - finish cuefile with processing steps
+      //  - validate candidate cuefile in directory, without songfile check
+      //  - move songs from wav array
+      //  - move source files to trash
+      //  - final verify of cuefile in place
+
+      // check setupRet
+      if ($setupRet != TRUE) return FALSE;
+
+      // get artist and album, then check if cue file exists in directory
+      if ( ($artist = getCueInfo("artist",$file,$cuefile)) == FALSE ) return FALSE;
+      if ( ($album = getCueInfo("album",$file,$cuefile)) == FALSE ) return FALSE;
+      $dir = $artist . "/" . $album;
+      $newfile = $base_title . ".cue";
+      $newpath = $dir . "/" . $album . "/" . $base_title;
+
+      logp("log","Processing cuefile '{$file}', '{$artist}'");
+
+      if (file_exists($newpath))  {
+        logp("error",array(
+               "ERROR: cuefile already exists where routing would write a new one. Skipping.",
+               "  File: $newpath"));
+        return FALSE;
       }
-    }
 
-  }
 
+      // write candidate file
+      if ( ! file_put_contents($newpath . ".cand", $cuefile))  {
+        logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${newpath}.cand'");
+        return FALSE;
+      }
+
+      // check if over 99 tracks and set $pad
+      $count_arr = countTracks($cuefile);
+      if ($count_arr["return"] =! TRUE) return FALSE;
+      $pad = $count_arr["max_pad"];
+
+      // trackify file to appropriate tracks, and populate $wav array
+      if (! trackify($cuefile, $wav, $artist, $album)) return FALSE;
+
+      // make Convertable
+      if (! makeCueConvertable($cuefile)) return FALSE;
+
+      // add line termination
+      addLineTerm($cuefile);
+
+      // verify current cuefile array
+      if (! verifyCue( '', $dir, $newfile, FALSE, $cuefile)) {
+        logp("error", array(
+               "ERROR: proposed cuefile did not verify. Skipping", " File '{$file}'"));
+
+      // move songs
+      if (! moveWav($wav)) {
+        logp("error","ERROR: error moving wav files. Check logs.");
+        return FALSE;
+      }
+
+      // rename candidate file
+      if (! isDryRun) {
+        logp("log", "rename candidate to cue, '{$newfile}'");
+        if ( ! rename($newpath . ".cand", $newpath))  {
+          logp("error,exit1","FATAL ERROR: could not rename candidate '{$newpath}'");
+          return FALSE;
+        }
+      }  // dryRun
+
+      // move to trash
+      moveToTrash($trash);
+
+    }  // end get suffix = cue
+  }  // end while directory
+  // close directory on the way out
   closedir($dir);
 
-  //
-  $dir = opendir($directory);
-  while(($file = readdir($dir)) !== false){
-    // NOTE $file is  name.cue
-    if(getSuffix($file) === "cue"){
-      // moves uncleaned cue files to trash bin
-      // if $file already exists in trash, then it adds ".1" to differ new file
-      if(file_exists($trashBin . "/" . $file)){
-        copy($directory . "/" . $file, $trashBin . "/" . $file . ".1");
-      }else{
-        copy($directory . "/" . $file, $trashBin . "/" . $file);
-      }
+  return TRUE;
+}
 
-      cleanCue($directory, $file);
-    }
+
+// function findMulti( $base_title, $endings)
+//  $base_title - base_title for file creation and title comparison
+//  $endings - array of end of file and suffix to append to base_title
+//
+// Helper function to determine if files with specified endings could
+//  part of a multi-disk rip
+//  Returns TRUE if one of the files matches for multi-disk
+
+function findMulti( $base_title, $endings) {
+  foreach ($endings as $ending)
+    $cand_file = $base_title . $ending . ".cue";
+    if ( file_exists($cand_file))
+      if (($cue_title = getCueInfo("album", $cand_file)) == FALSE) continue;
+      elseif ($cue_title == $base_title) return TRUE;
+
+  // got here with no matches
+  return FALSE;
+}
+
+// function: setupSingle($file, $cuefile, $wav, $trash
+//  $file - filename full (but no directories)
+//  $cuefile - cuefile array to be returned
+//  $wav - wav array to transport wav files
+//  $trash - array of files to move to trashBin
+//
+// sets up arrays for a single album
+
+function setupSingle($file, $cuefile, $wav, $trash) {
+  $cuefile = file($file, FILE_IGNORE_NEW_LINES);
+  if ( $cuefile === false )
+    logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
+
+  // check track count and rewrite if needed
+
+  if (file_exists($file)) {
+    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
+    if ( $cuefile === false )
+      logp("error,exit1","FATAL ERROR in getCueInfo: could not read file '{$file}'. Exit");
+  } else
+    logp("error,exit1","FATAL ERROR in setupMulti: could not find file '{$file}'. Exit");
+
+  // get artist and album
+  if ( ($artist = getCueInfo("artist",$file,$cuefile)) == FALSE ) return FALSE;
+  if ( ($album = getCueInfo("album",$file,$cuefile)) == FALSE ) return FALSE;
+  $dir = $artist . "/" . $album;
+
+  // check that directory exists
+  if (! is_dir($dir))  {
+    logp("error", array("ERROR: artist/album directory does not exist. Skipping album.",
+          "  Dir: '{$dir}'"));
+    return FALSE;
   }
 
-  closedir($dir);
+  // add to trash
+  $trash[] = $file;
 
+  return TRUE;
+}
+
+// function: setupMulti($file, $cuefile, $wav, $trash
+//  $file - filename full (but no directories)
+//  $cuefile - cuefile array to be returned
+//  $wav - wav array to transport wav files
+//  $trash - array of files to move to trashBin
+//
+// sets up arrays for a multidisk album
+
+function setupMulti($file, $cuefile, $wav, $trash) {
+  // initialize
+  $files = array();
+
+  if (file_exists($file)) {
+    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
+    if ( $cuefile === false )
+      logp("error,exit1","FATAL ERROR in setupMulti: could not read file '{$file}'. Exit");
+  } else
+    logp("error,exit1","FATAL ERROR in setupMulti: could not find file '{$file}'. Exit");
+
+  // multi check [-]1
+  if(preg_match("/(.*)(-?)1.cue$/", $file, $matches)){
+    // set base title
+    $base_title = $matches[1];
+    $trash[] = $file;
+
+    // get artist and album
+    if ( ($artist = getCueInfo("artist",$file,$cuefile)) == FALSE ) return FALSE;
+    if ( ($album = getCueInfo("album",$file,$cuefile)) == FALSE ) return FALSE;
+    $dir = $artist . "/" . $album;
+
+    // check that directory exists
+    if (! is_dir($dir))  {
+      logp("error", array("ERROR: artist/album directory does not exist. Skipping album.",
+            "  Dir: '{$dir}'"));
+      return FALSE;
+    }
+
+    // loop until a sequence number of file doesn't exist
+    //  k=1 is no end on file. k=0 is stop
+    $k = 2;
+    $endCheck = 0;
+    while ( $k > 0 ) {
+      if ($k == 1) $ends=array(""); else $ends=array($k,"-{$k}");
+      foreach($ends as $end) {
+        $nfile = $base_title . $end . ".cue";
+        if ( file_exists($base_title . $end . ".cue")) {
+          // reset endCheck
+          $endCheck = 0;
+          break;
+        }
+        else $nfile = "";
+      }
+
+      // check if file:
+      //  No file causes end state process:
+      //  - first bump increment and make sure there isn't a file there
+      //      endCheck=1
+      //  - then look for no-end on file,
+      //
+      // Otherwise if file, process
+
+      if ( $nfile == "")
+        if ( $endCheck == 0) {$k++; $endCheck = 1; }
+        elseif ( $endCheck == 1 ) {$k=1; $endCheck = 2; }
+        else $k=0;
+      else {
+        $k++;
+        $ncuefile = file($nfile, FILE_IGNORE_NEW_LINES);
+        if ( $ncuefile === false )
+          logp("error,exit1","FATAL ERROR in setupMulti: could not read file '{$nfile}'. Exit");
+
+        // check for matching artist and album
+        if ( ($nartist = getCueInfo("artist",$file,$cuefile)) == FALSE ) return FALSE;
+        if ( ($nalbum = getCueInfo("album",$file,$cuefile)) == FALSE ) return FALSE;
+        if ( $nartist != $artist || $nalbum != $album ) {
+          logp("error", array(
+              "ERROR: artist or album in cue sheet does not match that of multi master. Skipping",
+              "  Master artist: '{$artist}'",
+              "  Master album: '{$album}'",
+              "  File artist: '{$nartist}'",
+              "  File album: '{$nalbum}'",
+              "  File: '{$nfile}'"
+            ));
+          return FALSE;
+        }
+
+        // add REM separator
+        $cuefile[] = "REM Next CD";
+
+        // iterate through each line of file, find first FILE directive
+        $fileFound = FALSE;
+        foreach($ncuefile as $nline)  {
+          // mark when we get to FILE
+          if (preg_match( '/^\a*FILE/', $nline )) $fileFound = TRUE;
+
+          if ($fileFound == TRUE ) $cuefile[] = $nline;
+        }  // end of while
+
+        // add to trashBin
+        $trash[] = $nfile;
+
+      }  // end of else nfile (!= "")
+    }  // end of while K
+  } // end of preg_match [-]1
+  else
+    // did not match for multi file format - error
+    logp("error,exit1", array(
+            "FATAL ERROR in setupMulti: beginning file not of the form *[-]1.cue",
+            "  File: '{$file}'"));
+
+  return TRUE;
+}
+
+
+// function trackify(&cuefile, &$wav, $pad)
+//  &$
+//  $cuefile - cuefile array to be returned
+//  $wav - wav array to transport wav files
+
+//
+//  Helper function to rewrite tracks in wav file
+function trackify(&$cuefile, &$wav, $pad)  {
+  // initialize
+  $matches = array();
+  $tracks = array();
+
+  // get artist and album, then check if cue file exists in directory
+  if ( ($artist = getCueInfo("artist",$file,$cuefile)) == FALSE ) return FALSE;
+  if ( ($album = getCueInfo("album",$file,$cuefile)) == FALSE ) return FALSE;
+
+  $track="";
+  for($i=0; $i < count($cuefile); $i++)
+  {
+    // look for FILE lines
+    if( preg_match("/^\s*FILE\s+\"(.*)\"\s*WAVE/", $cuefile[$i], $matches)) {
+      // replace artist and album
+      $cuefile[$i] = preg_replace("/\"{$artist}\\\/", '"', $cuefile[$i]);
+      $cuefile[$i] = preg_replace("/\"{$album}\\\/", '"', $cuefile[$i]);
+
+      // check if any \ and error
+      if (preg_match('/\\\/', $cuefile[$i])) {
+        logp("error",array("ERROR: FILE title has a backslash.  Skipping entire cuefile.",
+                  "  Line: '{$cuefile[$i]}'"));
+        return FALSE;
+      }
+
+      // get trackno and replace with padded version
+      if( preg_match("/^(\s*FILE\s+\")(\d+) /", $cuefile[$i], $matches))  {
+        $track = intval($matches[2]);
+
+        // check that track hasn't already be used
+        if (isset($tracks[$track]))  {
+          logp("error", array(
+                  "ERROR: duplicate track number found, '{$track}'. Skipping cuefile",
+                  "  Line: '{$cuefile[$i]}'"));
+          return FALSE;
+        }
+        $cuefile[$i] = preg_replace("/^(\s*FILE\s+\")(\d+)( .*)/",
+              "${1}". str_pad($track, $pad, "0", STR_PAD_LEFT) . "${3}",
+              $cuefile[$i]);
+      } else {
+        logp("error",array("ERROR: could not find track.  Skipping entire cuefile.",
+                "  Line: '{$cuefile[$i]}'"));
+        return FALSE;
+      }
+    } // end of if FILE
+
+    // replace TRACK
+    if( preg_match("/^\s*TRACK\s+", $cuefile[$i])) {
+      if ($track != "") {
+        $cuefile[$i] = preg_replace("/(^\s*TRACK\s+)(\d+)(.*)",
+                 "${1}" . str_pad($track_no, 2, "0", STR_PAD_LEFT) . "${3}",
+                  $cuefile[$i]);
+        $track="";
+      }
+    } // end of if TRACK
+
+  } // end of for - reading file
+
+  return TRUE;
 }
 
 // function multiMove($directory, $trashBin, $hasDash)
@@ -453,9 +796,13 @@ function cleanCue($directory, &$file){
 //
 logp_init("MoveCues", "");
 
-$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
-$trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
+//$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
+//$trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
 
-scanCues($testDir, $trashDir);
+// scanCues($testDir, $trashDir)
+if (scanCues("."))
+  log("echo","MoveCues complete.")
+else
+  log("error,echo","MoveCues complete, but with errors.  Please check.")
 
 ?>

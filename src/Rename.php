@@ -92,13 +92,21 @@ print_r($wav);
         // for legacy artist\Album, replace everything up to backslash
         $songfile = preg_replace("/^.*\\\/", '', $songfile);
 
-        // check file existance:
 
+        // replace old Dir with newDir in file name if an option
+        // check file existance:
+        // try normal filename renames
+//        $pfix = " - ";
+//        $cuefile[$i] = str_replace($pfix . $oldDir . $pfix, $pfix . $newDir . $pfix, $cuefile[$i]);
+//        $pfix = " ~ ";
+//        $cuefile[$i] = str_replace($pfix . $oldDir . $pfix, $pfix . $newDir . $pfix, $cuefile[$i]);
 
         $wav[$i]["old"] = $songfile;
 
         // for legacy, replace oldDir with newDir
-        $cuefile[$i] = str_replace("\\{$oldDir}\\","\\{$newDir}\\",$cuefile[$i]);
+        //$cuefile[$i] = str_replace("\\{$oldDir}\\","\\{$newDir}\\",$cuefile[$i]);
+
+
 
         // fixes up FILE line and $songfile
         //$cuefile[$i] = preg_replace($trackExcerpt, '', $cuefile[$i]);
@@ -118,23 +126,30 @@ print_r($wav);
         $newSongfile = str_replace($trackExcerpt, '', $newSongfile);
         $wav[$i]["new"] = $newSongfile;
 
+        $cuefile[$i] = "FILE \"{$newSongfile}\" WAVE";
+
         // add directories
-        $wav[$i]["old_dir"]=$oldDir;
-        $wav[$i]["new_dir"]=$newDir;
+//        $wav[$i]["old_dir"]=$oldDir;
+//        $wav[$i]["new_dir"]=$newDir;
       }
 
     } // end of for
-    print "made end of function\n";
+
     return TRUE;
   } // end of setupAlbum function
 
 
   // function editAlbum($currentDir, $oldDir, $newDir, $trackExcerpt)
   //  $oldDir - old album name to be changed
-  function completeRename(&$cuefile, &$wav) {
-    return;
+  function completeRename($oldcue, &$cuefile, &$wav) {
+    global $oldDir;
+    global $newDir;
+    global $trackExcerpt;
+    global $albumRenameOff;
+
     // add line termination
     addLineTerm($cuefile);
+
     if (! file_put_contents($oldcue . ".rename", $cuefile))
       logp("error,exit1","FATAL ERROR: could not write rename cue file: '{$oldcue}.rename'");
 
@@ -145,12 +160,15 @@ print_r($wav);
     } else {
       //
       // rename old .cue file
-      if (! rename($oldcue, $oldcue . ".pre-rename"))
+      if (file_exists($oldcue . ".pre-rename"))
+        logp("error,exit1","FATAL ERROR: storage pre-rename file already exists '{$oldcue}.pre-rename'");
+      elseif (! rename($oldcue, $oldcue . ".pre-rename"))
         logp("error,exit1","FATAL ERROR: could not rename cue file: '{$oldcue}'");
 
       // rename directories
       if (! rename($oldDir, $newDir))
-        logp("error,exit1","FATAL ERROR: could not rename directory, '{$oldDir}' to '{$newDir}'");
+        logp("error,exit1",array("FATAL ERROR: could not rename directory, '{$oldDir}'",
+             " to '{$newDir}'"));
 
       // rename .rename file
       if (! rename($newDir . "/" . $oldDir . ".cue.rename", $newDir . "/" . $newDir . ".cue"))
@@ -179,6 +197,7 @@ print_r($wav);
     //     }
     //   }
     //}
+    return TRUE;
   } // end of completeRename function
 
 
@@ -209,7 +228,7 @@ print_r($wav);
   if (! confirm($wav)) exit;
 
   logp("echo","Completing rename...");
-  if (completeRename($cuefile, $wav))
+  if (completeRename($oldcue, $cuefile, $wav))
     logp("echo","  ...finished Rename to {$newDir}");
   else
     logp("error,exit1","There were errors on rename. See logs.");
