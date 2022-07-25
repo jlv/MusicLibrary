@@ -754,12 +754,16 @@ function checkCueExists($base_folder, $add_folder, $check_type = "error") {
 }
 
 
-// function verifyCue($base_folder, $add_folder, $file, $silent = false, [&$cuefile])
+// function verifyCue($base_folder, $add_folder, $file, [$silent = false], [&$cuefile] [skip_file])
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
 //  $file - filename within containing folder
 //  $silent - performs function without producing errors in logs. Used when
 //             evaluation is needed rather than error reporting.
+//  $cuefile - cuefile array to be tested. if $cuefile is provided, it is used
+//             instead of reading the file.
+//  $skip_file - if TRUE, skip file testing
+//
 //
 //  verifyCue verifies that the file is a cuefile, it is well-formed
 //   and the files it references exist. If not a cue file, returns TRUE to
@@ -769,7 +773,8 @@ function checkCueExists($base_folder, $add_folder, $check_type = "error") {
 //
 //  The file must be named *.cue or *.cue.cand
 
-function verifyCue($base_folder, $add_folder, $file, $silent = false, &$cuefile) {
+function verifyCue($base_folder, $add_folder, $file, $silent = false,
+                     &$cuefile = array(), $skip_file = false) {
   // initialize values
   $matches=array();
   // start with no error
@@ -825,7 +830,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false, &$cuefile)
     }
 
     // use or read cue file
-    if (!isset($cuefile)) {
+    if (! $cuefile) {
       $cuefile = file($full_path, FILE_IGNORE_NEW_LINES);
       if ( $cuefile === false )
         logp("error,exit1","FATAL ERROR: could not read cue file '{$full_path}'. Exiting.");
@@ -918,10 +923,11 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false, &$cuefile)
         $stitle = preg_replace("/(^\d{2,}) /", '', $stitle);
 
         //checks if track file name exists in directory
-        $fileExists = file_exists($pre_path . $trkfile);
-        if(! $fileExists){
+//        $fileExists = file_exists($pre_path . $trkfile);
+//        if(! $fileExists){
+        if ( $skip_file != TRUE && ! file_exists($pre_path . $trkfile)) {
           if ( $silent == false )
-            logp("error", array("ERROR: file in track {$ftrack_no}does not exist.",
+            logp("error", array("ERROR: file in track {$ftrack_no} does not exist.",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
         }
@@ -1047,11 +1053,12 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
     }
 
   // load infotag
-  if ($infotype = "album") $infotag = "TITLE";
-  elseif ($infotype = "artist") $infotag = "PERFORMER";
+  if ($infotype == "album") $infotag = "TITLE";
+  elseif ($infotype == "artist") $infotag = "PERFORMER";
   else
     log("error,exit1","FATAL ERROR: getCueInfo call with bad info type '{$infotype}'");
-
+print "INFOTYPE:{$infotype}\n";
+//readline("getcueinfo pause>");
   // read input, look for title
   foreach ($cuefile as $line)
     if (preg_match("/^\s*{$infotag}\s*\"(.*)\"$/", $line, $matches))
@@ -1168,20 +1175,22 @@ function makeCueConvertable(&$cuefile){
   $cue_count=count($cuefile);
   for($i = 0; $i < $cue_count; $i++){
     $matches = array();
-    if(preg_match("/(^ *INDEX 00 )([0-9:]*)(.*)/", $cuefile[$i], $matches)){
+    if(preg_match("/(^\s*INDEX\s+00\s+)([0-9:]+)/", $cuefile[$i], $matches)){
       // safety check NN:NN:NN
       if ($matches[2] != "00:00:00")
         logp("info","WARNING: Non-standard INDEX 00 '{$matches[2]}' found in current cuefile. Check log for file.");
 
       // look at INDEX 01 and capture time
       $matches = array();
-      if (preg_match("/(^ *INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i+1], $matches))
+      if (preg_match("/(^\s*INDEX\s+01\s+)([0-9:]+)/", $cuefile[$i+1], $matches))
       {
         // if INDEX 01 not, 00:00:00, then add PREGAP before INDEX 00
         if ($matches[2] != "00:00:00")
         {
           // add PREGAP
-          array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}{$_base['EOL']}"));
+          array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}"));
+// may need to fix for multi
+//          array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}{$_base['EOL']}"));
           $cue_count++;
           $i++;
 
@@ -1191,7 +1200,9 @@ function makeCueConvertable(&$cuefile){
 
           // move to next line and add new index line starting at 00:00:00
           $i++;
-          array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00{$_base['EOL']}"));
+// may need to fix for multi
+//          array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00{$_base['EOL']}"));
+          array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00"));
           $cue_count++;
         } // matches not 00:00:00
       }  // preg match 01
@@ -1200,7 +1211,7 @@ function makeCueConvertable(&$cuefile){
     // safety check for an INDEX 01 that is not 00:00:00.
     //  Currently returns false aborting conversion.
     $matches = array();
-    if(preg_match("/(^ *INDEX 01 )([0-9:]*)(.*)/", $cuefile[$i], $matches) && $matches[2] != "00:00:00")
+    if(preg_match("/(^ *INDEX\s+01\s+)([0-9:]+)/", $cuefile[$i], $matches) && $matches[2] != "00:00:00")
     {
       logp("error,info",array(
              "WARNING: Non-converted INDEX 01 with value '{$matches[2]}' found in current",
@@ -1320,6 +1331,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   //
   //  wav array: The 2D array uses Index as first dimension and as 2nd dim
   //           "old", "new", "old_dir", and "new_dir" for data values.
+  //         e.g. $wav[1]["new"]
 
   function moveWav(&$wav, $reverse = false)
   {
@@ -1346,9 +1358,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
         $new_path = $index["new"];
 
       if(isDryRun())
-      {
         logp("log", "DryRun: renaming '{$old_path}' as '{$new_path}', reverse={$reverse}");
-      }
       else
       {
         // if same, no need to rewrite
@@ -1377,6 +1387,9 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
         }
       }// DryRun
     } // foreach
+
+    return $return;
+
   } // function
 
 // function moveToTrash($trash)
