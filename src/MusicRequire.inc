@@ -689,8 +689,15 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
 //
 function getSuffix($file_name)
 {
-	$suffix = strrchr($file_name, "."); // Sets suffix to the file type, either jpg or mov
-	$suffix = substr($suffix, 1, strlen($suffix) - 1); // Cleans up $suffix
+	// $suffix = strrchr($file_name, "."); // Sets suffix to the file type, either jpg or mov
+	// $suffix = substr($suffix, 1, strlen($suffix) - 1); // Cleans up $suffix
+  $suffix = "";
+  $matches = array();
+
+  if (preg_match("/^(.*)(\.)(.*)$/", $file_name, $matches)) {
+    $suffix = strtolower($matches[3]);
+  }
+
 	return $suffix;
 } // end of function
 
@@ -1352,7 +1359,9 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 //logp("log","convert: {$add_folder}, {$file}");
   // Makes sure that the cue file is all good
   if (verifyCue($base_folder, $add_folder, $file) !== true){
-    logp("error", "ERROR: '{add_folder}', '{$file}' failed on verifyCue call. Returning.");
+    logp("error", array("ERROR: folder '{$add_folder}',",
+                        "  file '{$file}'",
+                        " failed on verifyCue call. Returning."));
     return false;
   }
 

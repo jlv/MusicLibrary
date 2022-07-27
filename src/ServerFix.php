@@ -22,7 +22,7 @@
   function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options){
     // only looks at cue files
     // changes the directory to $base_folder because we will always stay in it
-    logp("log","ServerFix checking '{$base_folder}', '{$file}'");
+//    logp("log","ServerFix checking '{$base_folder}', '{$file}'");
     chdir($base_folder . '/' . $add_folder);
 
     // $list - array of $add_folder split between every /
@@ -37,17 +37,18 @@
     //if(!file_exists($album . '.cue')){
     //  logp("error", "ERROR: no .cue file found associated with {$base_folder}/{$add_folder}/{$file}");
     //}
-    if (! checkCueCovered($base_folder, $add_folder, "continue"))
-    {
-      logp("error","ERROR: Returning. Failed checkCueCovered.");
-      return false;
-    }
+    if (! checkCueCovered($base_folder, $add_folder, "continue")) return TRUE;
+    // {
+    //   logp("error","ERROR: Returning. Failed checkCueCovered.");
+    //   return false;
+    // }
 
     // check for .jpg file and if it is named folder
-    if(preg_match("/\.jpg$/", $file))
+//    if(preg_match("/\.jpg$/", $file))
+    if (getSuffix($file) == "jpg")
       if ( ! file_exists("folder.jpg"))
         if ( rename($file, "folder.jpg"))
-          logp("info", "JPG rename {$file} to folder.jpg in {$base_folder}/{$add_folder}");
+          logp("log", "JPG rename {$file} to folder.jpg in {$base_folder}/{$add_folder}");
         else
           logp("error", "ERROR: Failure on renaming {$file} to folder.jpg in {$base_folder}/{$add_folder}");
 
@@ -65,18 +66,19 @@
 //    }
 
     // if cue file, check then fix if needed
-    if(preg_match('/\.cue$/i', $file)){
+//    if(preg_match('/\.cue$/i', $file)){
+    if (getSuffix($file) == "cue")
       // checks to see if cue file needs any fixing
 //      if(!cueGood($base_folder, $add_folder, $file)){
-      if(! verifyCue($base_folder, $add_folder, $file, TRUE)){
+      if(! verifyCue($base_folder, $add_folder, $file, TRUE))  {
         // if !cueGood, runs cueFix function
         $checkSpecial = cueFileFix($base_folder, $add_folder, $file);
         // checks for fixCUE using cueFileFix
-        if($checkSpecial === 1){
+        if($checkSpecial === 1)
           logp("info", "Warning: fixCUE ran cueFileFix on {$base_folder}/{$add_folder}. Please confirm validity of new files");
-        }
+
       }
-    }
+
   }
 
 
@@ -128,9 +130,9 @@
     if ($count_arr["return"] =! TRUE) return FALSE;
     $pad = $count_arr["max_pad"];
 
-    print_r($count_arr);
-    $foo=7;
-    print "pad:" . str_pad($foo,$count_arr["cnt_pad"],"0",STR_PAD_LEFT);
+//    print_r($count_arr);
+//    $foo=7;
+//    print "pad:" . str_pad($foo,$count_arr["cnt_pad"],"0",STR_PAD_LEFT);
 
     // crawls through lines in $cuefile
     for($i = 0; $i < count($cuefile); $i++){
@@ -151,7 +153,7 @@
         // remove any file path
         $song = preg_replace("/\\\/", '', $song);
 
-print("SONG:{$song}:\n");
+//print("SONG:{$song}:\n");
 
         // Calculate Long file name:
         // Also checks for too long file name (i.e. NN~AAA~1.wav)
@@ -268,7 +270,8 @@ print("SONG:{$song}:\n");
       logp("log","Verifying new cue file...");
       if (verifyCue($base_folder, $add_folder, $file, false))
         // log conversion complete
-        logp("info","ServerFix successfully transformed '{$file}' in '{$add_folder}'");
+        logp("info",array("ServerFix successfully transformed '{$file}'",
+                          "  in '{$add_folder}'"));
       else  // cleanup
       {
         // unwind all the files to original state
