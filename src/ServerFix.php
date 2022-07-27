@@ -37,9 +37,9 @@
     //if(!file_exists($album . '.cue')){
     //  logp("error", "ERROR: no .cue file found associated with {$base_folder}/{$add_folder}/{$file}");
     //}
-    if (! checkCueExists($base_folder, $add_folder, "continue"))
+    if (! checkCueCovered($base_folder, $add_folder, "continue"))
     {
-      logp("error","ERROR: Returning. Failed checkCueExists.");
+      logp("error","ERROR: Returning. Failed checkCueCovered.");
       return false;
     }
 
@@ -207,9 +207,6 @@ print("SONG:{$song}:\n");
       } // file line
     } // for
 
-    // add line terminators
-    addLineTerm($cuefile);
-
     // Write a cue file
 //    if(isDryRun())
 //    {
@@ -224,15 +221,20 @@ print("SONG:{$song}:\n");
 
     // write original, pre-Convertable cuefile
     logp("log","Writing original, pre-convertable cuefile as '${file}.orig'");
-    if ( ! file_put_contents($file . ".orig", $cuefile))
+    $orig = $cuefile;
+    // add line terminators
+    addLineTerm($orig);
+    if ( ! file_put_contents($file . ".orig", $orig))
       logp("error,exit1","FATAL ERROR: could not write original cuefile '${file}.orig'");
 
     // finally gets to making a .cue file that is mp3 converter friendly
-    if (! makeCueConvertable($cuefile))
-    {
+    if (! makeCueConvertable($cuefile))  {
       logp("error,info","ERROR: could not make file '{$file}' to a convertable file. Check errors.");
       return FALSE;
     }
+
+    // add line terminators
+    addLineTerm($cuefile);
 
     // Sequence:
     //  - write candidate .cue.new file

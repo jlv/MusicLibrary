@@ -72,7 +72,8 @@ elseif ($hostname == "Rising-Sun")
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   //$srcdir = "N:/QT";
-  $srcdir = "N:/QT-Rip2";
+//  $srcdir = "N:/QT-Rip2";
+  $srcdir = "N:/QT-Rip4/Succeed";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory
@@ -182,20 +183,22 @@ $conversions=array();
 // mp3-128 converter
 $conversions["mp3-128"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
       "base_folder"=>$conversion_base_dir . "/MP3-128", "cd_dir"=>"TRUE",
-      "pre-cue"=>" /dest mp3 /cbr 128 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
+      "pre-cue"=>" /dest mp3 /cbr 128 -i ",
+      "pre-out"=>" /usesource /pfilename \"%track% %title%\" -o ",
+      "post-out"=>"",
       "image"=>"FALSE");
 
-// mp3-192 converter
-$conversions["mp3-192"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
-      "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>"TRUE",
-      "pre-cue"=>" /dest mp3 /cbr 192 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
-      "image"=>"FALSE");
-
-// mp3-320 converter
-$conversions["mp3-320"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
-      "base_folder"=>$conversion_base_dir . "/MP3-320", "cd_dir"=>"TRUE",
-      "pre-cue"=>" /dest mp3 /cbr 320 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
-      "image"=>"FALSE");
+// // mp3-192 converter
+// $conversions["mp3-192"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+//       "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>"TRUE",
+//       "pre-cue"=>" /dest mp3 /cbr 192 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
+//       "image"=>"FALSE");
+//
+// // mp3-320 converter
+// $conversions["mp3-320"] = array("convert"=>"TRUE", "converter"=>$dflt_converter,
+//       "base_folder"=>$conversion_base_dir . "/MP3-320", "cd_dir"=>"TRUE",
+//       "pre-cue"=>" /dest mp3 /cbr 320 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
+//       "image"=>"FALSE");
 
 
 // parameters to feed converter
@@ -220,7 +223,7 @@ $sys_time_zone='America/Los_Angeles';
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
 $isDryRun=false;
-$isDryRun=true;
+//$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

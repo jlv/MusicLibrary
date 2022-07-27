@@ -16,6 +16,7 @@ function moveCues($directory)  {
   // initialize
   global $cue_rip_dir_tag;
   $matches = array();
+  $files_used = array();
   $return=TRUE;
 
   // check that we are called from a ripping directory
@@ -26,29 +27,36 @@ function moveCues($directory)  {
         "  The file '{$cue_rip_dir_tag}' must exist in this directory. Exiting."));
 
   // check that trash directory exists or can be made
-  if (! moveToTrash(array())) return FALSE;
+  if (! moveToTrash()) return FALSE;
+//  if (! moveToTrash(array())) return FALSE;
 //  $goodCue = '';
 
   // sees if there are multiple cue files for album. Runs multiMove is there are
   foreach(array(TRUE, FALSE) as $check) {
     logp("log","Pass for all files where check is " . $check);
 
-  $dir_r = opendir($directory);
-    $files_used = array();
+    $dir_r = opendir($directory);
     $setup_reg = FALSE;
+    $trash = array();
+    $trashed = array();
 
-  while(($file = readdir($dir_r)) !== false) {
-    // NOTE $file is name.cue
-print "\n\nNext ({$check}) FILE: {$file}\n";
-    // initialize variables to process each file
-    $wav=array();
-//    $trash=array();
-    $cuefile=array();
+    while(($file = readdir($dir_r)) !== false) {
+      // NOTE $file is name.cue
+//  print "\n\nNext ({$check}) FILE: {$file}\n";
+      // initialize variables to process each file
+      $wav=array();
+  //    $trash=array();
+      $cuefile=array();
 
-    // handle only cue files
-    if(getSuffix($file) === "cue")  {
-      // check file use, if in real processing mode
-       if (! fileChecked($file, $files_used, $check)) return FALSE;
+      // handle only cue files
+      if(getSuffix($file) != "cue") continue;
+
+      // skip if file is in $trashed list
+      if(fileChecked($file, $trashed, FALSE, TRUE)) continue;
+//print "passed trash check\n";
+      // if in second pass (if $check is FALSE), check that file was
+      //     picked up for use in first pass in the files_used list
+      if (! fileChecked($file, $files_used, $check)) return FALSE;
 
       // // initialize on every new cue file
       // $multi_files=array();
@@ -59,7 +67,7 @@ print "\n\nNext ({$check}) FILE: {$file}\n";
       // get album title from cue file (errors will have already displayed)
       if (($cue_title = getCueInfo("album", $file)) == FALSE) continue;
 
-print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
+//print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
       // logic for establishing multi mode
       //  - if ends in [-]1:
       //     - check if title matches with the [-]1:
@@ -84,7 +92,7 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
         if ($cue_title == $ftitle)
           // look for multi, otherwise process as single
           if (findMulti(array("1", "-1", "2", "-2"), $ftitle) == TRUE) continue;
-          else $setupRet = setupSingle($file, $cuefile, $wav, $files_used);
+          else $setupRet = setupSingle($file, $cuefile, $wav, $files_used, $trash);
 //          $setupRet = setupSingle($file, $cuefile, $wav, $trash);
         elseif ($cue_title != $base_title) {
           // orphaned file
@@ -108,13 +116,13 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
         }
 //print "MADE to setupMulti\n";
         // made it here.  It's a multi with this as the lead file.
-        $setupRet = setupMulti($file, $cuefile, $wav, $files_used);
+        $setupRet = setupMulti($file, $cuefile, $wav, $files_used, $trash);
 
       }  // if preg match 1.cue
 
       // multi: check if title[-][12] files exist,then skip for multi
       elseif (findMulti(array("1", "-1", "2", "-2"), $ftitle) == TRUE) {
-        print "FINDMULTI worked for -12\n";
+  //  print "FINDMULTI worked for -12\n";
         continue;
       }
 
@@ -123,9 +131,9 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
       //         of multi in above test
       elseif  ($ftitle == $cue_title)
       {
-        print "SINGLE passed\n";
+//        print "SINGLE passed\n";
 
-        $setupRet = setupSingle($file, $cuefile, $wav, $files_used);
+        $setupRet = setupSingle($file, $cuefile, $wav, $files_used, $trash);
       }
 
       // multi check \d*.cue and matches, skip
@@ -239,7 +247,7 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
 
       // write candidate file if not in CHECK mode
       if ($check == FALSE) {
-        print "In Check False Write\n";
+//        print "In Check False Write\n";
         if ( ! file_put_contents($newpath . ".cand", $cuefile))  {
           logp("error,exit1", array("FATAL ERROR: could not write candidate cuefile",
                     "  '${newpath}.cue.cand'"));
@@ -263,7 +271,7 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
       // if $check is false, verify actual file and make moves
       // verify current cuefile array, with file testing
       if ($check == FALSE) {
-        if (! isDryRun && ! verifyCue( '', $dir, $newfile . ".cand")) {
+        if (! isDryRun() && ! verifyCue( '', $dir, $newfile . ".cand")) {
           logp("error", array(
                  "ERROR: proposed cuefile did not verify. Skipping", " File '{$newfile}'"));
           $return=FALSE; continue;
@@ -277,9 +285,9 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
         }  // dryRun
 
         // move to trash
-        moveToTrash($files_used);
+        moveToTrash($trash, $trashed);
       } // end of $check == FALSE (just above)
-    }  // end get suffix = cue
+    //}  // end get suffix = cue
   }  // end while directory/read file loop
 
   // if in check mode, check for error condition, then reinitialize vars as needed
@@ -292,7 +300,6 @@ print "reading cue:\n  File '{$ftitle}'\n  Cue '{$cue_title}'\n";
     }
   }
 
-print "End of check loop\n";
    // close directory on the way out
    closedir($dir_r);
   } // end check mode
@@ -324,17 +331,18 @@ function findMulti( $endings, $base_title )  {
   return FALSE;
 }
 
-// function: setupSingle($file, $cuefile, $wav, &$files_used
+// function: setupSingle($file, $cuefile, $wav, &$files_used, &$trash
 //  $file - filename full (but no directories)
 //  $cuefile - cuefile array to be returned
 //  $wav - wav array to transport wav files
 //  $files_used - array of cue files that have been used. Adds to this array.
+//  $trash - array for to be trashed
 //
 // Returns TRUE if successul, FALSE on failure
 //
 // sets up arrays for a single album
 
-function setupSingle($file, &$cuefile, $wav, &$files_used) {
+function setupSingle($file, &$cuefile, $wav, &$files_used, &$trash) {
   $cuefile = file($file, FILE_IGNORE_NEW_LINES);
   if ( $cuefile === false )
     logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
@@ -366,21 +374,23 @@ function setupSingle($file, &$cuefile, $wav, &$files_used) {
 
   // add to files_used, and trash
   $files_used[] = $file;
+  $trash[] = $file;
 
   return TRUE;
 }
 
-// function: setupMulti($file, $cuefile, $wav, &$files_used
+// function: setupMulti($file, $cuefile, $wav, &$files_used, &trash
 //  $file - filename full (but no directories)
 //  $cuefile - cuefile array to be returned
 //  $wav - wav array to transport wav files
 //  $files_used - array of cue files that have been used. Adds to this array.
+//  $trash - array for to be trashed
 //
 // Returns TRUE if successul, FALSE on failure
 //
 // sets up arrays for a multidisk album
 
-function setupMulti($file, &$cuefile, $wav, &$files_used) {
+function setupMulti($file, &$cuefile, $wav, &$files_used, &$trash) {
   // initialize
   $files = array();
 
@@ -395,7 +405,9 @@ function setupMulti($file, &$cuefile, $wav, &$files_used) {
   if(preg_match("/(-?)1.cue$/", $file, $matches)){
     // set base title
     $base_title = substr($file, 0, -strlen($matches[1] . "1.cue"));
+    // bookkeeping
     $files_used[] = $file;
+    $trash[] = $file;
 
     // log cuefile
     logp("log","Processing multi disc cuefile '{$file}'");
@@ -420,7 +432,7 @@ function setupMulti($file, &$cuefile, $wav, &$files_used) {
     while ( $k > 0 ) {
       if ($k == 1) $ends=array(""); else $ends=array($k,"-{$k}");
       foreach($ends as $end) {
-       print "Multi find files: k={$k}, end '{$end}',\n  base:'{$base_title}'\n";
+// print "Multi find files: k={$k}, end '{$end}',\n  base:'{$base_title}'\n";
         $nfile = $base_title . $end . ".cue";
         if ( file_exists($base_title . $end . ".cue")) {
           // reset endCheck
@@ -484,8 +496,9 @@ function setupMulti($file, &$cuefile, $wav, &$files_used) {
           if ($fileFound == TRUE ) $cuefile[] = $nline;
         }  // end of foreach
 
-        // add to files used
+        // add to files used, trash
         $files_used[] = $nfile;
+        $trash[] = $nfile;
 
       }  // end of else nfile (!= "")
     }  // end of while K
@@ -580,8 +593,9 @@ function trackify(&$cuefile, &$wav, $pad)  {
     if( preg_match("/^\s*TRACK\s+/", $cuefile[$i])) {
       if ($track != "") {
         $cuefile[$i] = preg_replace("/(^\s*TRACK\s+)(\d+)(.*)/",
-                 '${1}' . str_pad($track, 2, "0", STR_PAD_LEFT) . '${3}',
+                  '${1}' . str_pad($track, $pad, "0", STR_PAD_LEFT) . '${3}',
                   $cuefile[$i]);
+  //               '${1}' . str_pad($track, 2, "0", STR_PAD_LEFT) . '${3}',
         $track="";
       }
     } // end of if TRACK
@@ -591,28 +605,31 @@ function trackify(&$cuefile, &$wav, $pad)  {
   return TRUE;
 }
 
-// function: fileChecked($file, $files_used, $check)
+// function: fileChecked($file, $files_used, $check, [$skip_error])
 //  $file - file
 //  $files_useds - array maintained of every cue file used
 //  $check - if $check = FALSE, perform file check
+//  $skip_error - if TRUE, skips reporting error
 //
 // Returns true if either check is true or if file passed a check
 //
 // Helper function to check file
 
-function fileChecked($file, $files_used, $check) {
-  if ($check == TRUE); return TRUE;
+function fileChecked($file, $files_used, $check, $skip_error = FALSE) {
+  if ($check == TRUE) return TRUE;
 
   // loop through array looking for match
   foreach($files_used as $file_check)
     if ($file_check == $file) return TRUE;
 
   // made it through array without a match. error.
-  logp("error",array(
+  if ($skip_error == FALSE)
+    logp("error",array(
            "ERROR: cue file not used in pass as single title or part of multi CD.",
            "   Usually a file name is out of whack or a file in a multi CD rip",
            "   is missing. Please check files and run again. No cues were moved.",
            "   File: '{$file}'"));
+
   return FALSE;
 }
 

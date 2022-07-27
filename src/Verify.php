@@ -20,7 +20,7 @@ $verify_no_cue_dir="";
 function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 //  global $verify_no_cue_dir;
 
-  logp("log","Checking {$add_folder}/{$file}");
+//  logp("log","Checking {$add_folder}/{$file}");
 
   $return = true;
 
@@ -28,14 +28,13 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 
 //  if ( $verify_no_cue_dir == "{$base_folder}/{$add_folder}" )
 //    return $return;
-//  elseif ( checkCueExists($base_folder, $add_folder))
-  if ( checkCueExists($base_folder, $add_folder))
+//  elseif ( checkCueCovered($base_folder, $add_folder))
+  if ( checkCueCovered($base_folder, $add_folder, "continue")) {
     $return = verifyCue($base_folder, $add_folder, $file);
-  else
-  {
-//    $verify_no_cue_dir = "{$base_folder}/{$add_folder}";
-    $return = false;
+    if ( $return == FALSE)
+      logp("error", array("Verified FAILED!: {$add_folder},",  "   '{$file}'"));
   }
+
   return $return;
 }
 
@@ -45,6 +44,9 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 logp_init("Verify", "", "echo[error]");
 
 // execute through crawl
-crawl($srcdir, '', '', "verify", array());
+if (crawl($srcdir, '', '', "verify"))
+  logp("echo","Verification pass completed.");
+else
+  logp("echo","Verification pass completed, but with errors.  Check logs.");
 
 ?>

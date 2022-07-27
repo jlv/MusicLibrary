@@ -29,11 +29,16 @@ require "MusicParams.inc";
 $_base["release_version"]="0.6";
 
 
-// Set endofline char based on OStype
-if ($OStype == "Windows")
+// base on OStype, set EOL character, filesep character, and filesep to be used in strings
+if ($OStype == "Windows") {
   $_base['EOL'] = "\r\n";
-else
-  $_base['EOL']="\n";
+  $_base['filesep'] = '\\';
+  $_base['filesepstr'] = '\\\\\\';
+} else {
+  $_base['EOL'] = "\n";
+  $_base['filesep'] = '/';
+  $_base['filesepstr'] = '\\/';
+}
 
 //
 // set time zone
@@ -628,20 +633,18 @@ function isDryRun(){
 // Note: uses '/' to delimit directories.  This works on windows platforms as well.
 //
 
-function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options)
+function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options = array())
 {
   global $debug;	// global debug flag
+  $return = TRUE;
 
   // concat $base_folder and $add_folder if $add_folder exists
   //   $catfolder is full folder name
   //   $catfile is delimter based on whether we are adding to existing $add_folder
-  if ($add_folder == '' )
-  {
+  if ($add_folder == '' )  {
     $catfolder = $base_folder;
     $catfile = '';
-  }
-  else
-  {
+  } else {
     $catfolder = $base_folder . "/" . $add_folder;
     $catfile = '/';
   }
@@ -649,8 +652,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
   if ( $debug == 1 ) print "\n\nCrawl: in FOLDER:" . $catfolder . "\n\n";
 
   // check if $catfolder is a directory, then jump in
-  if((is_dir($catfolder)) && ($catfolder != ".") && ($catfolder != ".."))
-  {
+  if((is_dir($catfolder)) && ($catfolder != ".") && ($catfolder != "..")) {
     // Procedes if $folder is a directory
     //   Open directory, read directory contents, and iterate through
     $dir = opendir($catfolder); // Creates a directory handle
@@ -661,13 +663,14 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
         print '';
       else if((is_dir($catfolder . '/' .$file)))
         // nested crawl.  Note concating $file to extend $add_folder
-        crawl($base_folder, $add_folder . $catfile . $file, $new_base_folder, $ufunction, $options);
+        $return = crawl($base_folder, $add_folder . $catfile . $file, $new_base_folder, $ufunction, $options);
       else
         // call user function on $file
         if (is_callable($ufunction, FALSE))
-          call_user_func($ufunction, $base_folder, $add_folder, $new_base_folder, $file, $options);
+          $return = call_user_func($ufunction, $base_folder, $add_folder, $new_base_folder, $file, $options);
         else
-          logp("echo,error,exit1","User function '" . $ufunction . "' is not callable.");
+          logp("echo,error,exit1",
+                  "FATAL ERROR crawl: User function '" . $ufunction . "' is not callable.");
 
      // close directory
      closedir($dir);
@@ -676,6 +679,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     // If selected file is not a folder, print error
     logp("echo,error,exit1","Error: folder \"$catfolder\" is not a folder. Exiting.");
 
+  return $return;
 } // end of crawl function
 
 
@@ -705,18 +709,80 @@ function fileAge($file_name)
 }// end of function
 
 
-// function checkCueExists($base_folder, $add_folder, $file)
+// function checkNoCue($path)
+//  $path - path to file or directory
+//
+// Returns: TRUE if directory is a "no cue" directory in which cue files should
+//   not be tested or expect.  FALSE otherwise.
+//
+// Tests whether the directory in the path has a .nocue file present.
+// if $path is a file, the directory is taken
+
+function checkNoCue($path)  {
+  global $_base;
+
+  // trim path if trailing /
+  $path = preg_replace("/\/$/", '', $path);
+
+  $flist = explode('/', $path);
+  $fcount = count($flist);
+  $name = NULL;
+  $prepath = NULL;
+  $matches = array();
+
+// print "\nSTART checknoCUE {$fcount}\n";
+//   print_r($flist);
+
+  // check if directory and get name, otherwise find name from file
+  if (is_dir($path)) {
+    if ($fcount > 1) {
+      $name = $flist[$fcount - 1];
+      $prepath = $path;
+    }
+  } else {
+    if ($fcount > 1) {
+      $name = $flist[$fcount - 2];
+      if (preg_match("/^(.*)\//", $path, $matches))
+           $prepath = $matches[1];
+
+    }
+  } // end else is_dir
+
+  // if no name, use cwd
+  if ($name == NULL) {
+//print "  in NONAME, base:{$_base['filesep']}:{$_base['filesepstr']}:\n";
+    $cwd = getcwd();
+    // replace filesep with /
+    $cwd = str_replace($_base['filesep'], '/', $cwd);
+//    $cwd_array = explode($_base['filesep'], $cwd);
+    $cwd_array = explode('/', $cwd);
+    $name = end($cwd_array);
+    $prepath = ".";
+    if ($name == NULL) return FALSE;
+  }
+
+//print "NOCUE:{$fcount}:${path}:\n  :{$prepath}:\n  :{$name}:\n";
+  // look for nocue
+  if (file_exists( $prepath . "/" . $name . ".nocue"))  return TRUE;
+
+  return FALSE;
+}
+
+
+// function checkCueCovered($base_folder, $add_folder, $file, $check_type)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
-//  $check_type - "continue" - will continue if cuefile is found and depth at $cue_file_dir_depth,
-//                   "error" will error if cuefile is not found and .nocue is not present.
+//  $check_type - "continue" - will continue if cuefile is found and depth at $cue_file_dir_depth
+//                   so that the cuefile can be used.  Will error if there should be a cuefile there.
+//                   "error" will error if cuefile is not found and .nocue is not present
+//                   and there should be a cuefile there.
 //
-//  checkCueExists checks if cue file exists in directory. If $album.nocue exists
+//  checkCueCovered checks if cue file exists in directory. If $album.nocue exists
 //   returns success even though there is not a cue file.
 //
 //  returns FALSE if cue file is needed, TRUE if not needed
 
-function checkCueExists($base_folder, $add_folder, $check_type = "error") {
+function checkCueCovered($base_folder, $add_folder, $check_type = "error") {
   global $cue_file_dir_depth;
 
   // $flist - array of $add_folder split between every /
@@ -727,43 +793,48 @@ function checkCueExists($base_folder, $add_folder, $check_type = "error") {
   $album = $flist[$fcnt - 1];
 
   // look for cuefile if file depth greater than 2 (album level in file heirachy)
-  if( $check_type == "continue" )
+  if( $check_type == "continue" ) {
     if ( $fcnt >= $cue_file_dir_depth &&
        file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue'))
       return true;
-    else
-    {
-      logp("error","checkCueExists: cue file not found: {$base_folder}/{$add_folder}/{$album}.cue, Fcnt:{$fcnt}");
+    elseif ( $fcnt < $cue_file_dir_depth ||
+            file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
+      return false;
+    else {
+     logp("error", array("ERROR checkCueCovered: cue file not found. Fcnt:{$fcnt}",
+                         "  '{$base_folder}/{$add_folder}'"));
       return false;
     }
-  elseif( $check_type == "error" )
+  }
+  elseif ( $check_type == "error" )
     if ( $fcnt >= $cue_file_dir_depth &&
        ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.cue') &&
        ! file_exists($base_folder . '/' . $add_folder . '/' . $album . '.nocue'))
     {
-      logp("error", "ERROR: no .cue file found in {$base_folder}/{$add_folder}");
+     logp("error", array("ERROR checkCueCovered: no .cue file found.  Fcnt:{$fcnt}",
+                          "    {$base_folder}/{$add_folder}"));
       return false;
     }
     else
       return true;
   else // back $check_type
   {
-    logp("error", "ERROR in checkCueExists: $check_type \"{$check_type}\" must be either 'continue' or 'error'.");
-    return false;
+      logp("error", "ERROR in checkCueCovered: $check_type \"{$check_type}\" must be either 'continue' or 'error'.");
+      return false;
   }
-}
+
+} // end of function
 
 
 // function verifyCue($base_folder, $add_folder, $file, [$silent = false], [&$cuefile] [skip_file])
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
 //  $file - filename within containing folder
-//  $silent - performs function without producing errors in logs. Used when
+//  $silent - performs function without producing errors or verification in logs. Used when
 //             evaluation is needed rather than error reporting.
 //  $cuefile - cuefile array to be tested. if $cuefile is provided, it is used
 //             instead of reading the file.
 //  $skip_file - if TRUE, skip file testing
-//
 //
 // Returns TRUE if successul, FALSE on failure
 //
@@ -793,9 +864,15 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   //
   // $flist - array of $add_folder split between every /
   $flist = preg_split("/\//", $add_folder);
-  // $album - last input of $list, which will be the album title
-  $album = $flist[count($flist) - 1];
-  $artist = $flist[count($flist) - 2];
+// JLV try this:
+// $flist = explode('/', $add_folder);
+  // get artist/album
+  $list_count=count($flist);
+  // if less than album/artist, return
+  if ($list_count < 2) return TRUE;
+
+  $album = $flist[$list_count - 1];
+  $artist = $flist[$list_count - 2];
 
   // check for non-null $album, $artist
   if ($album == NULL)
@@ -814,22 +891,29 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   }
 
   // check for .nocue existance
-  if(file_exists($pre_path . $album . '.nocue'))
-  {
-    logp("log","Verify found .nocue file. Skipping verification of {$base_folder}/{$add_folder}");
-    return true;
+//  if(file_exists($pre_path . $album . '.nocue'))
+  if (checkNoCue($pre_path))  {
+    logp("log","Verify found .nocue file. Skipping verification of {$pre_path}'");
+    return TRUE;
   }
 
+  //
+  // check for cue
+  //
   // if file is a cue file or candidate (.cue.cand) file
-  if(preg_match('/\.cue$/i', $file) || preg_match('/\.cue\.cand$/i', $file))
-  {
+  if(preg_match('/\.cue$/i', $file) || preg_match('/\.cue\.cand$/i', $file)) {
+    // general log
+    // keep it quiet?
+    if ( $silent == false )
+      logp("log", array("Verifying: {$add_folder},", "   '{$file}'"));
+
     //
     // check if cue file base matches folder album name
     //
     // strip getSuffix
     $base = preg_replace("/\.cand$/", '', $file);
     $base = preg_replace("/\.cue$/", '', $base);
-print "BASE:{$base}\n";
+//print "BASE:{$base}\n";
 
     if ($base != $album)
     {
@@ -1264,24 +1348,36 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   global $conversions;
 
   // return if not a .cue file
-  if(!preg_match('/\.cue$/i', $file)){
-    return;
-  }
+  if (! preg_match('/\.cue$/i', $file))  return TRUE;
+//logp("log","convert: {$add_folder}, {$file}");
   // Makes sure that the cue file is all good
-  if(verifyCue($base_folder, $add_folder, $file) !== true){
+  if (verifyCue($base_folder, $add_folder, $file) !== true){
     logp("error", "ERROR: '{add_folder}', '{$file}' failed on verifyCue call. Returning.");
     return false;
   }
 
-  // first much check if the album and songs exist in $new_base_folder
+  $pre_path = $base_folder;
+  if ( $base_folder != "" ) $pre_path .= '/';
+  $pre_path .= $add_folder;
+
+  // check for noCue
+  if (checkNoCue($pre_path)) return TRUE;
+
+  // get info from folder
+
   $list = preg_split("/\//", $add_folder);
-  if (count($list) < 2)
-    log("error,exit2",array(
-          "FATAL ERROR in convertFromCue: $add_folder param must have an artist level",
-          "  and album level. Offending value is: '{$add_folder}'")
-        );
-  $album = $list[count($list) - 1];
-  $artist = $list[count($list) - 2];
+
+  // first much check if the album and songs exist in $new_base_folder
+  $list_count = count($list);
+  if ($list_count < 2) return TRUE;
+  // if ($list_count < 2)
+  //   logp("error,exit2",array(
+  //         "FATAL ERROR in convertFromCue: $add_folder param must have an artist level",
+  //         "  and album level. Offending value is: '{$add_folder}'")
+  //       );
+
+  $album = $list[$list_count - 1];
+  $artist = $list[$list_count - 2];
 
   // check if new base_folder exists
 //  if (! file_exists($new_base_folder))
@@ -1337,7 +1433,9 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   }  // foreach
 
   // inform
-  logp("info","Converted '{$add_folder}', '{$file}', from '{$base_folder}'");
+  logp("info",array("Converted '{$add_folder}',",
+                "   '{$file}', ",
+                "   from '{$base_folder}'"));
   return;
 }
 
@@ -1421,10 +1519,15 @@ function moveWav(&$wav, $reverse = false, $test_exist = false)  {
 
 // function moveToTrash($trash)
 //  $trash - array of file names or file paths to move to trash directory
+//  $trashed - array of file names or file paths that have been moved to trash directory
 //
-// moves (renames) each file in array to trash directory in current directory
+// Returns TRUE on success, FALSE on failure
+//
+// moves (renames) each file in array to trash directory in current directory,
+//  removes file from list, then moves file name to trashed list
 
-function moveToTrash($trash) {
+
+function moveToTrash(&$trash = array(), &$trashed = array()) {
   global $trash_name;
   $return = TRUE;
 
@@ -1434,14 +1537,22 @@ function moveToTrash($trash) {
       logp("error,exit1",
             "FATAL ERROR: trash directory, '{$trash_name}' does not exist and cannot be made.");
 
-print_r($trash);
+  // if .nocue file doesn't exist, make it
+  if (! file_exists($trash_name . "/" . $trash_name . ".nocue"))
+    if (! file_put_contents($trash_name . "/" . $trash_name . ".nocue", array("No cue")))
+      logp("error,exit1",
+            "FATAL ERROR: trash no cue file, '{$trash_name}.nocue' does not exist and cannot be made.");
+//print "IN Trash\n";
+//print_r($trash);
+//print_r($trashed);
   // loop through and move files
-  foreach($trash as $file) {
-    // strip off precending path
+  foreach($trash as $key=>$file) {
+    // strip off and precending path
+// JLV: is there one?
     $filename = preg_replace("/^.*\//", '', $file);
     $filename = preg_replace("/^.*\\\/", '', $filename);
 
-print "Trash File:{$file}\nFilename:{$filename}\n";
+//print "Trash File:{$file}\nFilename:{$filename}\n";
 
     // Dry Run vs. real
     if (isDryRun())
@@ -1451,6 +1562,11 @@ print "Trash File:{$file}\nFilename:{$filename}\n";
                     " Please check."));
       $return = FALSE;
     }
+
+    // bookkeeping
+    unset($trash[$key]);
+    $trashed[] = $file;
+
   } // end of foreach
 
   return $return;
