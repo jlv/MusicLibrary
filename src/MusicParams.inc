@@ -224,7 +224,7 @@ $sys_time_zone='America/Los_Angeles';
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
 $isDryRun=false;
-//$isDryRun=true;
+$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

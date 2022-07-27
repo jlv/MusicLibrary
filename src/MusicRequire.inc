@@ -1612,6 +1612,40 @@ if(!function_exists("readline")) {
   }
 }
 
+// function getArgOptions($argv, &$options)
+//  $argv - argv from command line
+//  $options - array in which to return options
+//
+// Returns: TRUE if option loaded, FALSE if no option found
+//
+// Takes a regular argv, looks though each arg: if starts with --
+//  assumes it's an option.  If --option=value, then creates a key=>value
+//  pair in $options, otherwise creates a key=>TRUE pair.
+
+function getArgOptions($argv, &$options = array())  {
+  $return = FALSE;
+  $options=array();
+  $arg_arr=array();
+
+  // look through options, skipping [0]
+  for ($i=1; $i < count($argv); $i++) {
+    // if arg starts with --
+    if (substr($argv[$i],0,2) == '--') {
+      $arg_arr = explode('=',substr($argv[$i],2));
+        if (isset($arg_arr[1]))
+          $options[$arg_arr[0]] = $arg_arr[1];
+        else
+          $options[$arg_arr[0]] = TRUE;
+
+      $return=TRUE;
+    }
+  } // end of for loop
+
+  return $return;
+}
+
+
+
 // show that we're debugging as an example
 if (debug()) logp("echo","Debugging turned on.");
 
