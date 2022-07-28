@@ -92,7 +92,7 @@ function moveCues($directory)  {
         if ($cue_title == $ftitle)
           // look for multi, otherwise process as single
           if (findMulti(array("1", "-1", "2", "-2"), $ftitle) == TRUE) continue;
-          else $setupRet = setupSingle($file, $cuefile, $wav, $files_used, $trash);
+          else $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
 //          $setupRet = setupSingle($file, $cuefile, $wav, $trash);
         elseif ($cue_title != $base_title) {
           // orphaned file
@@ -116,7 +116,7 @@ function moveCues($directory)  {
         }
 //print "MADE to setupMulti\n";
         // made it here.  It's a multi with this as the lead file.
-        $setupRet = setupMulti($file, $cuefile, $wav, $files_used, $trash);
+        $setupRet = setupMulti($file, $cuefile, $files_used, $trash);
 
       }  // if preg match 1.cue
 
@@ -133,7 +133,7 @@ function moveCues($directory)  {
       {
 //        print "SINGLE passed\n";
 
-        $setupRet = setupSingle($file, $cuefile, $wav, $files_used, $trash);
+        $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
       }
 
       // multi check \d*.cue and matches, skip
@@ -217,6 +217,7 @@ function moveCues($directory)  {
         $return=FALSE; continue;
       }
 
+// JLV: may not need pad elsehwere -- can put in trackify?
       // check if over 99 tracks and set $pad
       $count_arr = countTracks($cuefile);
       if ($count_arr["return"] =! TRUE) {
@@ -225,7 +226,7 @@ function moveCues($directory)  {
       $pad = $count_arr["max_pad"];
 
       // trackify file to appropriate tracks, and populate $wav array
-      if (! trackify($cuefile, $wav, $pad)) {
+      if (! trackifyCue($cuefile, $wav, $pad)) {
         $return=FALSE; continue;
       }
       // finish wav array with directories
@@ -331,10 +332,9 @@ function findMulti( $endings, $base_title )  {
   return FALSE;
 }
 
-// function: setupSingle($file, $cuefile, $wav, &$files_used, &$trash
+// function: setupSingle($file, $cuefile, &$files_used, &$trash
 //  $file - filename full (but no directories)
 //  $cuefile - cuefile array to be returned
-//  $wav - wav array to transport wav files
 //  $files_used - array of cue files that have been used. Adds to this array.
 //  $trash - array for to be trashed
 //
@@ -342,7 +342,7 @@ function findMulti( $endings, $base_title )  {
 //
 // sets up arrays for a single album
 
-function setupSingle($file, &$cuefile, $wav, &$files_used, &$trash) {
+function setupSingle($file, &$cuefile, &$files_used, &$trash) {
   $cuefile = file($file, FILE_IGNORE_NEW_LINES);
   if ( $cuefile === false )
     logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
@@ -379,10 +379,9 @@ function setupSingle($file, &$cuefile, $wav, &$files_used, &$trash) {
   return TRUE;
 }
 
-// function: setupMulti($file, $cuefile, $wav, &$files_used, &trash
+// function: setupMulti($file, $cuefile, &$files_used, &trash
 //  $file - filename full (but no directories)
 //  $cuefile - cuefile array to be returned
-//  $wav - wav array to transport wav files
 //  $files_used - array of cue files that have been used. Adds to this array.
 //  $trash - array for to be trashed
 //
@@ -390,7 +389,7 @@ function setupSingle($file, &$cuefile, $wav, &$files_used, &$trash) {
 //
 // sets up arrays for a multidisk album
 
-function setupMulti($file, &$cuefile, $wav, &$files_used, &$trash) {
+function setupMulti($file, &$cuefile, &$files_used, &$trash) {
   // initialize
   $files = array();
 
@@ -513,7 +512,7 @@ function setupMulti($file, &$cuefile, $wav, &$files_used, &$trash) {
 }
 
 
-// function trackify(&cuefile, &$wav, $pad)
+// function trackifyCue(&cuefile, &$wav, $pad)
 //  &$
 //  $cuefile - cuefile array to be returned
 //  $wav - wav array to transport wav files
@@ -524,7 +523,7 @@ function setupMulti($file, &$cuefile, $wav, &$files_used, &$trash) {
 //  Helper function to rewrite tracks in wav file, remove extra directories
 //   in path name, etc.  Loads $wav
 
-function trackify(&$cuefile, &$wav, $pad)  {
+function trackifyCue(&$cuefile, &$wav, $pad)  {
   // initialize
   $matches = array();
   $tracks = array();

@@ -3,6 +3,7 @@
   print "Accessed MultiDisk.inc\n\n";
 
   // $finalDir - directory of combined multi-disk
+  //    (which is also name of cue, name of album)
   $finalDir = "Christmas Oratorio";
 
   // $multiDisks - array of all disks and their full name. Must be put in order (i.e. disk 1, then disk 2, etc.)

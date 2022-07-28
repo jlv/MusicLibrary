@@ -7,13 +7,60 @@ require "MusicRequire.inc";
 logp_init("MultiDisk", "");
 
 // check if Rename.inc exists in local directory, then require if exists
-if (file_exists("MultiDisk.inc"))
+if (file_exists("./MultiDisk.inc"))
   require "./MultiDisk.inc";
-else
-{
+else {
   logp ("echo,error,exit1",
-        "Could not find variables file \"Rename.inc\" in working directory. Exiting");
+        "FATAL ERROR: Could not find variables file \"Multidisk.inc\" in calling directory. Exiting");
 }
+
+// initialize globals
+$cuefile = array();
+$cue_meta = array();
+
+
+
+
+// setup the merge
+
+// confirm parameters with user
+
+
+// execute
+
+
+
+// Basic flow:
+//  Find files, check artist/album, load in cuefile with metadata
+//  Trackify and fixup where needed
+//  Load each cuefile path into $trash for later processing
+//
+
+
+function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options)
+  // globals from parameter
+  global $finalDir;
+  global $multiDisks;
+
+  // locate and make if needed finalDir
+//  if (! is_dir($finalDir))
+//    if (! mkdir($fi))
+
+  // loop through each dir/name, reading file and merging to array
+  foreach ($multiDisks as $disc) {
+    //
+    // get ncuefile
+    if (! file_exists($disc . "/" . $disc . ".cue")
+      log("error,exit1","FATAL ERROR: cannot find cuefile '{$disk}/{$disc}.cue'.");
+
+    if (($ncuefile = file)
+      log("error,exit1","FATAL ERROR: cannot find cuefile '{$disk}/{$disc}.cue'.");
+
+  }
+
+
+
+
 // function intro($currentDir, $oldDir, $newDir, $trackExcerpt)
 // $finalDir - directory of combined multi-disk
 // $multiDisks - array of all dist add ones (i.e. Disc 1, (Disc 1), or nothing)
@@ -263,16 +310,9 @@ function combine($finalDir, $multiDisks){
   }
 }
 
-
-// function isDryRun()
-//  no input parameters
 //
-// isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
-// returns global $isDryRun
-function isDryRun(){
-  global $isDryRun;
-  return $isDryRun;
-}
+// Main program
+//
 
 intro();
 
