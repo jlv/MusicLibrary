@@ -56,7 +56,7 @@ function moveCues($directory)  {
 //print "passed trash check\n";
       // if in second pass (if $check is FALSE), check that file was
       //     picked up for use in first pass in the files_used list
-      if (! fileChecked($file, $files_used, $check)) return FALSE;
+//      if (! fileChecked($file, $files_used, $check)) return FALSE;
 
       // // initialize on every new cue file
       // $multi_files=array();
@@ -226,7 +226,8 @@ function moveCues($directory)  {
       $pad = $count_arr["max_pad"];
 
       // trackify file to appropriate tracks, and populate $wav array
-      if (! trackifyCue($cuefile, $wav, $pad)) {
+//      if (! trackifyCue($cuefile, $wav, $pad)) {
+      if (! trackifyCue($cuefile, $wav)) {
         $return=FALSE; continue;
       }
       // finish wav array with directories
@@ -289,22 +290,34 @@ function moveCues($directory)  {
         moveToTrash($trash, $trashed);
       } // end of $check == FALSE (just above)
     //}  // end get suffix = cue
-  }  // end while directory/read file loop
+    }  // end while directory/read file loop
 
-  // if in check mode, check for error condition, then reinitialize vars as needed
-  if ($check == TRUE) {
-    // check if errors
-    if ($return != TRUE) {
-      logp("error",
-             "ERRORS were found on check pass. Returning without processing. Check errors.");
-      return FALSE;
-    }
-  }
+    // if in check mode, check for error condition, then reinitialize vars as needed
+    if ($check == TRUE) {
+      // check if errors
+      if ($return != TRUE) {
+        logp("error",
+               "ERRORS were found on check pass. Returning without processing. Check errors.");
+        return FALSE;
+      }
 
-   // close directory on the way out
-   closedir($dir_r);
+      // read through directory and make sure we hit every cue
+      closedir($dir_r);
+      $dir_r = opendir($directory);
+      while(($file = readdir($dir_r)) !== false) {
+        if(getSuffix($file) != "cue") continue;
+
+        // skip if file is in $trashed list
+        if(fileChecked($file, $trashed, FALSE, TRUE)) continue;
+
+        //  is file in files_used list
+        if (! fileChecked($file, $files_used, $check)) return FALSE;
+      } // while
+    } // Check = TURE
+
+    // close directory
+    closedir($dir_r);
   } // end check mode
-
 
   return $return;
 }
@@ -512,97 +525,7 @@ function setupMulti($file, &$cuefile, &$files_used, &$trash) {
 }
 
 
-// function trackifyCue(&cuefile, &$wav, $pad)
-//  &$
-//  $cuefile - cuefile array to be returned
-//  $wav - wav array to transport wav files
-//  $pad - number of zero-padded digits for this album
-//
-// Returns TRUE if successul, FALSE on failure
-//
-//  Helper function to rewrite tracks in wav file, remove extra directories
-//   in path name, etc.  Loads $wav
 
-function trackifyCue(&$cuefile, &$wav, $pad)  {
-  // initialize
-  $matches = array();
-  $tracks = array();
-
-  // get artist and album, then check if cue file exists in directory
-  if ( ($artist = getCueInfo("artist", '', $cuefile)) == FALSE ) return FALSE;
-  if ( ($album = getCueInfo("album", '', $cuefile)) == FALSE ) return FALSE;
-
-//print_r($cuefile);
-  $track="";
-  for($i=0; $i < count($cuefile); $i++)
-  {
-    // look for FILE lines
-    if( preg_match("/^\s*FILE\s+\"/", $cuefile[$i])) {
-      // replace artist and album
-//print "trackify----\n  artist:{$artist}\n  album:{$album}\n";
-      foreach(array($artist, $album) as $component) {
-        // get component without dots
-        $comp_no_dot = str_replace('.', '', $component);
-        foreach(array($component, $comp_no_dot) as $repl)
-          $cuefile[$i] = str_replace("{$repl}\\", '', $cuefile[$i]);
-      }
-
-//print "CUE:{$cuefile[$i]}\n";
-
-      // check if any \ and error
-      if (preg_match('/\\\/', $cuefile[$i])) {
-        logp("error",array("ERROR: FILE title has a backslash.  Skipping entire cuefile.",
-                  "  Line: '{$cuefile[$i]}'"));
-        return FALSE;
-      }
-
-      // get trackno and replace with padded version
-      if( preg_match("/^(\s*FILE\s+\")(\d+)( .*)\"/", $cuefile[$i], $matches))  {
-        // set key vars
-        $track_no=$matches[2];
-        $track = intval($track_no);
-        $curfilebase = $matches[3];
-        $new_track_no = str_pad($track, $pad, "0", STR_PAD_LEFT);
-
-        // store in wav
-        $wav[$track_no]["old"] = $track_no . $curfilebase;
-        $wav[$track_no]["new"] = $new_track_no . $curfilebase;
-
-//print "track={$track}, ";
-        // check that track hasn't already be used, otherwise set
-        if (isset($tracks[$track]))  {
-          logp("error", array(
-                  "ERROR: duplicate track number found, '{$track}'. Skipping cuefile",
-                  "  Line: '{$cuefile[$i]}'"));
-          return FALSE;
-        } else
-          $tracks[$track] = 1;
-
-        $cuefile[$i] = preg_replace("/^(\s*FILE\s+\")(\d+)( )/",
-              '${1}'. $new_track_no . " ",
-              $cuefile[$i]);
-      } else {
-        logp("error",array("ERROR: could not find track.  Skipping entire cuefile.",
-                "  Line: '{$cuefile[$i]}'"));
-        return FALSE;
-      }
-    } // end of if preg FILE
-
-    // replace TRACK
-    if( preg_match("/^\s*TRACK\s+/", $cuefile[$i])) {
-      if ($track != "") {
-        $cuefile[$i] = preg_replace("/(^\s*TRACK\s+)(\d+)(.*)/",
-                  '${1}' . str_pad($track, $pad, "0", STR_PAD_LEFT) . '${3}',
-                  $cuefile[$i]);
-  //               '${1}' . str_pad($track, 2, "0", STR_PAD_LEFT) . '${3}',
-        $track="";
-      }
-    } // end of if TRACK
-
-  } // end of for - reading file
-
-  return TRUE;
-}
 
 // function: fileChecked($file, $files_used, $check, [$skip_error])
 //  $file - file
@@ -631,7 +554,6 @@ function fileChecked($file, $files_used, $check, $skip_error = FALSE) {
 
   return FALSE;
 }
-
 
 
 //

@@ -140,6 +140,8 @@
       // file line
       if(preg_match ( '/^\s*FILE/', $cuefile[$i] )) {
         // initialize and increment vars
+        fixFileLine($add_folder, $cuefile, $i, $cue_meta, $wav, "fixup");
+
 
         $tooLong = "";
 
@@ -184,27 +186,13 @@
 
         // change FILE line and set $wav
         $wav[$wavIndex]["old"] = $song;
-        $cuefile[$i] = fixFileLine($base_folder, $add_folder, $cuefile[$i], $wav[$wavIndex], $pad);
+        $cuefile[$i] = fixFileLine($add_folder, $cuefile[$i], $wav[$wavIndex], $pad);
         //if($cuefile[$i] === 0 && $i < count($cuefile)){
         if($cuefile[$i] === 0 && $i < count($cuefile)){
           logp("error", array("ERROR: fixFileLine function has failed to write new songfile",
                          "  {$songfile}"));
           return FALSE;
         }
-
-        // // checks that song num matches track num
-        // $trackNum = "";
-        // if(preg_match("/^\d\d\d/", $song)){
-        //   $trackNum = substr($song, 0, 3);
-        //   $trackNum = substr($song, 1, 2);
-        // }else {
-        //   $trackNum = substr($song, 0, 2);
-        // }
-        // $trackCheck = $i + 1;
-        // if(!preg_match("/{$trackNum}/", $cuefile[$trackCheck])){
-        //   logp("error", "ERROR: {$trackNum} does not match song number {$cuefile[$trackCheck]}");
-        //   return false;
-        // }
 
       } // file line
     } // for
@@ -306,179 +294,6 @@
   }
 
 
-  // function fixFileLine($base_folder, $add_folder, $file, &$wav, $pad)
-  //  $base_folder - initial root folder
-  //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
-  //       full path name.  $add_folder can be blank to start (and usually is).  Used by
-  //       recursive function to crawl.
-  //  $line - FILE line from .cue file
-  //  &$wav - array of file names needed to rename .wav files in album
-  //  $pad - pad width for track numbers
-  //
-  // fixFileLine function - fixes a previous file format to new, correct standard
-  //
-  // returns a string which is the correct line, else returns 0 on failure
-
-  function fixFileLine($base_folder, $add_folder, $line, &$wav, $pad){
-    // initialize
-    $matches = array();
-
-    // gets $artist and $album
-    $list = preg_split("/\//", $add_folder);
-    $album = $list[count($list) - 1];
-    $artist = $list[count($list) - 2];
-
-    // fixes () and . if they are in album/title
-    $album = fixParens($album);
-    $artist = fixParens($artist);
-    $album = fixDot($album);
-    $artist = fixDot($artist);
-    $album = fixBrackets($album);
-    $artist = fixBrackets($artist);
-
-    // defines $song
-    $song = preg_replace("/^FILE \"/", '', $line);
-    $song = preg_replace("/\" WAVE$/", '', $song);
-    $song = preg_replace("/\\\/", '', $song);
-    $song = preg_replace("/{$artist}{$album}/", '', $song);
-
-    // checks to see that $album and $artist are correctly in $song. ERROR and exit if not
-    if((!preg_match("/{$artist} /", $song) || !preg_match("/{$album} /", $song))
-        && ((preg_match("/ ~ .* ~ /", $song) || preg_match("/ - .* - /", $song)))){
-      logp("error", "ERROR: {$artist}/{$album} in .cue file does not match .wav file");
-      return 0;
-    }
-
-    // check for ~ or - delimeter, then fixes song title
-    if(preg_match("/^\d+.* ~/", $song)){
-      $song = preg_replace("/~ {$artist} ~ /", '', $song);
-      $song = preg_replace("/{$album} ~ /", '', $song);
-      $song = preg_replace("/~ /", '', $song);
-    }
-    elseif(preg_match("/^\d+.* -/", $song)){
-      $song = preg_replace("/- {$artist} /", '', $song);
-      $song = preg_replace("/{$artist} /", '', $song);
-      $song = preg_replace("/- {$album} - /", '', $song);
-    }
-
-    // update tracknum
-    if (preg_match("/(^\d+)/", $song, $matches))
-      $track_no = intval($matches[1]);
-    else {
-      logp("error",array(
-               "ERROR fixFileLine: cannot find track number in song title.",
-               "  {$song}"));
-      return FALSE;
-    }
-    // cut tracknumber and potential . then add padded track no
-    $song = preg_replace("/^\d+\.*/", '', $song);
-    $song = str_pad($track_no, $pad, "0", STR_PAD_LEFT) . $song;
-
-    // // replace the track getprotobynumber
-    // $cutout = "/^\d{2,3}\./";
-    // $replace = "";
-    // if(preg_match("/^\d\d\d/", $song)){
-    //   $replace = substr($song, 0, 3);
-    // }else {
-    //   $replace = substr($song, 0, 2);
-    // }
-    // $song = preg_replace($cutout, $replace, $song);
-
-    // cuts all double spaces and extra .
-    $song = preg_replace("/\s+/", " ", $song);
-    $song = preg_replace("/\.+/", ".", $song);
-    // checks if replacement proccess worked. if not, return failure
-    if($song == null){
-      logp("error", "ERROR fixFileLine: preg_replace failure in .cue");
-      return false;
-    }
-    $line = "FILE \"{$song}\" WAVE";
-
-    // load new $song into $wav
-    $wav["new"] = $song;
-    return $line;
-  } // end of function
-
-
-  // function: makeCueConvertable(&$cuefile)
-  //
-  // Apparently, the converter
-
-  function makeCueConvertable_DEPR(&$cuefile){
-    // changes all INDEX to be correct for mp3
-    for($i = 0; $i < count($cuefile); $i++){
-      if(preg_match("/INDEX 00 /", $cuefile[$i])){
-        $cuefile[$i] = "    INDEX 01 00:00:00\n";
-      }else
-      if(preg_match("/INDEX \d\d/", $cuefile[$i]) && !preg_match("/INDEX 01 00:00:00/", $cuefile[$i])){
-        array_splice($cuefile, $i, 1);
-        $i--;
-      }
-    }
-  }
-
-  // function addLineTerm(&$array)
-  //  &$array - array of strings that will make up a file
-  //  NOTE &$array is a reference variable
-  // returns nothing
-  //
-  // addLineTerm function - adds \n (aka line breaks) to an array of strings in order for it to be passed
-  //   into a cue file correctly
-  function addLineTerm_DEPR(&$array){
-    for($i = 0; $i < count($array); $i++){
-      $array[$i] .= "\r\n";
-    }
-  }
-
-  // function fixParens($str)
-  //  $str - given to string that is to be fixed
-  //
-  // fixDash function - changes () to \(\) for regex functions. NOTE only use when you want str in regex
-  // returns fixed string
-  function fixParens($str){
-    $str = preg_replace("/\(/", "\\(", $str);
-    $str = preg_replace("/\)/", "\\)", $str);
-    return $str;
-  }
-
-  // function fixParens($str)
-  //  $str - given to string that is to be fixed
-  //
-  // fixDash function - changes [] to \[\] for regex functions. NOTE only use when you want str in regex
-  // returns fixed string
-  function fixBrackets($str){
-    $str = preg_replace("/\[/", "\\[", $str);
-    $str = preg_replace("/\]/", "\\]", $str);
-    return $str;
-  }
-
-  // function fixDot($str)
-  //  $str - given to string that is to be fixed
-  //
-  // fixDot function - changes all . to \. for regex function
-  // retruns fixed $str
-  function fixDot($str){
-    $str = preg_replace("/\./", "\\.", $str);
-    return $str;
-  }
-
-  // function isDryRun()
-  //  no input parameters
-  //
-  // isDryRun function - just tells program if MusicParams.inc has set $isDryRun as true or false
-  // returns global $isDryRun
-//  function isDryRun(){
-//    global $isDryRun;
-//    return $isDryRun;
-//  }
-
-  // TONTO directory starts
-  // $test = "C:/Quentin/MusicReference/Music";
-
-  // HECTOR directory starts
-  // $test = "D:/Quentin/MusicProgramming/RenameTest";
-  // $test = "D:/Quentin/MusicProgramming/MultiDiskTest";
-//  $test = "D:/Quentin/MusicProgramming/ServerFixTest";
 
   //crawl($test, '', '', "serverFix", array());
   crawl($srcdir, '', '', "serverFix", array());

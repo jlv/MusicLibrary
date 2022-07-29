@@ -31,16 +31,19 @@ $cue_meta = array();
 
 
 // Basic flow:
-//  Find files, check artist/album, load in cuefile with metadata
-//  Trackify and fixup where needed
+//  Find files, check artist/album, load in cuefile
+//  Trackify fixup to load files in $wav and fix tracks on each cuefile
 //  Load each cuefile path into $trash for later processing
-//
+//  Trackify again reorder without fixup once we have every disk loaded
 
 
-function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options)
+function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   // globals from parameter
   global $finalDir;
   global $multiDisks;
+  $gartist = "";
+  $galbum = "";
+  $disc_first = TRUE;
 
   // locate and make if needed finalDir
 //  if (! is_dir($finalDir))
@@ -49,15 +52,78 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options)
   // loop through each dir/name, reading file and merging to array
   foreach ($multiDisks as $disc) {
     //
+    $cuepath = $disc . "/" . $disc . ".cue";
     // get ncuefile
-    if (! file_exists($disc . "/" . $disc . ".cue")
-      log("error,exit1","FATAL ERROR: cannot find cuefile '{$disk}/{$disc}.cue'.");
+    if (! file_exists($cuepath)
+      log("error,exit1","FATAL ERROR: cannot find cuefile '{$cuepath}'.");
 
-    if (($ncuefile = file)
-      log("error,exit1","FATAL ERROR: cannot find cuefile '{$disk}/{$disc}.cue'.");
+    // read file
+    if (($ncuefile = file($cuepath, FILE_IGNORE_NEW_LINES) == 0)
+      log("error,exit1","FATAL ERROR: cannot open '{$cuepath}'.");
 
-  }
+    // get artist from cue file (errors will have already displayed)
+    if (($artist = getCueInfo("artist", $cuepath)) == FALSE)
+      log("error,exit1",array("FATAL ERROR: could not find artist in cuefile",
+                                 "  {$cuepath}"));
 
+    // get album from cue file (errors will have already displayed)
+    if (($album = getCueInfo("album", $cuepath)) == FALSE)
+      log("error,exit1",array("FATAL ERROR: could not find album in cuefile",
+                                 "  {$cuepath}"));
+
+    // compare with $disc
+    if ($album != $disc)
+      logp("error,exit1", array(
+                  "FATAL ERROR: album in cuefile does not match album name (directory).",
+                  "  Album in file: '{$album}'",
+                  "  Directory/name: '${disc}'",
+                  "  Cuefile read: '{$cuepath}'"));
+
+    // assign or compare to global artist
+    if ($disc_first == TRUE) $gartist = $artist;
+    elseif ($artist != $gartist)
+      logp("error,exit1", array(
+                  "FATAL ERROR: artist in cuefile does not match artist in first file.",
+                  "  Artist in file: '{$artist}'",
+                  "  Artist in first file: '${gartist}'",
+                  "  Cuefile read: '{$cuepath}'"));
+
+    // trackify Cue
+//    if (! trackifyCue($ncuefile, $wav, "fixup")) exit 1;
+
+    // load ncuefile into cuefile, first disc vs. others
+    if ($dist_first == TRUE) {
+      $cuefile = $ncuefile;
+      $index = count($cuefile);
+      // fill cue_meta[index][dir]
+      for($i=0; $i < $index; $i++)
+        $cue_meta[$i]["dir"] = $disc;
+    } else {
+      // iterate through each line of file, find first FILE directive, then add
+      $fileFound = FALSE;
+      foreach($ncuefile as $nline)  {
+        // mark when we get to FILE
+        if (preg_match( '/^\a*FILE/', $nline )) $fileFound = TRUE;
+
+        if ($fileFound == TRUE ) {
+          $cuefile[$index] = $nline;
+          $cue_meta[$index]["dir"] = $disc;
+          $index++;
+        }
+      }  // end of foreach
+    } // else from $dist_first
+
+    // add cuefile path to trash
+    $trash[] = $cuepath;
+
+  }  // foreach multidisc
+
+
+
+  // trackify entire file new file
+  if (! trackifyCue($cuefile, $wav))
+
+} // end of function
 
 
 
