@@ -89,12 +89,38 @@ elseif ($hostname == "Rising-Sun")
 //  $mp3dir = "N:/MP3";
 
 }
-elseif ($hostname == "Hector")
-{
+elseif ($hostname == "Hector")  {
   // hector development machine
 
   // $homedir - for systems that are built around a single home directory
   $homedir="D:/Quentin/MusicProgramming";
+
+}
+elseif ($hostname == "shigoto")  {
+
+  // $homedir - for systems that are built around a single home directory
+  $homedir="C:/jlv/MusicLibrary";
+
+  // source directory of wave files and cue files
+  //$srcdir = "N:/A";
+  //$srcdir = "N:/B";
+  //$srcdir = "N:/Q-Ref";
+  //$srcdir = "N:/QT";
+  $srcdir = "D:/QT5";
+//  $srcdir = "N:/QT-Rip2";
+//  $srcdir = "N:/QT-Rip4/Succeed";
+
+  // output/conversion top directory.  Types of conversions usually housed
+  //  bloew this directory
+//  $conversion_base_dir = "D:/Music/conversion";
+  $conversion_base_dir = "D:/Q-Out";
+
+  // source directory of wave files and cue files
+//  $cuedir = "N:/Cuefiles";
+
+  // destimation MP3 directory
+  //$mp3dir = "e:/MP3";
+//  $mp3dir = "N:/MP3";
 
 }
 elseif ($hostname == "tonto")

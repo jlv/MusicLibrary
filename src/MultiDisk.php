@@ -17,14 +17,16 @@ else {
 // initialize globals
 $cuefile = array();
 $cue_meta = array();
-
-
+$wav = array();
+$trash = array();
 
 
 // setup the merge
+if (! setupMultiMerge($cuefile, $cue_meta, $wav, $trash, "fixup"))
+  logp("error,exit1","FATAL ERROR: setup multi disk merge failed.");
 
 // confirm parameters with user
-
+if (! confirmMerge($cuefile, $wav)) exit;
 
 // execute
 
@@ -43,6 +45,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   global $multiDisks;
   $gartist = "";
   $galbum = "";
+  $ncuefile=array();
   $disc_first = TRUE;
 
   // locate and make if needed finalDir
@@ -53,22 +56,24 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   foreach ($multiDisks as $disc) {
     //
     $cuepath = $disc . "/" . $disc . ".cue";
+print "\nNCUE path:{$cuepath}\n";
+
     // get ncuefile
-    if (! file_exists($cuepath)
-      log("error,exit1","FATAL ERROR: cannot find cuefile '{$cuepath}'.");
+    if (! file_exists($cuepath))
+      logp("error,exit1","FATAL ERROR: cannot find cuefile '{$cuepath}'.");
 
     // read file
-    if (($ncuefile = file($cuepath, FILE_IGNORE_NEW_LINES) == 0)
-      log("error,exit1","FATAL ERROR: cannot open '{$cuepath}'.");
+    if (($ncuefile = file($cuepath, FILE_IGNORE_NEW_LINES)) == FALSE)
+      logp("error,exit1","FATAL ERROR: cannot open '{$cuepath}'.");
 
     // get artist from cue file (errors will have already displayed)
     if (($artist = getCueInfo("artist", $cuepath)) == FALSE)
-      log("error,exit1",array("FATAL ERROR: could not find artist in cuefile",
+      logp("error,exit1",array("FATAL ERROR: could not find artist in cuefile",
                                  "  {$cuepath}"));
 
     // get album from cue file (errors will have already displayed)
     if (($album = getCueInfo("album", $cuepath)) == FALSE)
-      log("error,exit1",array("FATAL ERROR: could not find album in cuefile",
+      logp("error,exit1",array("FATAL ERROR: could not find album in cuefile",
                                  "  {$cuepath}"));
 
     // compare with $disc
@@ -92,15 +97,24 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
 //    if (! trackifyCue($ncuefile, $wav, "fixup")) exit 1;
 
     // load ncuefile into cuefile, first disc vs. others
-    if ($dist_first == TRUE) {
+    if ($disc_first == TRUE) {
+      $disc_first = FALSE;
+
       $cuefile = $ncuefile;
       $index = count($cuefile);
       // fill cue_meta[index][dir]
-      for($i=0; $i < $index; $i++)
+      for($i=0; $i < $index; $i++)  {
         $cue_meta[$i]["dir"] = $disc;
+        $cue_meta[$i]["album"] = $disc;
+      }
     } else {
       // iterate through each line of file, find first FILE directive, then add
       $fileFound = FALSE;
+
+      // cleanup file first
+//      if (! processFILEtag($artist . "/" . $album, $cuefile, $cue_meta, $wav))
+//        logp("error,exit1", "ERROR: processFILEtag returned error.");
+
       foreach($ncuefile as $nline)  {
         // mark when we get to FILE
         if (preg_match( '/^\a*FILE/', $nline )) $fileFound = TRUE;
@@ -108,6 +122,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
         if ($fileFound == TRUE ) {
           $cuefile[$index] = $nline;
           $cue_meta[$index]["dir"] = $disc;
+          $cue_meta[$index]["album"] = $disc;
           $index++;
         }
       }  // end of foreach
@@ -118,12 +133,57 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
 
   }  // foreach multidisc
 
+  // process FILE statements
+  if (! processFILEtag($artist . "/" . $album, $cuefile, $cue_meta, $wav, "fixup"))
+    logp("error,exit1", "ERROR: processFILEtag returned error.");
 
+print "finished processFILEtag\n";
 
   // trackify entire file new file
   if (! trackifyCue($cuefile, $wav))
+    logp("error,exit1", "ERROR: trackifyCue returned error.");
 
-} // end of function
+  return TRUE;
+} // end of setupMultiMerge function
+
+
+
+
+// function confirmMerge($cuefile, $wav)
+//
+//
+// $finalDir - directory of combined multi-disk
+// $multiDisks - array of all dist add ones (i.e. Disc 1, (Disc 1), or nothing)
+//
+// intro function - takes in user input to confirm what is being renamed to what
+//                  NOTE - user must be in artist directory for system to work
+// returns 0 on failure
+
+function confirmMerge($cuefile, $wav)  {
+  global $finalDir;
+  global $multiDisks;
+
+  print "\n\n*** Confirming MultiDisk Details\n\n";
+
+  // diskfreespace
+
+  print "Disc Parameters:\n";
+  // checks that all cds actually exist
+  $i=1;
+  foreach($multiDisks as $disk)
+    print "  Disc " . $i++ . ": {$disk}\n";
+
+  print "\n  Final dir/artist: {$findalDir}\n";
+
+  // confirm
+  if (strtoupper(readline("\nConfirm >")) != "Y"); exit;
+
+
+  return TRUE;
+
+}
+
+
 
 
 
@@ -216,6 +276,8 @@ function intro(){
     return 0;
   }
 }
+
+
 
 // function combine($currentDir, $oldDir, $newDir, $trackExcerpt)
 // $finalDir - directory of combined multi-disk
