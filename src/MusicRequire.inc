@@ -1188,10 +1188,12 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
 // returns an array of various attributes of the cuefile:
 //  [song_file_cnt] - number of FILE directives
 //  [track_cnt] - number TRACK directives
-//  [max_track] - maximum specified track number by TRACK directive
+//  [max_track] - maximum specified track number in a TRACK directive
 //  [max_file_track] - maximum specified track number by track number in file
+//                     FILE directive
 //  [max_all] - maximum of all values
-//  [cnt_pad] - calculcated pad number based on counting (2 vs 3)
+//  [cnt_pad] - calculcated pad number based on counting TRACK stmts (2 vs 3)
+//  [file_cnt_pad] - calculcated pad number based on counting FILE (2 vs 3)
 //  [track_pad] - calculcated pad number based track definition (2 vs 3)
 //
 //  the file and track counts should be the same.  Will return FALSE if not.
@@ -1245,14 +1247,14 @@ function countTracks(&$cuefile) {
   // simple analysis
   $max_all = max($song_file_cnt, $track_cnt, $max_track, $max_file_track);
 
-  if ($song_file_cnt != $track_cnt)
-  {
-    logp("error",
-      "ERROR: number of FILE ({$song_file_cnt}) vs. ({$track_cnt}) TRACK statements are different.");
+  if ($song_file_cnt > $track_cnt)  {
+    logp("error", array(
+      "ERROR: number of FILE ({$song_file_cnt}) is greater than TRACK ({$track_cnt}) statements.");
     $return=FALSE;
   }
 
-  if ($song_file_cnt > 99) $cnt_pad=3; else $cnt_pad=2;
+  if ($track_cnt > 99) $cnt_pad=3; else $cnt_pad=2;
+  if ($song_file_cnt > 99) $file_cnt_pad=3; else $file_cnt_pad=2;
   if ($max_track > 99) $track_pad=3; else $track_pad=2;
   if ($max_all > 99) $max_pad=3; else $max_pad=2;
 
@@ -1260,11 +1262,13 @@ function countTracks(&$cuefile) {
   return array("song_file_cnt"=>$song_file_cnt, "track_cnt"=>$track_cnt,
                "max_track"=>$max_track, "max_file_track"=>$max_file_track,
                "max_all"=>$max_all, "cnt_pad"=>$cnt_pad,
-               "track_pad"=>$track_pad, "max_pad"=>$max_pad, "return"=>$return);
+               "track_pad"=>$track_pad, "file_cnt_pad"=>$file_cnt_pad,
+               "max_pad"=>$max_pad, "return"=>$return);
 }  // function
 
 
 // function trackifyCue(&cuefile, &$wav, ["reorder"])
+// function trackifyCue(&cuefile, ["reorder"])
 //  $cuefile - cuefile array to be returned
 //  $wav - wav array to transport wav files
 //  ??$pad - number of zero-padded digits for this album
@@ -1278,7 +1282,7 @@ function countTracks(&$cuefile) {
 //  Helper function to rewrite tracks in wav file, remove extra directories
 //   in path name, etc.  Loads $wav
 
-function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
+function trackifyCue(&$cuefile, $option = FALSE)  {
   // initialize
   $matches = array();
   $tracks = array();
@@ -1291,27 +1295,35 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
   // check if over 99 tracks and set $pad
   $count_arr = countTracks($cuefile);
   if ($count_arr["return"] =! TRUE) return FALSE;
-  $pad = $count_arr["max_pad"];
+  // pick pad
+  if ($option = "reorder")
+    $pad = $count_arr["cnt_pad"];
+  else
+    $pad = $count_arr["max_pad"];
 
 //print_r($cuefile);
+  // loop through each line. If track was not found after FILE, error
+  //  using $track_found.
   $track="";
+  $track_found = TRUE;
+  $cur_track = 1;
   for($i=0; $i < count($cuefile); $i++)
   {
     // look for FILE lines
     if( preg_match("/^\s*FILE\s+\"/", $cuefile[$i])) {
       // replace artist and album
 //print "trackify----\n  artist:{$artist}\n  album:{$album}\n";
-      foreach(array($artist, $album) as $component) {
-        // get component without dots
-        $comp_no_dot = str_replace('.', '', $component);
-        foreach(array($component, $comp_no_dot) as $repl)
-          $cuefile[$i] = str_replace("{$repl}\\", '', $cuefile[$i]);
-      }
+
+// JLV: deal with this functionality in fixFileLine
+      // foreach(array($artist, $album) as $component) {
+      //   // get component without dots
+      //   $comp_no_dot = str_replace('.', '', $component);
+      //   foreach(array($component, $comp_no_dot) as $repl)
+      //     $cuefile[$i] = str_replace("{$repl}\\", '', $cuefile[$i]);
+      // }
 
       // if fixup option, fix line
 
-
-//print "CUE:{$cuefile[$i]}\n";
 
       // check if any \ and error
       if (preg_match('/\\\/', $cuefile[$i])) {
@@ -1322,45 +1334,100 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
 
       // get trackno and replace with padded version
       if( preg_match("/^(\s*FILE\s+\")(\d+)( .*)\"/", $cuefile[$i], $matches))  {
+        // check if we saw a track before this FILE
+        if ($track_found != TRUE) {
+          logp("error",array(
+                  "ERROR: found FILE statement before preceding FILE's TRACK statement.",
+                  "  Stmt: '{$cuefile[$i]}'"));
+          return FALSE;
+        }
+        $track_found = FALSE;
+
         // set key vars
-        $track_no=$matches[2];
-        $track = intval($track_no);
         $curfilebase = $matches[3];
-        $new_track_no = str_pad($track, $pad, "0", STR_PAD_LEFT);
+        $track_file=$matches[2];
+
+        // choose track type
+        if ($option == "reorder")
+          $track = $cur_track;
+        else
+          $track = intval($track_file);
+        $new_track = str_pad($track, $pad, "0", STR_PAD_LEFT);
 
         // store in wav
-        $wav[$track_no]["old"] = $track_no . $curfilebase;
-        $wav[$track_no]["new"] = $new_track_no . $curfilebase;
+        // $wav[$track_no]["old"] = $track_no . $curfilebase;
+        // $wav[$track_no]["new"] = $new_track_no . $curfilebase;
 
 //print "track={$track}, ";
-        // check that track hasn't already be used, otherwise set
-        if (isset($tracks[$track]))  {
-          logp("error", array(
-                  "ERROR: duplicate track number found, '{$track}'. Skipping cuefile",
-                  "  Line: '{$cuefile[$i]}'"));
-          return FALSE;
-        } else
-          $tracks[$track] = 1;
 
         $cuefile[$i] = preg_replace("/^(\s*FILE\s+\")(\d+)( )/",
-              '${1}'. $new_track_no . " ",
+              '${1}'. $new_track . " ",
               $cuefile[$i]);
       } else {
-        logp("error",array("ERROR: could not find track.  Skipping entire cuefile.",
+        logp("error",array(
+                "ERROR: could not find track in FILE line.  Skipping entire cuefile.",
                 "  Line: '{$cuefile[$i]}'"));
         return FALSE;
       }
     } // end of if preg FILE
 
-    // replace TRACK
+    // find TRACK and replace track number
     if( preg_match("/^\s*TRACK\s+/", $cuefile[$i])) {
-      if ($track != "") {
+      // extract track_track or error
+      if( preg_match("/^\s*TRACK\s+(\d+)/", $cuefile[$i], $matches)) {
+        $track_track = $matches[1];
+      else {
+        logp("error",array(
+                "ERROR trackify: TRACK statement found without a track number. Please check.",
+                "  Stmt: '{$cuefile[$i]}'" ));
+        return FALSE;
+      }
+
+      // if this track is from the FILE statement, compare with what we found in FILE
+      if ($track_found == FALSE  && $track_track != $track_file) {
+        logp("error",;array(
+                "ERROR: track from FILE and track TRACK did not match. Please check.",
+                "  Track from FILE line: '{$track_file}'",
+                "  Track from TRACK line: '{$track_track}'",
+                "  Line: {$cuefile[$i]}"));
+        return FALSE;
+      }
+
+      // if this track is a subsequent track on the same file, use extractioing or calc
+      if ($track_found == TRUE)
+        if ($option == "reorder")
+          $track = $cur_track;
+        else
+          $track = intval($track_track);
+        $new_track = str_pad($track, $pad, "0", STR_PAD_LEFT);
+
+      // check that track hasn't already be used, otherwise set
+      if (isset($tracks[$new_track]))  {
+        logp("error", array(
+                "ERROR: duplicate track number found, '{$new_track}'. Skipping cuefile",
+                "  New track '{$new_track}'",
+                "  Line: '{$cuefile[$i]}'"));
+        return FALSE;
+      } else
+        $tracks[$new_track] = 1;
+
+      if ($new_track != "") {
         $cuefile[$i] = preg_replace("/(^\s*TRACK\s+)(\d+)(.*)/",
-                  '${1}' . str_pad($track, $pad, "0", STR_PAD_LEFT) . '${3}',
+                  '${1}' . $new_track . '${3}',
                   $cuefile[$i]);
   //               '${1}' . str_pad($track, 2, "0", STR_PAD_LEFT) . '${3}',
         $track="";
       }
+      else {
+        // track is bad
+        logp("error",array(
+                 "ERROR: track processing reduced track to a NULL. Unclear why."
+                 "   Line: {$cuefile[$i]}"));
+      }
+
+      // increment cur_track
+      $cur_track++;
+
     } // end of if TRACK
 
   } // end of for - reading file

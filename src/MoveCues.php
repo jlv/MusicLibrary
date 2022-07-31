@@ -218,12 +218,7 @@ function moveCues($directory)  {
       }
 
 // JLV: may not need pad elsehwere -- can put in trackify?
-      // check if over 99 tracks and set $pad
-      $count_arr = countTracks($cuefile);
-      if ($count_arr["return"] =! TRUE) {
-         $return=FALSE; continue;
-      }
-      $pad = $count_arr["max_pad"];
+      // fix FILE lines
 
       // trackify file to appropriate tracks, and populate $wav array
 //      if (! trackifyCue($cuefile, $wav, $pad)) {
