@@ -919,7 +919,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     // strip getSuffix
     $base = preg_replace("/\.cand$/", '', $file);
     $base = preg_replace("/\.cue$/", '', $base);
-print "BASE:{$base}\n";
+//print "BASE:{$base}\n";
 
     if ($base != $album)
     {
@@ -1232,7 +1232,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, $command = "no
 
   // loop though looking for file lines
   for($i=0; $i < count($cuefile); $i++) {
-    print "in loop {$i}; $cuefile[$i]\n";
+//    print "in loop {$i}; $cuefile[$i]\n";
 
     // load album / artist from cue_meta if it exists, otherwise from
     //  gartist/galbum
@@ -1277,8 +1277,8 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, $command = "no
       // remove wav suffix
 //       $songbase = preg_replace("/\.[wW][aA[vV]$/", '', $songfile);
        $songbase = preg_replace("/\.wav$/i", '', $songfile);
-print "songfile:'{$songfile}'\n";
-print "   songbase:'{$songbase}'\n";
+//print "songfile:'{$songfile}'\n";
+//print "   songbase:'{$songbase}'\n";
       // build a tooLong version for comparison
       //
       // get current track no
@@ -1328,28 +1328,28 @@ print "   songbase:'{$songbase}'\n";
       //   // remove string .wav while fixing
       //   $new_song = preg_replace("/\.[wW][aA[vV]$/", '', $songfile);
 
-print "new song first pass:'{$new_song}'\n";
+//print "new song first pass:'{$new_song}'\n";
 
       // if command is "fixup"
       if ($command == "fixup")  {
-print "in fixup\n";
-print "artist:'{$artist}'\n";
-print "album:'{$album}'\n";
+//print "in fixup\n";
+//print "artist:'{$artist}'\n";
+//print "album:'{$album}'\n";
         // check for ~ or - delimeter, then fix song title
         if(preg_match("/~/", $new_song)) {
-print "in tilde fixup\n";
+//print "in tilde fixup\n";
           $new_song = str_replace("~ {$artist} ~", '', $new_song);
           $new_song = str_replace(" {$album} ~ ", '', $new_song);
           $new_song = str_replace("~ ", '', $new_song);
         }
         elseif(preg_match("/-/", $new_songfile)){
-print "in dash fixup\n";
+//print "in dash fixup\n";
           $new_song = str_replace("- {$artist} ", '', $new_song);
           $new_song = str_replace("{$artist} ", '', $new_song);
           $new_song = str_replace("- {$album} - ", '', $new_song);
         }
       } // end if fixup
-print "post fix:{$new_song}\n";
+//print "post fix:{$new_song}\n";
       // cuts all double spaces any .
       $new_song = preg_replace("/\s+/", " ", $new_song);
       $new_song = preg_replace("/\./", ".", $new_song);
@@ -1499,7 +1499,7 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
   else
     $pad = $count_arr["max_pad"];
 
-print "In Trackify\n";
+//print "In Trackify\n";
 //print_r($cuefile);
   // loop through each line. If track was not found after FILE, error
   //  using $track_found.
@@ -1584,7 +1584,7 @@ print "In Trackify\n";
 
     // find TRACK and replace track number
     if( preg_match("/^\s*TRACK\s+/", $cuefile[$i])) {
-print "Found track\n";
+//"Found track\n";
       // extract track_track or error
       if( preg_match("/^\s*TRACK\s+(\d+)/", $cuefile[$i], $matches))
         $track_track = $matches[1];
