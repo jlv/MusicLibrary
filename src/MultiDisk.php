@@ -178,7 +178,6 @@ function confirmMerge($cuefile, $wav)  {
   global $finalDir;
   global $multiDisks;
 
-print_r($wav);
   print "\n\n*** Confirming MultiDisk Details\n\n";
 
   // diskfreespace
@@ -216,6 +215,7 @@ print_r($wav);
 function executeMerge(&$cuefile, &$wav, &$trash)  {
   // globals from parameter
   global $finalDir;
+  global $multiDisks;
 
   $dir= getArtistFromCwd() . "/" . $finalDir;
   $newfile = $finalDir . ".cue";
@@ -259,6 +259,12 @@ function executeMerge(&$cuefile, &$wav, &$trash)  {
     logp("error,exit1",
          "FATAL ERROR: proposed cuefile did not verify but wav files have been moved.");
 
+  // move to trash.  Note using parent as base trash directory.
+  //  also note: we move to Trash before we rename .cand file in case
+  //   the finalDir is one of the contributing dirs (which would remove
+  //   it's cue file)
+  moveToTrash($trash, $trashed, "..");
+
   // rename candidate file
   if (! isDryRun()) {
     logp("log", "rename candidate to cue, '{$newpath}'");
@@ -266,8 +272,11 @@ function executeMerge(&$cuefile, &$wav, &$trash)  {
       logp("error,exit1","FATAL ERROR: could not rename candidate '{$newpath}'");
   }  // dryRun
 
-  // move to trash.  Note using parent as base trash directory
-  moveToTrash($trash, $trashed, "..");
+
+  // move remaining files source disks
+  foreach ($multiDisks as $disc)
+    if (! moveDirContents($disc, $finalDir))
+      logp("error","ERROR: could not clear a directory, '{$disc}'");
 
   return TRUE;
 } // end of executeMerge function

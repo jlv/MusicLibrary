@@ -1342,7 +1342,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, $command = "no
           $new_song = str_replace(" {$album} ~ ", '', $new_song);
           $new_song = str_replace("~ ", '', $new_song);
         }
-        elseif(preg_match("/-/", $new_songfile)){
+        elseif(preg_match("/-/", $new_song)){
 //print "in dash fixup\n";
           $new_song = str_replace("- {$artist} ", '', $new_song);
           $new_song = str_replace("{$artist} ", '', $new_song);
@@ -1377,7 +1377,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, $command = "no
     } // end if preg_match FILE
   } // end for loop on cuefile line
 
-print_r($cuefile);
+//print_r($cuefile);
 
   return TRUE;
 } // end of function
@@ -2245,6 +2245,123 @@ function changeWAVNew(&$wav, $old, $new) {
 
   return $return;
 } // function changeWAVnew
+
+// function moveDirContents($from_dir, $dest_dir)
+//  $from_dir - source directory
+//  $dest_dir - destination directory
+//
+// Returns FALSE if error in moving
+//
+// Moves contents of from_dir to dest_dir. If files already exist in dest_dir,
+//  adds -N before suffix and attempts again (up to limit).
+// Once from_dir is clean, attempts to delete it.
+//
+
+function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
+  // constants
+  $FILE_DUP_LIMIT=50;
+
+  // initialize
+  $return = TRUE;
+
+  // NULL check
+  if ($from_dir == NULL || $dest_dir == NULL) {
+    logp("error","ERROR moveDirContents: directory cannot be null");
+    return FALSE;
+  }
+
+  // check if same
+  if ($from_dir == $dest_dir) return TRUE;
+
+  // check and open dir
+  if (! is_dir($from_dir))  {
+    logp("error",
+           "ERROR moveDirContents: source directory not found ,'{$from_dir}'");
+    return FALSE;
+  }
+
+  if (($dir = opendir($from_dir)) == FALSE)
+    logp("error,exit1",
+         "FATAL ERROR moveDirContents: could not open source directory,'{$from_dir}'");
+
+  // check dest dir
+  if (! is_dir($dest_dir))  {
+    logp("error",
+          "ERROR moveDirContents: destination directory not found ,'{$dest_dir}'");
+    return FALSE;
+  }
+
+  // loop through each file
+  while(($file = readdir($dir)) !== FALSE) {
+    if ($file == ".") continue;
+    if ($file == "..") continue;
+
+
+    $suf = getSuffix($file);
+    $base = substr($file,0,-strlen("." . $suf));
+
+    // create newfile and loop until we can write
+    $newfile = $dest_dir . "/" . $file;
+    $i=1;
+    while (file_exists($newfile) && $i <= $FILE_DUP_LIMIT)
+      $newfile = $dest_dir . "/" . $base . "-" . $i++ . "." . $suf ;
+
+    if (file_exists($newfile)) {
+      logp("error",array(
+              "ERROR moveDirContents: cannot find file extension that doesn't already exists.",
+              "  File: {$file}",
+              "  Directory: {$from_dir}"));
+      $return = FALSE;
+      continue;
+    }
+
+    if (isDryRun())
+      logp("log",array(
+               "DryRun: would move {$from_dir}/{$file}",
+               "        to {$newfile}"));
+    elseif (! rename($from_dir . "/" . $file, $newfile)) {
+      logp("error",array(
+              "ERROR moveDirContents: cannot rename file to new directory:",
+              "  File: {$file}",
+              "  Directory: {$from_dir}",
+              "  New dir/file name: {$newfile}"));
+      $return = FALSE;
+      continue;
+    }
+    else
+      logp("log","Moved {$from_dir}/{$file} to {$newfile}");
+  } // end of while readdir
+
+  // done if dryRun
+  if (isDryRun()) return $return;
+
+  // check files are gone
+  closedir($dir);
+  $dir = opendir($from_dir);
+  $found_file=FALSE;
+  while(($file = readdir($dir)) !== FALSE) {
+    if ($file = ".") continue;
+    if ($file = "..") continue;
+    $found_file=TRUE;
+    break;
+  }
+
+  // if we found a file, error
+  if ($found_file !== FALSE) {
+    logp("error","ERROR moveDirContents: could not move all files. Will not delete directory.");
+    $return = FALSE;
+  } else {
+    if (! rmdir($from_dir)) {
+      logp("error","ERROR: could not remove directory, '{$from_dir}'");
+      $return = FALSE;
+    }
+  }
+
+  closedir($dir);
+  return $return;
+
+} // end of function moveDirContents
+
 
 
 // function moveToTrash(&$trash, &trashed, [$base_dir])
