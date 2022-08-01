@@ -217,14 +217,16 @@ function moveCues($directory)  {
         $return=FALSE; continue;
       }
 
-// JLV: may not need pad elsehwere -- can put in trackify?
-      // fix FILE lines
+      // process FILE statements
+      if (! processFILEtag($dir, $cuefile, NULL, $wav, "normal"))
+        logp("error,exit1", "ERROR: processFILEtag returned error.");
 
       // trackify file to appropriate tracks, and populate $wav array
 //      if (! trackifyCue($cuefile, $wav, $pad)) {
       if (! trackifyCue($cuefile, $wav)) {
         $return=FALSE; continue;
       }
+
       // finish wav array with directories
       foreach($wav as $wavkey=>$wavfile) {
         $wav[$wavkey]["old_dir"] = $dir;

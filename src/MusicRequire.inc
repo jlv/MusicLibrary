@@ -1216,7 +1216,7 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
 //  galbum vs. cue_meta
 
 
-function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, $command = "normal") {
+function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $command = "normal") {
   // initialize
   $matches = array();
 
