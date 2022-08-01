@@ -55,7 +55,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   foreach ($multiDisks as $disc) {
     //
     $cuepath = $disc . "/" . $disc . ".cue";
-print "\nNCUE path:{$cuepath}\n";
+//print "\nNCUE path:{$cuepath}\n";
 
     // get ncuefile
     if (! file_exists($cuepath))
@@ -110,7 +110,7 @@ print "\nNCUE path:{$cuepath}\n";
 
         // manually replace album title (first TITLE)
         if ($title_found == FALSE && preg_match("/^\s*TITLE\s/",$cuefile[$i])) {
-          print "**** IN title '{$finalDir}'\n";
+//          print "**** IN title '{$finalDir}'\n";
           $cuefile[$i] = preg_replace("/^(\s*TITLE\s+\")(.*)(\".*)$/",
                         '${1}' . $finalDir . '${3}',  $cuefile[$i]);
           $title_found = TRUE;
