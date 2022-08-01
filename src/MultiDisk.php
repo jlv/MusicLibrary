@@ -29,8 +29,11 @@ if (! setupMultiMerge($cuefile, $cue_meta, $wav, $trash, "fixup"))
 if (! confirmMerge($cuefile, $wav)) exit;
 
 // execute
+if (! executeMerge($cuefile, $wav, $trash)) exit;
 
+logp("echo,exit0","MultiDisk successfully merged directories.  See logs for details.");
 
+// end of script
 
 // Basic flow:
 //  Find files, check artist/album, load in cuefile
@@ -47,10 +50,6 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   $galbum = "";
   $ncuefile=array();
   $disc_first = TRUE;
-
-  // locate and make if needed finalDir
-//  if (! is_dir($finalDir))
-//    if (! mkdir($fi))
 
   // loop through each dir/name, reading file and merging to array
   foreach ($multiDisks as $disc) {
@@ -102,11 +101,22 @@ print "\nNCUE path:{$cuepath}\n";
 
       $cuefile = $ncuefile;
       $index = count($cuefile);
+
       // fill cue_meta[index][dir]
+      $title_found = FALSE;
       for($i=0; $i < $index; $i++)  {
         $cue_meta[$i]["dir"] = $disc;
         $cue_meta[$i]["album"] = $disc;
-      }
+
+        // manually replace album title (first TITLE)
+        if ($title_found == FALSE && preg_match("/^\s*TITLE\s/",$cuefile[$i])) {
+          print "**** IN title '{$finalDir}'\n";
+          $cuefile[$i] = preg_replace("/^(\s*TITLE\s+\")(.*)(\".*)$/",
+                        '${1}' . $finalDir . '${3}',  $cuefile[$i]);
+          $title_found = TRUE;
+        }
+      } // for $i loop
+
     } else {
       // iterate through each line of file, find first FILE directive, then add
       $fileFound = FALSE;
@@ -137,11 +147,16 @@ print "\nNCUE path:{$cuepath}\n";
   if (! processFILEtag($artist . "/" . $album, $cuefile, $cue_meta, $wav, "fixup"))
     logp("error,exit1", "ERROR: processFILEtag returned error.");
 
-print "finished processFILEtag\n";
+  // add finalDir
+  for($i=0; $i < count($wav); $i++)
+    $wav[$i]["new_dir"] = $finalDir;
 
   // trackify entire file new file
-  if (! trackifyCue($cuefile, $wav))
+  if (! trackifyCue($cuefile, $wav, "reorder"))
     logp("error,exit1", "ERROR: trackifyCue returned error.");
+
+//print_r($cuefile);
+//print_r($wav);
 
   return TRUE;
 } // end of setupMultiMerge function
@@ -163,6 +178,7 @@ function confirmMerge($cuefile, $wav)  {
   global $finalDir;
   global $multiDisks;
 
+print_r($wav);
   print "\n\n*** Confirming MultiDisk Details\n\n";
 
   // diskfreespace
@@ -171,12 +187,23 @@ function confirmMerge($cuefile, $wav)  {
   // checks that all cds actually exist
   $i=1;
   foreach($multiDisks as $disk)
-    print "  Disc " . $i++ . ": {$disk}\n";
+    print "  Disc " . $i++ . ":           {$disk}\n";
 
-  print "\n  Final dir/artist: {$findalDir}\n";
+  print "  Final dir/artist: {$finalDir}\n";
 
   // confirm
-  if (strtoupper(readline("\nConfirm >")) != "Y"); exit;
+  if (strtoupper(readline("\nConfirm >")) != "Y") exit;
+
+  // show wav
+  print "\n\nTrack Changes:\n\n";
+
+  foreach ($wav as $song) {
+    print "Dir:  {$song["old_dir"]}\nSong: {$song["old"]}\n";
+    print " --> '{$song["new"]}'\n\n";
+  }
+
+  // confirm
+  if (strtoupper(readline("\nConfirm >")) != "Y") exit;
 
 
   return TRUE;
@@ -184,6 +211,66 @@ function confirmMerge($cuefile, $wav)  {
 }
 
 
+
+
+function executeMerge(&$cuefile, &$wav, &$trash)  {
+  // globals from parameter
+  global $finalDir;
+
+  $dir= getArtistFromCwd() . "/" . $finalDir;
+  $newfile = $finalDir . ".cue";
+  $newpath = $finalDir . "/" . $newfile;
+
+  // make directory if needed
+  if (! is_dir($finalDir))
+    if (! mkdir($finalDir))
+      logp("error,exit1","FATAL ERROR: could not make final Directory, '{$finalDir}'");
+
+  if (file_exists($newfile))
+    if ( ! rename($newpath, $newpath . ".pre-merge"))
+      logp("error,exit1","FATAL ERROR: could not rename old cue '{$newpath}'");
+
+  // make Convertable
+  if (! makeCueConvertable($cuefile)) {
+    return FALSE;
+  }
+
+  // add line termination
+  addLineTerm($cuefile);
+
+  // write candidate file
+  if ( ! file_put_contents($newpath . ".cand", $cuefile))
+    logp("error,exit1", array("FATAL ERROR: could not write candidate cuefile",
+              "  '${newpath}.cand'"));
+
+//print_r($cuefile);
+  // verify current cuefile array, without file testing
+  if (! verifyCue( '', $dir, $newfile, FALSE, $cuefile, TRUE))
+    logp("error,exit1",
+       "FATAL ERROR: proposed cuefile array did not verify.");
+
+  // move songs (or test file existance if in check mode)
+  if (! moveWav($wav))
+    logp("error,exit1","FATAL ERROR: error moving wav files. Check logs.");
+
+  // verify with files in place
+  //  note hack to ../ on base dir so file works
+  if (! isDryRun() && ! verifyCue( '..', $dir, $newfile . ".cand"))
+    logp("error,exit1",
+         "FATAL ERROR: proposed cuefile did not verify but wav files have been moved.");
+
+  // rename candidate file
+  if (! isDryRun()) {
+    logp("log", "rename candidate to cue, '{$newpath}'");
+    if ( ! rename($newpath . ".cand", $newpath))
+      logp("error,exit1","FATAL ERROR: could not rename candidate '{$newpath}'");
+  }  // dryRun
+
+  // move to trash.  Note using parent as base trash directory
+  moveToTrash($trash, $trashed, "..");
+
+  return TRUE;
+} // end of executeMerge function
 
 
 
