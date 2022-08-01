@@ -53,8 +53,7 @@ date_default_timezone_set($sys_time_zone);
 $debug=FALSE;
 //$debug=TRUE;
 //
-function debug()
-{
+function debug()  {
     global $debug;
     if ( $debug === TRUE ) return(TRUE); else return(FALSE);
 }
@@ -110,8 +109,7 @@ function debug()
 //   - $_base: internal structure for base data
 //
 
-function logp_init($logroot, $default_ctl=NULL, $options=NULL)
-{
+function logp_init($logroot, $default_ctl=NULL, $options=NULL)  {
   global $logdir;
   global $log_default_name;
   global $log_default_options;
@@ -120,24 +118,21 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
   $initial = TRUE;
 
   // check if $logdir is a directory
-  if (! is_dir($logdir))
-  {
+  if (! is_dir($logdir))  {
     print "LOG ERROR: log directory $logdir does not exist.\n";
     print "    Please create or adjust logdir in the parameters file.\n";
     exit(1);
   }
 
   // check if file (initialized indicator) is already set and handle input as replacement
-  if (isset ($_base['log']['_file']))
-  {
+  if (isset ($_base['log']['_file']))  {
     // remove initial flag because it's set
     $initial = FALSE;
 //    logp("log",
 //      "WARNING: logp_init called additonal time after already being initialized. Using latest call's default params.");
 
     // check if file root has changed
-    if ( $logroot != NULL && $logroot != "" && $_base['log']['_logroot'] != $logroot )
-    {
+    if ( $logroot != NULL && $logroot != "" && $_base['log']['_logroot'] != $logroot )  {
       logp("log",
         array("WARNING: additional logp_init call does not match file from previous call:",
             "  Previous file: ". $_base['log']['_file'],
@@ -170,8 +165,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
   }
 
   // handle default control string array
-  if ( $initial === TRUE || $default_ctl != NULL )
-  {
+  if ( $initial === TRUE || $default_ctl != NULL )  {
     // check for clear
     if ( $default_ctl == "clear" || $default_ctl == "CLEAR" || $default_ctl == "none"
           || $default_ctl == "NONE")
@@ -181,8 +175,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
   }
 
   // handle options string
-  if ( $initial === TRUE || $options != NULL )
-  {
+  if ( $initial === TRUE || $options != NULL )  {
     // check for clear
     if ( $options == "clear" || $options == "CLEAR" || $options == "none"
           || $options == "NONE")
@@ -211,8 +204,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
 //      printf("var:{$var}, ind:{$ind}, val:{$opt_parts[1]}");
 
       // dispatch
-      switch ($var)
-      {
+      switch ($var) {
        case NULL: break;
        case "echo":
          // check if valid $ind
@@ -269,8 +261,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)
 //     Logs in log file, info file, and echos to screen
 //
 
-function logp($ctl, $message)
-{
+function logp($ctl, $message)  {
   global $_base;
 
   // flags initial state
@@ -280,8 +271,7 @@ function logp($ctl, $message)
   $prefix = NULL;
 
   // check for initialization
-  if (! isset($_base['log']['_file']))
-  {
+  if (! isset($_base['log']['_file']))  {
     print "LOG ERROR: function logp called without first initializing with logp_init.\n";
     print "    Exiting.\n";
     exit(1);
@@ -290,20 +280,17 @@ function logp($ctl, $message)
   $ctlarr = logp_int_ctlstring($ctl);
 
   // set EOL character for file and echo
-  if ($ctlarr['nl'] === FALSE)
-  {
+  if ($ctlarr['nl'] === FALSE)  {
     $eol = "";
     $echo_eol = "";
   }
-  else
-  {
+  else  {
     $eol = $_base['EOL'];
     $echo_eol = "\n";
   }
 
   // handle debug logging
-  if ( $ctlarr['debug'] === TRUE )
-  {
+  if ( $ctlarr['debug'] === TRUE )  {
     // signal logger not to log based on just this line
     $debug_logged = TRUE;
     // write debug if in debug state
@@ -312,8 +299,7 @@ function logp($ctl, $message)
 
   // loop through non-logging types and if set, log message
   foreach (array("info", "complete", "notify", "error" ) as $type)
-    if ( isset($ctlarr[$type]) && $ctlarr[$type] === TRUE)
-    {
+    if ( isset($ctlarr[$type]) && $ctlarr[$type] === TRUE)  {
       logp_int_write($type, $message, NULL, $eol);
 
       // check for echo option set
@@ -331,16 +317,14 @@ function logp($ctl, $message)
   // determine if log needed
   //  logic: follow if explicitly set, otherwise,
   //    follow flag or defaultto TRUE if not debug_logged
-  if ( isset($ctlarr['log_ctl']))
-  {
+  if ( isset($ctlarr['log_ctl']))  {
     if ( $ctlarr['log_ctl'] === FALSE ) $log_exec = FALSE;
     else $log_exec = TRUE;
   }
   elseif ( $debug_logged === FALSE ) $log_exec = TRUE;
 
   // execute log and debug write as well
-  if ( $log_exec === TRUE )
-  {
+  if ( $log_exec === TRUE )  {
     logp_int_write("log", $message, NULL, $eol);
     // write debug log if debug is on
     if ( $debug_logged === FALSE && debug() )
@@ -350,8 +334,7 @@ function logp($ctl, $message)
   // determine echo
   //  logic: follow if explicitly set, otherwise,
   //         if debug, output
-  if ( isset($ctlarr['echo_ctl']))
-  {
+  if ( isset($ctlarr['echo_ctl']))  {
     // echo was explicitly set or explicitly not set
 //    if ( $ctlarr['echo_ctl'] === TRUE )
     if ( $ctlarr['echo_ctl'] == TRUE )
@@ -359,15 +342,13 @@ function logp($ctl, $message)
     elseif ( $ctlarr['echo_ctl'] == FALSE )
       $echo_exec = FALSE;
   }
-  elseif ( $debug_logged === TRUE && debug() )
-  {
+  elseif ( $debug_logged === TRUE && debug() )  {
     $echo_exec = TRUE;
     $prefix = "DEBUG:";
   }
 
   // execute echo
-  if ( $echo_exec === TRUE )
-  {
+  if ( $echo_exec === TRUE )  {
     // normalize message into array
     if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
 
@@ -377,8 +358,7 @@ function logp($ctl, $message)
   }
 
   // handle exit
-  if ( isset($ctlarr['exit']) && $ctlarr['exit'] === TRUE )
-  {
+  if ( isset($ctlarr['exit']) && $ctlarr['exit'] === TRUE )  {
     // log message
     logp_int_write("log", "Exit {$ctlarr['exit']}", NULL, $eol);
 
@@ -389,20 +369,18 @@ function logp($ctl, $message)
     exit ($ctlarr['exit_level']);
   }
 
-  return;
+  return TRUE;
 }
 
 
 // logp_close
 
-function logp_close ()
-{
+function logp_close ()  {
   global $_base;
 
   // close all log files
   foreach ( $_base['log']['_types'] as $type )
-    if ( isset($_base['log'][$type]['handle'] ))
-    {
+    if ( isset($_base['log'][$type]['handle'] ))    {
       $log_handle = $_base['log'][$type]['handle'];
 
       if(! fclose ($log_handle))
@@ -421,7 +399,7 @@ function logp_close ()
   unset( $_base['log']['_basectl'] );
   unset( $_base['log']['_default'] );
 
-  return;
+  return TRUE;
 }
 
 
@@ -432,8 +410,7 @@ function logp_close ()
 //  $eol - end-of-line (OS specific and controlled by param)
 //
 
-function logp_int_write($type, $message, $prefix, $eol)
-{
+function logp_int_write($type, $message, $prefix, $eol)  {
   global $_base;
 
 //  print "logp_int_write {$type}\n";
@@ -492,7 +469,7 @@ function logp_int_write($type, $message, $prefix, $eol)
                         "    {$_base['log']['_file']}.{$_base['log']['_types'][$type]}.",
                         "    Exiting."), TRUE);
 
-  return;
+  return TRUE;
 }
 
 // internal function: logp_int_error ($message, $fatal)
@@ -502,16 +479,14 @@ function logp_int_write($type, $message, $prefix, $eol)
 // logs an error message if possible, otherwise prints to terminal
 //
 
-function logp_int_error ($message, $fatal)
-{
+function logp_int_error ($message, $fatal)  {
   global $_base;
   $print = FALSE;
 
   // if already tried error, then set $print
   if (isset($_base['log']['_err_err']) && ($_base['log']['_err_err'] === TRUE))
     $print = TRUE;
-  else
-  {
+  else  {
     $_base['log']['_err_err'] = TRUE;
     logp_int_write("error", $message, NULL, $_base['EOL']);
   }
@@ -519,14 +494,12 @@ function logp_int_error ($message, $fatal)
   // if already tried log, then set $print
   if (isset($_base['log']['_log_err']) && ($_base['log']['_log_err'] === TRUE))
     $print = TRUE;
-  else
-  {
+  else  {
     $_base['log']['_log_err'] = TRUE;
     logp_int_write("log", $message, NULL, $_base['EOL']);
   }
 
-  if ($print === TRUE || $fatal === TRUE)
-  {
+  if ($print === TRUE || $fatal === TRUE)  {
     // normalize message into array
     if (is_array($message)) $msgarr = $message; else  $msgarr = array($message);
 
@@ -534,6 +507,7 @@ function logp_int_error ($message, $fatal)
     foreach ($msgarr as $msg) print "$msg\n";
   }
 
+// JLV?  Print state?
   // exit if $fatal or $print
   if ($print === TRUE || $fatal === TRUE)
     exit(1);
@@ -545,8 +519,7 @@ function logp_int_error ($message, $fatal)
 //
 // return array with default options
 
-function logp_int_ctlstring ($ctl)
-{
+function logp_int_ctlstring ($ctl)  {
   global $_base;
 
   $ctl_index = explode(",", $ctl);
@@ -561,11 +534,9 @@ function logp_int_ctlstring ($ctl)
   if (! isset($ctl_array['nl']) ) $ctl_array['nl'] = TRUE;
   if (! isset($ctl_array['debug']) ) $ctl_array['debug'] = FALSE;
 
-  foreach ($ctl_index as $option)
-  {
+  foreach ($ctl_index as $option)  {
   //  print "ctlstring option:{$option}\n";
-    switch ($option)
-    {
+    switch ($option)  {
       case "": break;
       case "log": $ctl_array["log_ctl"] = TRUE; break;
       case "nolog": $ctl_array["log_ctl"] = FALSE; break;
@@ -605,7 +576,7 @@ function logp_int_ctlstring ($ctl)
 //
 // isDryRun function - used to exctract global in conditionals
 // returns global $isDryRun
-function isDryRun(){
+function isDryRun()  {
   global $isDryRun;
   if (isset($isDryRun)) return $isDryRun; else return FALSE;
 }
