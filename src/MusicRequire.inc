@@ -360,7 +360,7 @@ function logp($ctl, $message)  {
   // handle exit
   if ( isset($ctlarr['exit']) && $ctlarr['exit'] === TRUE )  {
     // log message
-    logp_int_write("log", "Exit {$ctlarr['exit']}", NULL, $eol);
+    logp_int_write("log", "Exit {$ctlarr['exit_level']}", NULL, $eol);
 
     // close log files
     logp_close();
@@ -1156,7 +1156,6 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
 }
 
 
-// function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, [$command])
 //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
 //       full path name.  $add_folder can be blank to start (and usually is).  Used by
 //       recursive function to crawl.
@@ -1165,7 +1164,6 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
 //  $pad - pad width for track numbers
 //  $command - normal, fixup
 //  $options
-//
 // Returns string which is the updated line, else returns FALSE on failure
 //
 // fixFileLine - fixes a previous file format to new, correct standard
@@ -1196,12 +1194,15 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
   // gets $artist and $album
   $list = preg_split("/\//", $add_folder);
-  $list_cnt=count($list);
+  $list_cnt = count($list);
   if ($list_cnt < 2) {
-    logp("error","ERROR: add_folder must be of the form ..artist/album");
+    logp("error",array(
+          "ERROR processFILEtag: add_folder must be of the form ..artist/album",
+          "  add_folder:'{$add_folder}'"));
     return FALSE;
   }
   $galbum = $list[$list_cnt - 1];
+  // function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, [$command])
   $gartist = $list[$list_cnt - 2];
 
   // loop though looking for file lines
@@ -1210,6 +1211,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
     // load album / artist from cue_meta if it exists, otherwise from
     //  gartist/galbum
+    //
     if (isset($cue_meta[$i]["artist"])) $artist  = $cue_meta[$i]["artist"];
     else $artist = $gartist;
 

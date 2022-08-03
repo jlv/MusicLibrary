@@ -106,7 +106,7 @@ elseif ($hostname == "shigoto")  {
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   //$srcdir = "N:/QT";
-  $srcdir = "F:/QT5";
+  $srcdir = "F:/QT6";
 //  $srcdir = "N:/QT-Rip2";
 //  $srcdir = "N:/QT-Rip4/Succeed";
 
@@ -250,7 +250,7 @@ $sys_time_zone='America/Los_Angeles';
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
 $isDryRun=false;
-//$isDryRun=true;
+$isDryRun=true;
 
 // end of MusicParams.inc
 ?>
