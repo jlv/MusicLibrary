@@ -106,14 +106,14 @@ elseif ($hostname == "shigoto")  {
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   //$srcdir = "N:/QT";
-  $srcdir = "D:/QT5";
+  $srcdir = "F:/QT5";
 //  $srcdir = "N:/QT-Rip2";
 //  $srcdir = "N:/QT-Rip4/Succeed";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory
 //  $conversion_base_dir = "D:/Music/conversion";
-  $conversion_base_dir = "D:/Q-Out";
+  $conversion_base_dir = "F:/Q-Out";
 
   // source directory of wave files and cue files
 //  $cuedir = "N:/Cuefiles";
@@ -250,7 +250,7 @@ $sys_time_zone='America/Los_Angeles';
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
 $isDryRun=false;
-$isDryRun=true;
+//$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

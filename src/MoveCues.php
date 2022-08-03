@@ -1,23 +1,26 @@
 <?php
 
-// functional definition
+// MoveCues [--reorder]
+//  --reorder - reorders tracks in any compbined files
 //
 // After EAC ripping, scans each cuefile in a directory, touches up any issues
 //  and moves the cuefile to the appropriate directory.
 
 require 'MusicRequire.inc';
 
+
 // function moveCues($directory)
 //  $directory - target directory which the function checks
 //
 //function scanCues($directory, $trashBin){
 
-function moveCues($directory)  {
+function moveCues($directory, $options)  {
   // initialize
   global $cue_rip_dir_tag;
   $matches = array();
   $files_used = array();
   $return=TRUE;
+  $cue_found=FALSE;
 
   // check that we are called from a ripping directory
   //  Requires that a "safe tag" file exists
@@ -26,8 +29,7 @@ function moveCues($directory)  {
         "FATAL ERROR: not called from a ripping directory.",
         "  The file '{$cue_rip_dir_tag}' must exist in this directory. Exiting."));
 
-  // check that trash directory exists or can be made
-  if (! moveToTrash()) return FALSE;
+
 //  if (! moveToTrash(array())) return FALSE;
 //  $goodCue = '';
 
@@ -39,6 +41,11 @@ function moveCues($directory)  {
     $setup_reg = FALSE;
     $trash = array();
     $trashed = array();
+
+    // check that trash directory exists or can be made
+    if ($check == FALSE)
+      if (! moveToTrash()) return FALSE;
+
 
     while(($file = readdir($dir_r)) !== false) {
       // NOTE $file is name.cue
@@ -53,6 +60,7 @@ function moveCues($directory)  {
 
       // skip if file is in $trashed list
       if(fileChecked($file, $trashed, FALSE, TRUE)) continue;
+      $cue_found=TRUE;
 //print "passed trash check\n";
       // if in second pass (if $check is FALSE), check that file was
       //     picked up for use in first pass in the files_used list
@@ -223,7 +231,11 @@ function moveCues($directory)  {
 
       // trackify file to appropriate tracks, and populate $wav array
 //      if (! trackifyCue($cuefile, $wav, $pad)) {
-      if (! trackifyCue($cuefile, $wav)) {
+      if (isset($options["reorder"]) && $options["reorder"] === TRUE)
+         $option="reorder";
+      else $option="normal";
+
+      if (! trackifyCue($cuefile, $wav, $option)) {
         $return=FALSE; continue;
       }
 
@@ -291,6 +303,11 @@ function moveCues($directory)  {
 
     // if in check mode, check for error condition, then reinitialize vars as needed
     if ($check == TRUE) {
+      // check for cues
+      if ($cue_found == FALSE) {
+        logp("error","No cue files found.");
+        return FALSE;
+      }
       // check if errors
       if ($return != TRUE) {
         logp("error",
@@ -558,13 +575,12 @@ function fileChecked($file, $files_used, $check, $skip_error = FALSE) {
 //
 logp_init("MoveCues", "");
 
-//$testDir = "C:/Quentin/ReferenceMusic-RippingTool/0 Jazz";
-//$trashDir = "C:/Quentin/MusicWorking/MoveCuesTrash";
+getArgOptions($argv, $options);
 
 // scanCues($testDir, $trashDir)
-if (moveCues("."))
-  logp("echo","MoveCues complete.");
+if (moveCues(".", $options))
+  logp("echo,exit0","MoveCues complete.");
 else
-  logp("error,echo","MoveCues complete, but with errors.  Please check.");
+  logp("error,echo,exit1","MoveCues complete, but with errors.  Please check.");
 
 ?>

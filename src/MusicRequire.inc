@@ -849,6 +849,9 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   if ($list_count < 2) return TRUE;
 
   $album = $flist[$list_count - 1];
+  // strip trailing .'s if any
+  $album = preg_replace("/\.+$/", '', $album);
+
   $artist = $flist[$list_count - 2];
 
   // check for non-null $album, $artist
@@ -936,7 +939,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
       // check album line
       if($in_tracks == FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
-        if ($matches[2] != $album)
+        if ($matches[2] != $album && preg_replace("/\.+$/", '', $matches[2]) != $album)
         {
           if ( $silent == false )
           logp("error", array(
@@ -1212,6 +1215,8 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
     if (isset($cue_meta[$i]["album"])) $album  = $cue_meta[$i]["album"];
     else $album = $galbum;
+    // strip trailing .'s if any
+    $album = preg_replace("/\.+$/",'',$album);
 
     // look for FILE lines
     if( preg_match("/^\s*FILE\s+\"/", $cuefile[$i])) {
@@ -1229,6 +1234,10 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
       // replace $artist and $album directory level 0.  Keep space.
       $songfile = str_replace("{$artist}\\{$album}\\", '', $songfile);
+      // replace ending with . just in case
+// print "sf:'{$songfile}'\n";
+//       $songfile = str_replace("{$artist}\\{$album}.\\", '', $songfile);
+// print "sf2:'{$songfile}'\n";
 //$repstr = "{$artist}\\{$album}\\";
 //$repstr = "{$artist}\\";
 //print "repstr '{$repstr}'\n";
@@ -1475,6 +1484,7 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
   // loop through each line. If track was not found after FILE, error
   //  using $track_found.
   $track="";
+  $file_line="";
   $track_found = TRUE;
   $cur_track = 1;
   for($i=0; $i < count($cuefile); $i++)
@@ -1515,6 +1525,7 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
           return FALSE;
         }
         $track_found = FALSE;
+        $file_line = $cuefile[$i];
 
         // set key vars
         $curfilebase = $matches[3];
@@ -1567,12 +1578,13 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
       }
 
       // if this track is from the FILE statement, compare with what we found in FILE
-      if ($track_found == FALSE && $track_track != $track_file) {
+      if ($track_found == FALSE && $track_track != $track_file && $option != "reorder") {
         logp("error",array(
-                "ERROR trackify: track from FILE and track TRACK did not match. Please check.",
+                "ERROR trackify: track from FILE and track TRACK do not match. Please check.",
                 "  Track from FILE line: '{$track_file}'",
                 "  Track from TRACK line: '{$track_track}'",
-                "  Line: {$cuefile[$i]}"));
+                "  Track line: {$cuefile[$i]}",
+                "  File line: {$file_line}"));
         return FALSE;
       }
 
