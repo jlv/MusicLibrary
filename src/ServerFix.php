@@ -4,8 +4,17 @@
 
 require "MusicRequire.inc";
 
-logp_init("ServerFix", NULL, "echo[error],echo[info]");
+logp_init("ServerFix");
 logp("log","ServerFix Beginning");
+
+//crawl($test, '', '', "serverFix", array());
+if (crawl($srcdir, '', '', "serverFix", array()))
+  logp("echo,exit0","ServerFix completed crawl of directory.");
+else
+  logp("echo,exit0","ServerFix encountered errors in crawl of directory. Plesae check.");
+
+// safety
+exit;
 
 // funtion serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
 //  $base_folder - initial root folder
@@ -101,39 +110,24 @@ function cueFileFix($base_folder, $add_folder, $file){
   // $wav is a 2D aray of [tracknum][old/new/old_dir/new_dir]
   $wav = array();
 
-  // $cuefile is array of orig cue file
-//    $cuefile = file($file, FILE_IGNORE_NEW_LINES);
-print "base:{$base_folder}\n";
-print "add:{$add_folder}\n";
-print "file:{$file}\n";
   // gets $artist and $album
   $list = preg_split("/\//", $add_folder);
-  print_r($list);
   $list_cnt = count($list);
-  print "cnt:{$list_cnt}\n";
   if ($list_cnt < 2) {
     logp("error",array(
           "ERROR ServerFix: add_folder must be of the form ..artist/album",
           "  add_folder:'{$add_folder}'"));
     return FALSE;
   }
-print "through\n";
+
   $album = $list[$list_cnt - 1];
   // function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, [$command])
   $artist = $list[$list_cnt - 2];
 
 
-  // // fixes () and . if they are in album/title
-  // $album = fixParens($album);
-  // $artist = fixParens($artist);
-  // $album = fixDot($album);
-  // $artist = fixDot($artist);
-  // $album = fixBrackets($album);
-  // $artist = fixBrackets($artist);
-
   // checks if in artist/album directory
   $checkDir = "/{$artist}\/{$album}/";
-  if(! preg_match($checkDir, $add_folder)){
+  if(! preg_match($checkDir, $add_folder))  {
     logp("error,info", "ERROR: cue file in incorrect directory '{$add_folder}'");
     return false;
   }
@@ -143,98 +137,11 @@ print "through\n";
   if ( $cuefile === false )
     logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
 
-print "into process\n";
   // process FILE statements
   if (! processFILEtag($add_folder, $cuefile, NULL, $wav, "fixup")) {
     logp("error", "ERROR: processFILEtag returned error.");
     return FALSE;
   }
-print "passed process\n";
-
-
-//     // check if over 99 tracks and set $pad
-//     $count_arr = countTracks($cuefile);
-//     if ($count_arr["return"] =! TRUE) return FALSE;
-//     $pad = $count_arr["max_pad"];
-//
-// //    print_r($count_arr);
-// //    $foo=7;
-// //    print "pad:" . str_pad($foo,$count_arr["cnt_pad"],"0",STR_PAD_LEFT);
-//
-//     // crawls through lines in $cuefile
-//     for($i = 0; $i < count($cuefile); $i++){
-//
-//       // file line
-//       if(preg_match ( '/^\s*FILE/', $cuefile[$i] )) {
-//         // initialize and increment vars
-//         fixFileLine($add_folder, $cuefile, $i, $cue_meta, $wav, "fixup");
-//
-//
-//         $tooLong = "";
-//
-//         // defines $song
-//         $song = preg_replace("/^\s*FILE \"/", '', $cuefile[$i]);
-//         $song = preg_replace("/\" WAVE$/", '', $song);
-// //        $song = preg_replace("/\\\/", '', $song);
-// //        $song = preg_replace("/{$artist}{$album}/", '', $song);
-//         $song = preg_replace("/{$artist}\\\/", '', $song);
-//         $song = preg_replace("/{$album}\\\/", '', $song);
-//         // remove any file path
-//         $song = preg_replace("/\\\/", '', $song);
-//
-// //print("SONG:{$song}:\n");
-//
-//         // Calculate Long file name:
-//         // Also checks for too long file name (i.e. NN~AAA~1.wav)
-//         $tooLong = "";
-//         $wavIndex = 0;
-//         if(preg_match("/^\d\d\d/", $song)){
-//           $tooLong = substr($song, 0, 3);
-//         }else {
-//           $tooLong = substr($song, 0, 2);
-//         }
-//         // reassigns $artist to artist name without \
-//         $tooLongArtist = $list[count($list) - 2];
-//
-//         // begin making $tooLong
-//         $wavIndex = intval($tooLong);
-//         $wav[$wavIndex] = array();
-//         $tooLong = $tooLong .  "-" . strtoupper(substr($tooLongArtist, 0, 3)) . "~" . "1.wav";
-//
-//         // If file exists, capture:
-//         // as long as a song file exists, will assign old name of track to $wav array
-//         if(file_exists($song)) $songfile=$song;
-//         elseif(file_exists($tooLong)) $songfile=$tooLong;
-//         else
-//         {
-//           logp("error", array("ERROR: file '{$song}' or", "  '{$tooLong}' specified in cuefile does not exist."));
-//           return false;
-//         }
-//
-//         // change FILE line and set $wav
-//         $wav[$wavIndex]["old"] = $song;
-//         $cuefile[$i] = fixFileLine($add_folder, $cuefile[$i], $wav[$wavIndex], $pad);
-//         //if($cuefile[$i] === 0 && $i < count($cuefile)){
-//         if($cuefile[$i] === 0 && $i < count($cuefile)){
-//           logp("error", array("ERROR: fixFileLine function has failed to write new songfile",
-//                          "  {$songfile}"));
-//           return FALSE;
-//         }
-
-  //   } // file line
-  // } // for
-
-  // Write a cue file
-//    if(isDryRun())
-//    {
-//      logp("info", "DryRun: Writing pre-converatble cuefile as {$file}.orig");
-//      $goodCue = file_put_contents($file . ".orig.new", $cuefile);
-//    }
-//    else
-//    {
-//      // puts cue file as all good
-//      $goodCue = file_put_contents($file . ".orig", $cuefile);
-//    }
 
   // write original, pre-Convertable cuefile
   logp("log","Writing original, pre-convertable cuefile as '${file}.orig'");
@@ -265,8 +172,10 @@ print "passed process\n";
     logp("error,exit1","FATAL ERROR: could not write candidate cuefile '${file}.new'");
 
   // rewrite wav files
-  moveWav($wav);
-//        moveWav($base_folder, $add_folder, $wav);
+  if (! moveWav($wav)) {
+    logp("error","ERROR: error moving wav files. Check logs.");
+    $return FALSE;
+  }
 
   // verify sequence
   if(! isDryRun())
@@ -323,11 +232,5 @@ print "passed process\n";
 } // end of function
 
 
-
-//crawl($test, '', '', "serverFix", array());
-if (crawl($srcdir, '', '', "serverFix", array()))
-  logp("echo,exit0","ServerFix completed crawl of directory.");
-else
-  logp("echo,exit0","ServerFix encountered errors in crawl of directory. Plesae check.");
 
  ?>
