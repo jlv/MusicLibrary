@@ -3,7 +3,7 @@
 // MultiDisk [--override-nofile]
 //  --override-nofile - overrides completion of disk merge skipping non-existant
 //                       files
-//                          
+//
 
 require "MusicRequire.inc";
 logp_init("MultiDisk", "");
@@ -168,6 +168,10 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   if (! trackifyCue($cuefile, $wav, "reorder"))
     logp("error,exit1", "ERROR: trackifyCue returned error.");
 
+  // check file existance from moveWav
+  if (! moveWav($wav, "test-exist"))
+    logp("error,exit1", "ERROR: moveWav testing file existance returned error.");
+
 
   return TRUE;
 } // end of setupMultiMerge function
@@ -218,10 +222,16 @@ function confirmMerge($cuefile, $wav)  {
   print "\n\nTrack Changes:\n\n";
 
   foreach ($wav as $song) {
-    print "Dir:  {$song["old_dir"]}\nSong: {$song["old"]}\n";
+    // get correct file,if a tooLong
+    if (isset($song['tooLongExists']) && $song['tooLongExists'] == TRUE)
+      $old_song = $song["old_long"];
+    else
+      $old_song = $song["old"];
+
+    print "Dir:  {$song["old_dir"]}\nSong: {$old_song}\n";
     print " --> '{$song["new"]}'\n\n";
   }
-
+//print_r($wav);
   // confirm
   if (strtoupper(readline("\nConfirm >")) != "Y") exit;
 
@@ -237,6 +247,7 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
   // globals from parameter
   global $finalDir;
   global $multiDisks;
+  $return = TRUE;
 
   $dir= getArtistFromCwd() . "/" . $finalDir;
   $newfile = $finalDir . ".cue";
@@ -271,7 +282,7 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
        "FATAL ERROR: proposed cuefile array did not verify.");
 
   // move songs (or test file existance if in check mode)
-  if (! moveWav($wav))
+  if (! moveWav($wav, $options))
     logp("error,exit1","FATAL ERROR: error moving wav files. Check logs.");
 
   // verify with files in place
@@ -284,7 +295,7 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
   //  also note: we move to Trash before we rename .cand file in case
   //   the finalDir is one of the contributing dirs (which would remove
   //   it's cue file)
-  moveToTrash($trash, $trashed, "..");
+  if (! moveToTrash($trash, $trashed, "..")) $return = FALSE;
 
   // rename candidate file
   if (! isDryRun()) {
@@ -296,10 +307,12 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
 
   // move remaining files source disks
   foreach ($multiDisks as $disc)
-    if (! moveDirContents($disc, $finalDir))
+    if (! moveDirContents($disc, $finalDir)) {
       logp("error","ERROR: could not clear a directory, '{$disc}'");
-
-  return TRUE;
+      $return = FALSE;
+    }
+    
+  return $return;
 } // end of executeMerge function
 
 

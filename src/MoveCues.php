@@ -274,7 +274,7 @@ function moveCues($directory, $options)  {
       }
 //print "\nCompleted no file verify\n";
       // move songs (or test file existance if in check mode)
-      if (! moveWav($wav, NULL, $check)) {
+      if (! moveWav($wav, array("test-exist"=>$check))) {
         logp("error","ERROR: error moving wav files. Check logs.");
         $return=FALSE; continue;
       }

@@ -1208,7 +1208,12 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
                 "  Line: $cuefile[$i]"));
         return FALSE;
       }
-      $songfile = preg_replace("/\"\s+WAVE.*$/", '', $songfile);
+
+      // strip back end of string.  Sometimes no WAVE but just a "
+      $repl = 0;
+      $songfile = preg_replace("/\"\s+WAVE.*$/", '', $songfile, -1, $repl);
+      if ($repl < 1)
+        $songfile = preg_replace("/\"$/", '', $songfile);
 
       // replace $artist and $album directory level 0.  Keep space.
       $songfile = str_replace("{$artist}\\{$album}\\", '', $songfile);
@@ -1221,8 +1226,8 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
                "  Filename:{$songfile}"));
         return FALSE;
       }
-
        $songbase = preg_replace("/\.wav$/i", '', $songfile);
+
 
       // get current track no
       if (preg_match("/^(\d+)/", $songbase, $matches))
@@ -1235,7 +1240,8 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
       }
 
       // if $songfile is a tooLong (i.e. NN~AAA~1.wav), create a new songfile line
-      if ($songfile == $track_no .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1") {
+      $tooLong = $track_no .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1";
+      if ($songfile == $tooLong) {
         // look ahead and find title
         $song_found = FALSE;
         for($j=$i; $j < count($cuefile); $j++) {
@@ -1265,7 +1271,16 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
         $new_song = $track_no . " " . $cue_song;
       } // if tooLong
-      else $new_song = $songbase;
+      else {
+        // clean up new song a bit
+        //
+        // strip trailing dots
+        $new_song = preg_replace("/\.+$/", '', $songbase);
+
+        // change other dots to -
+        $new_song = str_replace('.', '-', $new_song);
+
+      }
 
       // if command is "fixup"
       if ($command == "fixup")  {
@@ -1301,6 +1316,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
       // create $wav entry
       $wav[] = array (
         "old" => $songfile,
+        "old_long" => $tooLong . ".wav",
         "new" => $new_song,
         "old_dir" => $cue_meta[$i]["dir"],
         "new_dir" => ""
@@ -2076,23 +2092,33 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
 // function moveWav(&$wav, [$reverse = false], [$test_exist = false])
 //  $wav - array of wav file info (see below)
-//  $options - single element or element of options
+//  $options - single element or key=>value element of options
 //       --reverse - renames the files in the other direction from new to old
 //       --override-nofile - show warning if old files do not exist, but continue
 //                            processing and don't return false
-//       --test_exist - 
+//       --test-exist -
 //
 // Returns TRUE if successul, FALSE on failure
 //
 // moveWav function - moves array of wav files
 //
 //  wav array: The 2D array uses Index as first dimension and as 2nd dim
-//           "old", "new", "old_dir", and "new_dir" for data values.
+//           "old", "old_long", "new", "old_dir", and "new_dir" for data values.
 //            e.g. $wav[1]["new"].  Index is [], numerical array
 
-function moveWav(&$wav, $reverse = false, $test_exist = false)  {
+function moveWav(&$wav, $options)  {
   $return = TRUE;
-  if ($test_exist == FALSE) $msg = "Renaming"; else $msg="Test existance";
+
+  // get options
+  $reverse = getOption("reverse", $options);
+  $override_nofile = getOption("--override-nofile", $options);
+  $test_exist = getOption("test-exist", $options);
+
+//  print "Test_exist:{$test_exist}:\n";
+  // if ($test_exist == FALSE) print "test exist FALSE";
+  // if ($test_exist == TRUE) print "test exist TRUE";
+  //
+  // if ($test_exist == FALSE) $msg = "Renaming"; else $msg="Test existance";
 
   // general message if dryRun
   if (isDryRun()) logp("log","DryRun: the following would be renamed:");
@@ -2107,10 +2133,14 @@ function moveWav(&$wav, $reverse = false, $test_exist = false)  {
       logp("error,exit1","FATAL ERROR in moveWav: null 'new' value in key '{$key}'");
 
     // set file names
-    if (isset($index["old_dir"]) && $index["old_dir"] != NULL)
+    if (isset($index["old_dir"]) && $index["old_dir"] != NULL)  {
       $old_path = $index["old_dir"] . "/" . $index["old"];
-    else
+      $long_path = $index["old_dir"] . "/" . $index["old_long"];
+    }
+    else {
       $old_path = $index["old"];
+      $long_path = $index["old_long"];
+    }
 
     if (isset($index["new_dir"]) && $index["new_dir"] != NULL)
       $new_path = $index["new_dir"] . "/" . $index["new"];
@@ -2124,23 +2154,50 @@ function moveWav(&$wav, $reverse = false, $test_exist = false)  {
     elseif ( $reverse != true ) {
       logp("log", array("{$msg} '{$old_path}'", "  as '{$new_path}'."));
 
+      // check for normal path, long path, or error
       if (file_exists($old_path)) {
         if (! isDryRun() && $test_exist == FALSE && ! rename($old_path, $new_path))  {
           logp("error", array("ERROR moveWav: failure on renaming '{$old_path}'",
                  " to '{$new_path}'"));
           $return = FALSE;
         }
-      } else {
-        logp("error","ERROR moveWav: file does not exist, '{$old_path}'");
-        $return=FALSE;
       }
-    } else {   // reverse the rename
-      logp("log", array("Reverse {$msg} '{$new_path}'", " as '{$old_path}'."));
+      elseif (file_exists($long_path)) {
+        // set $wav entry for TooLongExists
+        $wav[$key]['tooLongExists'] = TRUE;
+        logp("log","Using TooLong verion: '{$long_path}'");
+
+        if (! isDryRun() && $test_exist == FALSE && ! rename($long_path, $new_path))  {
+          logp("error", array("ERROR moveWav: failure on renaming '{$long_path}'",
+                 " to '{$new_path}'"));
+          $return = FALSE;
+        }
+      }
+      // no file of other type
+      else {
+        if ($override_nofile == TRUE) {
+          logp("error",array(
+                  "WARNING moveWav: file does not exist, but override set.",
+                  "File: '{$old_path}'"));
+          $return=TRUE;
+        } else {
+          logp("error","ERROR moveWav: file does not exist, '{$old_path}'");
+          $return=FALSE;
+        }
+      } // end of else of if file exists
+    } // if reverse
+    else {   // reverse the rename
+      // set $rev dest path
+      if (isset($index['tooLongExists']) && $index['tooLongExists'] == TRUE)
+        $rev_path = $long_path;
+      else $rev_path = $old_path;
+
+      logp("log", array("Reverse {$msg} '{$new_path}'", " as '{$rev_path}'."));
 
       if (file_exists($new_path)) {
-        if (! isDryRun && $test_exist == FALSE && ! rename($new_path, $old_path))  {
+        if (! isDryRun && $test_exist == FALSE && ! rename($new_path, $rev_path))  {
           logp("error", array("ERROR moveWav: failure on reverse renaming '{$new_path}'",
-                  " as '{$old_path}'"));
+                  " as '{$rev_path}'"));
           $return = FALSE;
         }
       } else {
@@ -2258,11 +2315,12 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
       logp("log","Moved {$from_dir}/{$file} to {$newfile}");
   } // end of while readdir
 
+  closedir($dir);
+
   // done if dryRun
   if (isDryRun()) return $return;
 
   // check files are gone
-  closedir($dir);
   $dir = opendir($from_dir);
   $found_file=FALSE;
   while(($file = readdir($dir)) !== FALSE) {
@@ -2283,6 +2341,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
     }
   }
 
+print "should not reach here in dry run\n";
   closedir($dir);
   return $return;
 
@@ -2408,7 +2467,26 @@ function getArgOptions($argv, &$options = array())  {
   } // end of for loop
 
   return $return;
-}
+}  // end of getArgOptions
+
+
+// function getOption($option, $options, [$default_value])
+//  $option - name of option
+//  $options - array of key=>value options
+//  $default_value - value returned if no value is set in key=>value.
+//                   defaults to TRUE
+function getOption($option, $options, $default_value = TRUE) {
+  // arrayify if needed
+  if (! is_array($options)) $options=array($options=>TRUE);
+
+//print_r($options);
+//print "option:{$option}:value:{$options[$option]}:\n";
+  if (isset($options[$option]))
+    if ($options[$option] == NULL) return $default_value;
+    else return $options[$option];
+  else
+    return FALSE;
+} // end of function getOption
 
 
 

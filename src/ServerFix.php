@@ -219,7 +219,7 @@ function cueFileFix($base_folder, $add_folder, $file){
       // reverse wav files
       logp("error","  Attempting to restore wav files...");
 //        moveWav($base_folder, $add_folder, $wav, TRUE);
-      moveWav($wav, TRUE);
+      moveWav($wav, "reverse");
 
       logp("info","ServerFix failed to transform '{$file}' in '{$add_folder}'. Check if undo was successful.");
     }
