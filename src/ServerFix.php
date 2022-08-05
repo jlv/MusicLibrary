@@ -26,13 +26,15 @@ exit;
 //  $file - name of file passed to function
 //  $options - array of options passed to function
 //
+// Returns TRUE on success, FALSE if errors.
+//
 // serverFix function - fixes both cue file and associated .wav files of the music server
 //                        Fixes cue files first and then changes .wav files
+
 function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options){
   $return = TRUE;
-  // only looks at cue files
-  // changes the directory to $base_folder because we will always stay in it
-//    logp("log","ServerFix checking '{$base_folder}', '{$file}'");
+
+  // operate from directory location
   chdir($base_folder . '/' . $add_folder);
 
   // $list - array of $add_folder split between every /
@@ -44,17 +46,9 @@ function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
   // if there is a .$album.nocue file, return out of function (.nocue signals no work in this directory)
 
   // checks if there is a cue file. if there isn't, ERROR
-  //if(!file_exists($album . '.cue')){
-  //  logp("error", "ERROR: no .cue file found associated with {$base_folder}/{$add_folder}/{$file}");
-  //}
   if (! checkCueCovered($base_folder, $add_folder, "continue")) return TRUE;
-  // {
-  //   logp("error","ERROR: Returning. Failed checkCueCovered.");
-  //   return false;
-  // }
 
   // check for .jpg file and if it is named folder
-//    if(preg_match("/\.jpg$/", $file))
   if (getSuffix($file) == "jpg")
     if ( ! file_exists("folder.jpg"))
       if ( rename($file, "folder.jpg"))
@@ -62,24 +56,10 @@ function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
       else
         logp("error", "ERROR: Failure on renaming {$file} to folder.jpg in {$base_folder}/{$add_folder}");
 
-//      if(! preg_match("/folder.jpg/", $file))
-//      {
-//        $check = rename($file, "folder.jpg");
-//      }
-//      else
-//      {
-//        $check = true;
-//      }
-//      if($check === false){
-//        logp("error", "Warning: Failure on renaming {$file}, Probably multiple .jpg in directory");
-//      }
-//    }
-
-  // if cue file, check then fix if needed
-//    if(preg_match('/\.cue$/i', $file)){
+  // if cue file
   if (getSuffix($file) == "cue")
     // checks to see if cue file needs any fixing
-//      if(!cueGood($base_folder, $add_folder, $file)){
+    // JLV: may make a command line option to fix everything
     if(! verifyCue($base_folder, $add_folder, $file, TRUE))  {
       // if !cueGood, runs cueFix function
       $checkSpecial = cueFileFix($base_folder, $add_folder, $file);
@@ -103,7 +83,6 @@ function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
 //  $line - FILE line from .cue file
 //
 // cueFileFix function - new fix function to see if it works. Go back to GitHub if there are big problems
-// returns 0 on failure
 
 function cueFileFix($base_folder, $add_folder, $file){
   logp("log", "cueFileFix starting on: {$base_folder}/{$add_folder}/{$file}");
@@ -121,9 +100,7 @@ function cueFileFix($base_folder, $add_folder, $file){
   }
 
   $album = $list[$list_cnt - 1];
-  // function processFILEtag($add_folder, &$cuefile, $cue_meta, &$wav, [$command])
   $artist = $list[$list_cnt - 2];
-
 
   // checks if in artist/album directory
   $checkDir = "/{$artist}\/{$album}/";
@@ -146,6 +123,7 @@ function cueFileFix($base_folder, $add_folder, $file){
   // write original, pre-Convertable cuefile
   logp("log","Writing original, pre-convertable cuefile as '${file}.orig'");
   $orig = $cuefile;
+
   // add line terminators
   addLineTerm($orig);
   if ( ! file_put_contents($file . ".orig", $orig))
