@@ -2104,6 +2104,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 //
 //  wav array: The 2D array uses Index as first dimension and as 2nd dim
 //           "old", "old_long", "new", "old_dir", and "new_dir" for data values.
+//           Note that wav can store runtime data, as it does with tooLongExists
 //            e.g. $wav[1]["new"].  Index is [], numerical array
 
 function moveWav(&$wav, $options)  {
