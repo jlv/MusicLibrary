@@ -1,12 +1,10 @@
 <?php
 
   // functional definition
+  //
+  // prints every cue file and wav file
 
   require "MusicRequire.inc";
-
-  logp_init("ServerReport", "");
-
-  $crawlDir = "D:/A";
 
   // funciton crawlName($base_folder, $add_folder, $new_base_folder, $filename, $array_of_options)
   //  $base_folder - initial root folder
@@ -27,6 +25,11 @@
     }
   }
 
-  crawl($crawlDir, "", "", "crawlName", array());
+  //
+  // begin function - main
+  //
+  logp_init("ServerReport", "");
+
+  crawl($srcdir, "", "", "crawlName", array());
 
  ?>

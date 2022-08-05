@@ -1,8 +1,7 @@
 <?php
 
-  // functional definition
+  // input parameters for rename.  Call rename.php to execute.
 
-  print "Accessed Rename.inc\n\n";
   // $oldDir - old album name to be changed
   $oldDir = "Open Your Eyes (Limited Edition Surround Sound)";
 
@@ -10,8 +9,12 @@
   // if user does not wish to change the album title, have $oldDir = $newDir
   $newDir = "Open Your Eyes";
 
-  // trackExcerpt - part of tracks that the user wants the program to cut out
-  // NOTE do NOT put in Regex form
+  // trackExcerpt - string segment that should be removed from each track
+  // NOTE: do NOT put in Regex form
   $trackExcerpt = "";
+
+  // albumRename renames the " - album -" and "~ album ~" formats. When set to
+  //  TRUE, turns this feature off.
+  $albumRenameOff = FALSE;
 
  ?>
