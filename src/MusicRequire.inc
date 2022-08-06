@@ -581,6 +581,23 @@ function isDryRun()  {
   if (isset($isDryRun)) return $isDryRun; else return FALSE;
 }
 
+
+// function checkDryRunOption($options)
+//
+// Always returns TRUE
+//
+// changes $isDryRun global state if --dryrun or --DryRun are set in options
+
+function checkDryRunOption($options=array()) {
+  global $isDryRun;
+
+  $isDryRun = getOption("DryRun", $options, $isDryRun);
+
+  return TRUE;
+}
+
+
+
 // function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options)
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to add to $base_folder (or $new_base_folder) to achieve
@@ -1223,7 +1240,9 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
       if (preg_match("/\\\/", $songfile)) {
         logp("error", array(
                "ERROR in processFILEtag: file has remaining directory delimiters after fixup.",
-               "  Filename:{$songfile}"));
+               "  Filename:{$songfile}",
+               "  Artist:{$artist}",
+               "  Album:{$album}"));
         return FALSE;
       }
        $songbase = preg_replace("/\.wav$/i", '', $songfile);
@@ -2107,7 +2126,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 //           Note that wav can store runtime data, as it does with tooLongExists
 //            e.g. $wav[1]["new"].  Index is [], numerical array
 
-function moveWav(&$wav, $options)  {
+function moveWav(&$wav, $options=array())  {
   $return = TRUE;
 
   // get options
@@ -2459,7 +2478,14 @@ function getArgOptions($argv, &$options = array())  {
     if (substr($argv[$i],0,2) == '--') {
       $arg_arr = explode('=',substr($argv[$i],2));
         if (isset($arg_arr[1]))
-          $options[$arg_arr[0]] = $arg_arr[1];
+          // check if TRUE or FALSE
+          if (! strcasecmp($arg_arr[1], "TRUE"))
+            $options[$arg_arr[0]] = TRUE;
+          elseif (! strcasecmp($arg_arr[1], "FALSE"))
+            $options[$arg_arr[0]] = FALSE;
+          else
+            $options[$arg_arr[0]] = $arg_arr[1];
+        // no assignment means true
         else
           $options[$arg_arr[0]] = TRUE;
 
@@ -2471,24 +2497,29 @@ function getArgOptions($argv, &$options = array())  {
 }  // end of getArgOptions
 
 
-// function getOption($option, $options, [$default_value])
+// function getOption($option, $options, [$current_value], [$default_set_value])
 //  $option - name of option
 //  $options - array of key=>value options
-//  $default_value - value returned if no value is set in key=>value.
+//  $current_value - value variable is set to if no option is set. A general
+//                   "default" value for the variable.
+//  $default_value - value used for attribute if the option is set but no value
+//                   is declare. This value only takes effect when the option
+//                   is set.
 //                   defaults to TRUE
-function getOption($option, $options, $default_value = TRUE) {
+
+function getOption($option, $options, $current_value = NULL, $default_set_value = TRUE) {
+  // start with current value
+  $value = $current_value;
+
   // arrayify if needed
-  if (! is_array($options)) $options=array($options=>TRUE);
+  if (! is_array($options)) $options=array($options=>NULL);
 
-//print_r($options);
-//print "option:{$option}:value:{$options[$option]}:\n";
   if (isset($options[$option]))
-    if ($options[$option] == NULL) return $default_value;
-    else return $options[$option];
-  else
-    return FALSE;
-} // end of function getOption
+    if ($options[$option] === NULL) $value = $default_set_value;
+    else $value = $options[$option];
 
+  return $value;
+} // end of function getOption
 
 
 // show that we're debugging as an example

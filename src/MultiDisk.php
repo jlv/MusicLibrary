@@ -8,7 +8,9 @@
 require "MusicRequire.inc";
 logp_init("MultiDisk", "");
 
+// check options
 getArgOptions($argv, $options);
+checkDryRunOption($options);
 
 // check if Rename.inc exists in local directory, then require if exists
 if (file_exists("./MultiDisk.inc"))

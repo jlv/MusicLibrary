@@ -8,6 +8,22 @@
 
 require 'MusicRequire.inc';
 
+logp_init("MoveCues", "");
+
+// check options
+// get options
+getArgOptions($argv, $options);
+checkDryRunOption($options);
+
+// scanCues($testDir, $trashDir)
+if (moveCues(".", $options))
+  logp("echo,exit0","MoveCues complete.");
+else
+  logp("error,echo,exit1","MoveCues complete, but with errors.  Please check.");
+
+// safety
+exit;
+
 
 // function moveCues($directory)
 //  $directory - target directory which the function checks
@@ -570,17 +586,5 @@ function fileChecked($file, $files_used, $check, $skip_error = FALSE) {
 }
 
 
-//
-// begin function - main
-//
-logp_init("MoveCues", "");
-
-getArgOptions($argv, $options);
-
-// scanCues($testDir, $trashDir)
-if (moveCues(".", $options))
-  logp("echo,exit0","MoveCues complete.");
-else
-  logp("error,echo,exit1","MoveCues complete, but with errors.  Please check.");
 
 ?>

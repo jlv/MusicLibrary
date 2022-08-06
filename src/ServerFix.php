@@ -5,7 +5,12 @@
 require "MusicRequire.inc";
 
 logp_init("ServerFix");
-logp("log","ServerFix Beginning");
+logp("log","ServerFix Beginning...");
+
+// check options
+// get options
+getArgOptions($argv, $options);
+checkDryRunOption($options);
 
 //crawl($test, '', '', "serverFix", array());
 if (crawl($srcdir, '', '', "serverFix", array()))
@@ -152,7 +157,7 @@ function cueFileFix($base_folder, $add_folder, $file){
   // rewrite wav files
   if (! moveWav($wav)) {
     logp("error","ERROR: error moving wav files. Check logs.");
-    $return FALSE;
+    return FALSE;
   }
 
   // verify sequence
@@ -196,7 +201,6 @@ function cueFileFix($base_folder, $add_folder, $file){
 
       // reverse wav files
       logp("error","  Attempting to restore wav files...");
-//        moveWav($base_folder, $add_folder, $wav, TRUE);
       moveWav($wav, "reverse");
 
       logp("info","ServerFix failed to transform '{$file}' in '{$add_folder}'. Check if undo was successful.");
