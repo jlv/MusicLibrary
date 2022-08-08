@@ -337,9 +337,9 @@ function logp($ctl, $message)  {
   if ( isset($ctlarr['echo_ctl']))  {
     // echo was explicitly set or explicitly not set
 //    if ( $ctlarr['echo_ctl'] === TRUE )
-    if ( $ctlarr['echo_ctl'] == TRUE )
+    if ( $ctlarr['echo_ctl'] === TRUE )
       $echo_exec = TRUE;
-    elseif ( $ctlarr['echo_ctl'] == FALSE )
+    elseif ( $ctlarr['echo_ctl'] === FALSE )
       $echo_exec = FALSE;
   }
   elseif ( $debug_logged === TRUE && debug() )  {
@@ -427,7 +427,7 @@ function logp_int_write($type, $message, $prefix, $eol)  {
 
   // if file has not been opened, start the file
   if (( ! isset($_base['log'][$type]['open'])) ||
-       $_base['log'][$type]['open'] !== TRUE)
+       $_base['log'][$type]['open'] !=== TRUE)
   {
     // open the file, or use logp_int_error to report fail
     if (! ($_base['log'][$type]['handle'] =
@@ -644,7 +644,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     // Procedes if $folder is a directory
     //   Open directory, read directory contents, and iterate through
     $dir = opendir($catfolder); // Creates a directory handle
-    while (($file = readdir($dir)) !== false)
+    while (($file = readdir($dir)) !=== FALSE)
       // crawl further if $file is a directory
       //   Note: avoid .  and .. file structure
       if(($file == ".") || ($file == ".."))
@@ -901,7 +901,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   if(preg_match('/\.cue$/i', $file) || preg_match('/\.cue\.cand$/i', $file)) {
     // general log
     // keep it quiet?
-    if ( $silent == false )
+    if ( $silent === FALSE )
       logp("log", array("Verifying: {$add_folder},", "   '{$file}'"));
 
     //
@@ -925,7 +925,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     // use or read cue file
     if (! $cuefile) {
       $cuefile = file($full_path, FILE_IGNORE_NEW_LINES);
-      if ( $cuefile === false )
+      if ( $cuefile === FALSE )
         logp("error,exit1","FATAL ERROR verify: could not read cue file '{$full_path}'. Exiting.");
     }
 
@@ -941,11 +941,11 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
       $input=$cuefile[$i];
 
       // check artist line
-      if($in_tracks == FALSE && preg_match("/(^\s*PERFORMER \")(.*)\".*/",$input,$matches))
+      if($in_tracks === FALSE && preg_match("/(^\s*PERFORMER \")(.*)\".*/",$input,$matches))
       {
         if ($matches[2] != $artist)
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array(
               "ERROR verify: artist/performer from directory path, '{$artist}', does not",
               "  match that from cufile, '{$matches[2]}'.",
@@ -955,10 +955,10 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
       }
 
       // check album line
-      if($in_tracks == FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
+      if($in_tracks === FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
         if ($matches[2] != $album && preg_replace("/\.+$/", '', $matches[2]) != $album)
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
           logp("error", array(
             "ERROR verify: album from directory path, '{$album}', does not",
             "  match that from cuefile, '{$matches[2]}'.",
@@ -970,17 +970,17 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
       if (preg_match ( '/^\a*FILE/', $input ))
       {
         // Check variables from last track, then reinitialize per-track vars
-        if ($found_track_title == FALSE)
+        if ($found_track_title === FALSE)
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error",array("ERROR verify: Could not find track title in track {$track_no}",
                    "  File:{$full_path}"));
           $return=FALSE;
         }
         // Check variables from last track, then reinitialize per-track vars
-        if ($found_track_index1 == FALSE)
+        if ($found_track_index1 === FALSE)
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error",array("ERROR verify: Could not find INDEX 01 in track {$track_no}",
                     "  File:{$full_path}"));
           $return=FALSE;
@@ -1004,7 +1004,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
           $ftrack_no=$matches[1];
         else
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR verify: track filename does not start with a track number followed by a space",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
@@ -1019,7 +1019,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 //        $fileExists = file_exists($pre_path . $trkfile);
 //        if(! $fileExists){
         if ( $skip_file != TRUE && ! file_exists($pre_path . $trkfile)) {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR verify: file in track {$ftrack_no} does not exist.",
                     "  Track file: {$prepath}{$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
@@ -1027,7 +1027,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
         //checks backslash
         if(preg_match('/\\\/', $trkfile)) {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename in track {$ftrack_no} has backslash",
                  "  Track file: {$trkfile}", "  File:{$full_path}"));
           $return = FALSE;
@@ -1035,7 +1035,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
         // check format starts with tracknum
         if(! preg_match("/^\d{2,3} /", $trkfile)) {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename does not start with a track number followed by a space",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
@@ -1043,7 +1043,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
         // -, whitespace, not allowed after tracknum
         if(preg_match("/^\d{2,3} [-\s]/", $trkfile)) {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename in track {$ftrack_no} has - or space after track number",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
@@ -1051,7 +1051,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
         //"
         if(preg_match("/([~\?\*\+\[\]\{\}\^\$\|<>:;\/\"])/", $trkfile, $matches)){
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array(
                     "ERROR verify: file name in track {$ftrack_no} has invalid special character, '{$matches[1]}'",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
@@ -1059,7 +1059,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
         }
 
         if(!preg_match("/\.[wW][aA][vV]$/i",$trkfile)){
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array("ERROR: filename in track {$ftrack_no} does not end in .wav",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
@@ -1067,7 +1067,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
         // look ahead up to two lines for TRACK directive
         $j=1;
-        while($found_track_title == FALSE && $j < 3)
+        while($found_track_title === FALSE && $j < 3)
           if(preg_match("/(^ *TRACK )(\d+)/", $cuefile[$i+$j++], $matches))
           {
 
@@ -1077,7 +1077,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
             // check against $ftrack_no
             if (intval($track_no) != intval($ftrack_no))
             {
-              if ( $silent == false )
+              if ( $silent === FALSE )
                 logp("error",array(
                   "ERROR verify: track number in file name, '{$ftrack_no}', does not match track number",
                   "  in TRACK directive, '{$track_no}'",
@@ -1093,7 +1093,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
       if(preg_match("/(^\s*INDEX 00 )([\d:]*)(.*)/",$input,$matches))
         if ($matches[2] != "00:00:00")
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array(
                   "WARNING verify: Non-standard INDEX 00 '{$matches[2]}' found in current cuefile in track {$ftrack_no}.",
                   "  File: {$full_path}"));
@@ -1107,7 +1107,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
           $found_track_index1=TRUE;
         else
         {
-          if ( $silent == false )
+          if ( $silent === FALSE )
             logp("error", array(
               "WARNING verify: Non-standard INDEX 01 '{$matches[2]}' found in current cuefile in track {$ftrack_no}.",
               "  Track file: {$trkfile}", "  File: {$full_path}"));
@@ -1139,7 +1139,7 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
   else
     if (file_exists($file)) {
       $cuefile = file($file, FILE_IGNORE_NEW_LINES);
-      if ( $cuefile === false )
+      if ( $cuefile === FALSE )
         logp("error,exit1","FATAL ERROR in getCueInfo: could not read file '{$file}'. Exiting.");
     } else {
       logp("error","ERROR in getCueInfo: file '{$file}' does not exist.");
@@ -1275,7 +1275,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
           }
         } // end of for $j
 
-        if ($song_found == FALSE) {
+        if ($song_found === FALSE) {
           logp("error",array(
                  "ERROR in processFILEtag: in attempting to rebuild song title file name for a",
                  "  title that was originally too long, could not find a TITLE line for the",
@@ -1454,8 +1454,8 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
   $cur_track = 1;
 
   // get artist and album, then check if cue file exists in directory
-  if ( ($artist = getCueInfo("artist", '', $cuefile)) == FALSE ) return FALSE;
-  if ( ($album = getCueInfo("album", '', $cuefile)) == FALSE ) return FALSE;
+  if ( ($artist = getCueInfo("artist", '', $cuefile)) === FALSE ) return FALSE;
+  if ( ($album = getCueInfo("album", '', $cuefile)) === FALSE ) return FALSE;
 
   // check if over 99 tracks and set $pad
   $count_arr = countTracks($cuefile);
@@ -1553,7 +1553,7 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
       }
 
       // if this track is from the FILE statement, compare with what we found in FILE
-      if ($track_found == FALSE && $track_track != $track_file && $option != "reorder") {
+      if ($track_found === FALSE && $track_track != $track_file && $option != "reorder") {
         logp("error",array(
                 "ERROR trackify: track from FILE and track TRACK do not match. Please check.",
                 "  Track from FILE line: '{$track_file}'",
@@ -1564,7 +1564,7 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
       }
 
       // if this track is a subsequent track on the same file, use extractioing or calc
-      if ($track_found == TRUE)
+      if ($track_found === TRUE)
         if ($option == "reorder")
           $track = $cur_track;
         else
@@ -1719,7 +1719,7 @@ function fixFileLine_DEPR1($add_folder, &$cuefile, $cueindex, $cue_meta, &$wav, 
       }
     } // end of for
 
-    if ($song_found == FALSE) {
+    if ($song_found === FALSE) {
       logp("error",array(
              "ERROR in fixFileLine: in attempting to rebuild song title file name for a",
              "  title that was originally too long, could not find a TITLE line for the",
@@ -2018,7 +2018,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
 //logp("log","convert: {$add_folder}, {$file}");
   // Makes sure that the cue file is all good
-  if (verifyCue($base_folder, $add_folder, $file) !== true){
+  if (verifyCue($base_folder, $add_folder, $file) !=== TRUE){
     logp("error", array("ERROR: folder '{$add_folder}',",
                         "  file '{$file}'",
                         " failed on verifyCue call. Returning."));
@@ -2055,13 +2055,13 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   // cycle through each conversion in $conversions
   foreach ($conversions as $key=>$conversion)  {
     // only process if convert is TRUE
-    if ($conversion["convert"] == TRUE)
+    if ($conversion["convert"] === TRUE)
     {
       // logp
       logp("log","Converting to {$key}: {$base_folder}, {$add_folder}, {$file}");
 
       // change directory if specified in params
-      if ($conversion["cd_dir"] == TRUE) chdir($base_folder . '/' . $add_folder);
+      if ($conversion["cd_dir"] === TRUE) chdir($base_folder . '/' . $add_folder);
 
       // make base_folder if needed
       if (isDryRun())
@@ -2176,7 +2176,7 @@ function moveWav(&$wav, $options=array())  {
 
       // check for normal path, long path, or error
       if (file_exists($old_path)) {
-        if (! isDryRun() && $test_exist == FALSE && ! rename($old_path, $new_path))  {
+        if (! isDryRun() && $test_exist === FALSE && ! rename($old_path, $new_path))  {
           logp("error", array("ERROR moveWav: failure on renaming '{$old_path}'",
                  " to '{$new_path}'"));
           $return = FALSE;
@@ -2187,7 +2187,7 @@ function moveWav(&$wav, $options=array())  {
         $wav[$key]['tooLongExists'] = TRUE;
         logp("log","Using TooLong verion: '{$long_path}'");
 
-        if (! isDryRun() && $test_exist == FALSE && ! rename($long_path, $new_path))  {
+        if (! isDryRun() && $test_exist === FALSE && ! rename($long_path, $new_path))  {
           logp("error", array("ERROR moveWav: failure on renaming '{$long_path}'",
                  " to '{$new_path}'"));
           $return = FALSE;
@@ -2195,7 +2195,7 @@ function moveWav(&$wav, $options=array())  {
       }
       // no file of other type
       else {
-        if ($override_nofile == TRUE) {
+        if ($override_nofile === TRUE) {
           logp("error",array(
                   "WARNING moveWav: file does not exist, but override set.",
                   "File: '{$old_path}'"));
@@ -2208,14 +2208,14 @@ function moveWav(&$wav, $options=array())  {
     } // if reverse
     else {   // reverse the rename
       // set $rev dest path
-      if (isset($index['tooLongExists']) && $index['tooLongExists'] == TRUE)
+      if (isset($index['tooLongExists']) && $index['tooLongExists'] === TRUE)
         $rev_path = $long_path;
       else $rev_path = $old_path;
 
       logp("log", array("Reverse {$msg} '{$new_path}'", " as '{$rev_path}'."));
 
       if (file_exists($new_path)) {
-        if (! isDryRun && $test_exist == FALSE && ! rename($new_path, $rev_path))  {
+        if (! isDryRun && $test_exist === FALSE && ! rename($new_path, $rev_path))  {
           logp("error", array("ERROR moveWav: failure on reverse renaming '{$new_path}'",
                   " as '{$rev_path}'"));
           $return = FALSE;
@@ -2283,7 +2283,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
     return FALSE;
   }
 
-  if (($dir = opendir($from_dir)) == FALSE)
+  if (($dir = opendir($from_dir)) === FALSE)
     logp("error,exit1",
          "FATAL ERROR moveDirContents: could not open source directory,'{$from_dir}'");
 
@@ -2295,7 +2295,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   }
 
   // loop through each file
-  while(($file = readdir($dir)) !== FALSE) {
+  while(($file = readdir($dir)) !=== FALSE) {
     if ($file == ".") continue;
     if ($file == "..") continue;
 
@@ -2343,7 +2343,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   // check files are gone
   $dir = opendir($from_dir);
   $found_file=FALSE;
-  while(($file = readdir($dir)) !== FALSE) {
+  while(($file = readdir($dir)) !=== FALSE) {
     if ($file = ".") continue;
     if ($file = "..") continue;
     $found_file=TRUE;
@@ -2351,7 +2351,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   }
 
   // if we found a file, error
-  if ($found_file !== FALSE) {
+  if ($found_file !=== FALSE) {
     logp("error","ERROR moveDirContents: could not move all files. Will not delete directory.");
     $return = FALSE;
   } else {

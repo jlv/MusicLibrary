@@ -31,7 +31,7 @@ function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
 //  elseif ( checkCueCovered($base_folder, $add_folder))
   if ( checkCueCovered($base_folder, $add_folder, "continue")) {
     $return = verifyCue($base_folder, $add_folder, $file);
-    if ( $return == FALSE)
+    if ( $return === FALSE)
       logp("error", array("Verified FAILED!: {$add_folder},",  "   '{$file}'"));
   }
 

@@ -116,7 +116,7 @@ function cueFileFix($base_folder, $add_folder, $file){
 
   // $cuefile is array of current cue file
   $cuefile = file($file, FILE_IGNORE_NEW_LINES);
-  if ( $cuefile === false )
+  if ( $cuefile === FALSE )
     logp("error,exit1","FATAL ERROR: could not read cue file '{$file}'. Exiting.");
 
   // process FILE statements

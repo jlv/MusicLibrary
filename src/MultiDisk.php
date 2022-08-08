@@ -83,16 +83,16 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
       logp("error,exit1","FATAL ERROR: cannot find cuefile '{$cuepath}'.");
 
     // read file
-    if (($ncuefile = file($cuepath, FILE_IGNORE_NEW_LINES)) == FALSE)
+    if (($ncuefile = file($cuepath, FILE_IGNORE_NEW_LINES)) === FALSE)
       logp("error,exit1","FATAL ERROR: cannot open '{$cuepath}'.");
 
     // get artist from cue file (errors will have already displayed)
-    if (($artist = getCueInfo("artist", $cuepath)) == FALSE)
+    if (($artist = getCueInfo("artist", $cuepath)) === FALSE)
       logp("error,exit1",array("FATAL ERROR: could not find artist in cuefile",
                                  "  {$cuepath}"));
 
     // get album from cue file (errors will have already displayed)
-    if (($album = getCueInfo("album", $cuepath)) == FALSE)
+    if (($album = getCueInfo("album", $cuepath)) === FALSE)
       logp("error,exit1",array("FATAL ERROR: could not find album in cuefile",
                                  "  {$cuepath}"));
 
@@ -105,7 +105,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
                   "  Cuefile read: '{$cuepath}'"));
 
     // assign or compare to global artist
-    if ($disc_first == TRUE) $gartist = $artist;
+    if ($disc_first === TRUE) $gartist = $artist;
     elseif ($artist != $gartist)
       logp("error,exit1", array(
                   "FATAL ERROR: artist in cuefile does not match artist in first file.",
@@ -115,7 +115,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
 
 
     // load ncuefile into cuefile, first disc vs. others
-    if ($disc_first == TRUE) {
+    if ($disc_first === TRUE) {
       $disc_first = FALSE;
 
       $cuefile = $ncuefile;
@@ -128,7 +128,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
         $cue_meta[$i]["album"] = $disc;
 
         // manually replace album title (first TITLE)
-        if ($title_found == FALSE && preg_match("/^\s*TITLE\s/",$cuefile[$i])) {
+        if ($title_found === FALSE && preg_match("/^\s*TITLE\s/",$cuefile[$i])) {
           $cuefile[$i] = preg_replace("/^(\s*TITLE\s+\")(.*)(\".*)$/",
                         '${1}' . $finalDir . '${3}',  $cuefile[$i]);
           $title_found = TRUE;
@@ -144,7 +144,7 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
         // mark when we get to FILE
         if (preg_match( '/^\a*FILE/', $nline )) $fileFound = TRUE;
 
-        if ($fileFound == TRUE ) {
+        if ($fileFound === TRUE ) {
           $cuefile[$index] = $nline;
           $cue_meta[$index]["dir"] = $disc;
           $cue_meta[$index]["album"] = $disc;
@@ -214,7 +214,7 @@ function confirmMerge($cuefile, $wav)  {
 
   foreach ($wav as $song) {
     // get correct file,if a tooLong
-    if (isset($song['tooLongExists']) && $song['tooLongExists'] == TRUE)
+    if (isset($song['tooLongExists']) && $song['tooLongExists'] === TRUE)
       $old_song = $song["old_long"];
     else
       $old_song = $song["old"];
