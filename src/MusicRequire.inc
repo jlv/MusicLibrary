@@ -335,7 +335,6 @@ function logp($ctl, $message)  {
   //         if debug, output
   if ( isset($ctlarr['echo_ctl']))  {
     // echo was explicitly set or explicitly not set
-//    if ( $ctlarr['echo_ctl'] === TRUE )
     if ( $ctlarr['echo_ctl'] === TRUE )
       $echo_exec = TRUE;
     elseif ( $ctlarr['echo_ctl'] === FALSE )
@@ -411,9 +410,6 @@ function logp_close ()  {
 
 function logp_int_write($type, $message, $prefix, $eol)  {
   global $_base;
-
-//  print "logp_int_write {$type}\n";
-//  print_r($_base['log']);
 
   // check for type and get file suffix, or error
   if (isset($_base['log']['_types'][$type]))
@@ -724,9 +720,6 @@ function checkNoCue($path)  {
   $prepath = NULL;
   $matches = array();
 
-// print "\nSTART checknoCUE {$fcount}\n";
-//   print_r($flist);
-
   // check if directory and get name, otherwise find name from file
   if (is_dir($path)) {
     if ($fcount > 1) {
@@ -887,7 +880,6 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   }
 
   // check for .nocue existance
-//  if(file_exists($pre_path . $album . '.nocue'))
   if (checkNoCue($pre_path))  {
     logp("log","Verify found .nocue file. Skipping verification of {$pre_path}'");
     return TRUE;
@@ -909,7 +901,6 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     // strip getSuffix
     $base = preg_replace("/\.cand$/", '', $file);
     $base = preg_replace("/\.cue$/", '', $base);
-//print "BASE:{$base}\n";
 
     if ($base != $album)
     {
@@ -934,7 +925,6 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     $found_track_index1=TRUE;
 
     // loop through each line of file checking various attributes
-    //foreach ($cuefile as $input) {
     for($i = 0; $i < count($cuefile); $i++)
     {
       $input=$cuefile[$i];
@@ -951,7 +941,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
               "  File:{$full_path}"));
           return FALSE;
         }
-      }
+      }  // end of if ... PERFORMER
 
       // check album line
       if($in_tracks === FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
@@ -966,19 +956,16 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
         }
 
       // check each file line as a start of next track
-      if (preg_match ( '/^\a*FILE/', $input ))
-      {
+      if (preg_match ( '/^\a*FILE/', $input ))  {
         // Check variables from last track, then reinitialize per-track vars
-        if ($found_track_title === FALSE)
-        {
+        if ($found_track_title === FALSE) {
           if ( $silent === FALSE )
             logp("error",array("ERROR verify: Could not find track title in track {$track_no}",
                    "  File:{$full_path}"));
           $return=FALSE;
         }
         // Check variables from last track, then reinitialize per-track vars
-        if ($found_track_index1 === FALSE)
-        {
+        if ($found_track_index1 === FALSE)   {
           if ( $silent === FALSE )
             logp("error",array("ERROR verify: Could not find INDEX 01 in track {$track_no}",
                     "  File:{$full_path}"));
@@ -1150,8 +1137,7 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
   elseif ($infotype == "artist") $infotag = "PERFORMER";
   else
     logp("error,exit1","FATAL ERROR: getCueInfo call with bad info type '{$infotype}'");
-//print "INFOTYPE:{$infotype}\n";
-//readline("getcueinfo pause>");
+
   // read input, look for title
   foreach ($cuefile as $line)
     if (preg_match("/^\s*{$infotag}\s*\"(.*)\"$/", $line, $matches))
@@ -1475,18 +1461,6 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
   {
     // look for FILE lines
     if( preg_match("/^\s*FILE\s+\"/", $cuefile[$i])) {
-      // replace artist and album
-
-// JLV: deal with this functionality in fixFileLine
-      // foreach(array($artist, $album) as $component) {
-      //   // get component without dots
-      //   $comp_no_dot = str_replace('.', '', $component);
-      //   foreach(array($component, $comp_no_dot) as $repl)
-      //     $cuefile[$i] = str_replace("{$repl}\\", '', $cuefile[$i]);
-      // }
-
-      // if fixup option, fix line
-
       // check if any \ and error
       if (preg_match('/\\\/', $cuefile[$i])) {
         logp("error",array("ERROR trackify: FILE title has a backslash.  Skipping entire cuefile.",
@@ -1698,12 +1672,9 @@ function fixFileLine_DEPR1($add_folder, &$cuefile, $cueindex, $cue_meta, &$wav, 
            "  Filename:{$songfile}"));
     return FALSE;
   }
-//  $track_pad = str_pad($track_no, $pad, "0", STR_PAD_LEFT);
-
-//  $tooLong = $track_no .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav";
 
   // if $songfile is a tooLong (i.e. NN~AAA~1.wav), create a new songfile line
-  if ($songfile == $track_no .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav") {
+  if ($songfile == $track_no .  '~' . strtoupper(substr($artist, 0, 3)) . "~" . "1.wav") {
     // look ahead and find title
     $song_found = FALSE;
     for($j=$index; $j < count($cuefile); $j++) {
@@ -1955,8 +1926,6 @@ function makeCueConvertable(&$cuefile) {
         {
           // add PREGAP
           array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}"));
-// may need to fix for multi
-//          array_splice($cuefile,$i,0,array("    PREGAP {$matches[2]}{$_base['EOL']}"));
           $cue_count++;
           $i++;
 
@@ -1966,8 +1935,7 @@ function makeCueConvertable(&$cuefile) {
 
           // move to next line and add new index line starting at 00:00:00
           $i++;
-// may need to fix for multi
-//          array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00{$_base['EOL']}"));
+
           array_splice($cuefile,$i,0,array("    INDEX 01 00:00:00"));
           $cue_count++;
         } // matches not 00:00:00
@@ -2015,7 +1983,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
   // return if not a .cue file
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
-//logp("log","convert: {$add_folder}, {$file}");
+
   // Makes sure that the cue file is all good
   if (verifyCue($base_folder, $add_folder, $file) !== TRUE){
     logp("error", array("ERROR: folder '{$add_folder}',",
