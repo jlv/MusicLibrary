@@ -84,7 +84,7 @@ function debug()  {
 ///     ['_err_err'] - set to true if logging an err has been attempted
 ///     ['_default_str'] - copy of latest _default_ctl string from logp_init
 ///     ['_options_str'] - copy of latest options string from logp_init
-
+//
 // function logp_init($logroot, $default_ctl, $options)
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
@@ -186,8 +186,7 @@ function logp_init($logroot, $default_ctl=NULL, $options=NULL)  {
 
     // parse options and set
     $opt_index = explode(",", $opt_str);
-    foreach ($opt_index as $sub_opt)
-    {
+    foreach ($opt_index as $sub_opt)  {
       $opt_parts = explode("=", $sub_opt);
 
       // test only 1 =
@@ -427,7 +426,7 @@ function logp_int_write($type, $message, $prefix, $eol)  {
 
   // if file has not been opened, start the file
   if (( ! isset($_base['log'][$type]['open'])) ||
-       $_base['log'][$type]['open'] !=== TRUE)
+       $_base['log'][$type]['open'] !== TRUE)
   {
     // open the file, or use logp_int_error to report fail
     if (! ($_base['log'][$type]['handle'] =
@@ -644,7 +643,7 @@ function crawl($base_folder, $add_folder, $new_base_folder, $ufunction, $options
     // Procedes if $folder is a directory
     //   Open directory, read directory contents, and iterate through
     $dir = opendir($catfolder); // Creates a directory handle
-    while (($file = readdir($dir)) !=== FALSE)
+    while (($file = readdir($dir)) !== FALSE)
       // crawl further if $file is a directory
       //   Note: avoid .  and .. file structure
       if(($file == ".") || ($file == ".."))
@@ -1259,7 +1258,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
       }
 
       // if $songfile is a tooLong (i.e. NN~AAA~1.wav), create a new songfile line
-      $tooLong = $track_no .  "-" . strtoupper(substr($artist, 0, 3)) . "~" . "1";
+      $tooLong = $track_no .  '~' . strtoupper(substr($artist, 0, 3)) . "~" . "1";
       if ($songfile == $tooLong) {
         // look ahead and find title
         $song_found = FALSE;
@@ -2018,7 +2017,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
 //logp("log","convert: {$add_folder}, {$file}");
   // Makes sure that the cue file is all good
-  if (verifyCue($base_folder, $add_folder, $file) !=== TRUE){
+  if (verifyCue($base_folder, $add_folder, $file) !== TRUE){
     logp("error", array("ERROR: folder '{$add_folder}',",
                         "  file '{$file}'",
                         " failed on verifyCue call. Returning."));
@@ -2185,7 +2184,7 @@ function moveWav(&$wav, $options=array())  {
       elseif (file_exists($long_path)) {
         // set $wav entry for TooLongExists
         $wav[$key]['tooLongExists'] = TRUE;
-        logp("log","Using TooLong verion: '{$long_path}'");
+        logp("log"," Using TooLong version: '{$long_path}'");
 
         if (! isDryRun() && $test_exist === FALSE && ! rename($long_path, $new_path))  {
           logp("error", array("ERROR moveWav: failure on renaming '{$long_path}'",
@@ -2201,7 +2200,10 @@ function moveWav(&$wav, $options=array())  {
                   "File: '{$old_path}'"));
           $return=TRUE;
         } else {
-          logp("error","ERROR moveWav: file does not exist, '{$old_path}'");
+          logp("error",array(
+              "ERROR moveWav: file does not exist",
+              "  Std: '{$old_path}'",
+              "  TooLong: '${long_path}'"));
           $return=FALSE;
         }
       } // end of else of if file exists
@@ -2221,7 +2223,9 @@ function moveWav(&$wav, $options=array())  {
           $return = FALSE;
         }
       } else {
-        logp("error","ERROR moveWav: file does not exist, '{$new_path}'");
+        logp("error",array(
+               "ERROR moveWav reverse: file does not exist:",
+               "'{$new_path}'"));
         $return=FALSE;
       }
     } // else reverse
@@ -2295,7 +2299,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   }
 
   // loop through each file
-  while(($file = readdir($dir)) !=== FALSE) {
+  while(($file = readdir($dir)) !== FALSE) {
     if ($file == ".") continue;
     if ($file == "..") continue;
 
@@ -2343,7 +2347,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   // check files are gone
   $dir = opendir($from_dir);
   $found_file=FALSE;
-  while(($file = readdir($dir)) !=== FALSE) {
+  while(($file = readdir($dir)) !== FALSE) {
     if ($file = ".") continue;
     if ($file = "..") continue;
     $found_file=TRUE;
@@ -2351,7 +2355,7 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   }
 
   // if we found a file, error
-  if ($found_file !=== FALSE) {
+  if ($found_file !== FALSE) {
     logp("error","ERROR moveDirContents: could not move all files. Will not delete directory.");
     $return = FALSE;
   } else {

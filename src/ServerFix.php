@@ -8,7 +8,6 @@ logp_init("ServerFix");
 logp("log","ServerFix Beginning...");
 
 // check options
-// get options
 getArgOptions($argv, $options);
 checkDryRunOption($options);
 
@@ -16,10 +15,11 @@ checkDryRunOption($options);
 if (crawl($srcdir, '', '', "serverFix", array()))
   logp("echo,exit0","ServerFix completed crawl of directory.");
 else
-  logp("echo,exit0","ServerFix encountered errors in crawl of directory. Plesae check.");
+  logp("echo,exit1","ServerFix encountered errors in crawl of directory. Plesae check.");
 
 // safety
 exit;
+
 
 // funtion serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
 //  $base_folder - initial root folder
@@ -108,8 +108,7 @@ function cueFileFix($base_folder, $add_folder, $file){
   $artist = $list[$list_cnt - 2];
 
   // checks if in artist/album directory
-  $checkDir = "/{$artist}\/{$album}/";
-  if(! preg_match($checkDir, $add_folder))  {
+  if(! preg_match("/{$artist}\/{$album}/", $add_folder))  {
     logp("error,info", "ERROR: cue file in incorrect directory '{$add_folder}'");
     return false;
   }
@@ -131,6 +130,7 @@ function cueFileFix($base_folder, $add_folder, $file){
 
   // add line terminators
   addLineTerm($orig);
+
   if ( ! file_put_contents($file . ".orig", $orig))
     logp("error,exit1","FATAL ERROR: could not write original cuefile '${file}.orig'");
 
@@ -161,8 +161,7 @@ function cueFileFix($base_folder, $add_folder, $file){
   }
 
   // verify sequence
-  if(! isDryRun())
-  {
+  if(! isDryRun())  {
     // rename old cue file
     logp("log", "rename current cue '{$file}' as '{$file}.old'");
     if ( ! rename($file, $file . ".old"))
@@ -211,8 +210,7 @@ function cueFileFix($base_folder, $add_folder, $file){
 
   return $return;
 
-} // end of function
-
+} // end of cueFileFix function
 
 
  ?>
