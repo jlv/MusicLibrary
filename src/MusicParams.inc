@@ -72,9 +72,10 @@ elseif ($hostname == "Rising-Sun")
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   //$srcdir = "N:/QT";
-  $srcdir = "N:/QT5";
+//  $srcdir = "N:/QT5";
 //  $srcdir = "N:/QT-Rip2";
 //  $srcdir = "N:/QT-Rip4/Succeed";
+  $srcdir = "N:/Q-Ref1-1";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory

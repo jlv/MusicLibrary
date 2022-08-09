@@ -902,8 +902,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     $base = preg_replace("/\.cand$/", '', $file);
     $base = preg_replace("/\.cue$/", '', $base);
 
-    if ($base != $album)
-    {
+    if ($base != $album)  {
        logp("error",
          array("ERROR verify: '{$file}'",
              "  cue file found has name that does not match containing folder album:",
@@ -925,8 +924,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
     $found_track_index1=TRUE;
 
     // loop through each line of file checking various attributes
-    for($i = 0; $i < count($cuefile); $i++)
-    {
+    for($i = 0; $i < count($cuefile); $i++)  {
       $input=$cuefile[$i];
 
       // check artist line
@@ -945,8 +943,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
 
       // check album line
       if($in_tracks === FALSE && preg_match("/(^\s*TITLE \")(.*)\".*/",$input,$matches))
-        if ($matches[2] != $album && preg_replace("/\.+$/", '', $matches[2]) != $album)
-        {
+        if ($matches[2] != $album && preg_replace("/\.+$/", '', $matches[2]) != $album)  {
           if ( $silent === FALSE )
           logp("error", array(
             "ERROR verify: album from directory path, '{$album}', does not",
@@ -1002,8 +999,6 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
         $stitle = preg_replace("/(^\d+) /", '', $stitle);
 
         //checks if track file name exists in directory
-//        $fileExists = file_exists($pre_path . $trkfile);
-//        if(! $fileExists){
         if ( $skip_file != TRUE && ! file_exists($pre_path . $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: file in track {$ftrack_no} does not exist.",
@@ -1075,7 +1070,6 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
       } // file line
 
       // check for INDEX 00 for correct setting
-//      if(preg_match("/(^\s*INDEX 00 )([0-9:]*)(.*)/",$input,$matches))
       if(preg_match("/(^\s*INDEX 00 )([\d:]*)(.*)/",$input,$matches))
         if ($matches[2] != "00:00:00")
         {
@@ -1087,12 +1081,10 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
         }
 
       // check for INDEX 01 for correct setting
-//      if(preg_match("/(^\s*INDEX 01 )([0-9:]*)(.*)/",$input,$matches))
       if(preg_match("/(^\s*INDEX 01 )([\d:]*)(.*)/",$input,$matches))
         if ($matches[2] == "00:00:00")
           $found_track_index1=TRUE;
-        else
-        {
+        else  {
           if ( $silent === FALSE )
             logp("error", array(
               "WARNING verify: Non-standard INDEX 01 '{$matches[2]}' found in current cuefile in track {$ftrack_no}.",
@@ -2095,17 +2087,13 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
 function moveWav(&$wav, $options=array())  {
   $return = TRUE;
-
   // get options
   $reverse = getOption("reverse", $options);
   $override_nofile = getOption("--override-nofile", $options);
   $test_exist = getOption("test-exist", $options);
 
-//  print "Test_exist:{$test_exist}:\n";
-  // if ($test_exist == FALSE) print "test exist FALSE";
-  // if ($test_exist == TRUE) print "test exist TRUE";
-  //
-  // if ($test_exist == FALSE) $msg = "Renaming"; else $msg="Test existance";
+  // set message
+  if ($test_exist == FALSE) $msg = "Renaming"; else $msg="Test existance";
 
   // general message if dryRun
   if (isDryRun()) logp("log","DryRun: the following would be renamed:");
@@ -2162,6 +2150,7 @@ function moveWav(&$wav, $options=array())  {
       }
       // no file of other type
       else {
+        // if override is true, continue with process
         if ($override_nofile === TRUE) {
           logp("error",array(
                   "WARNING moveWav: file does not exist, but override set.",
@@ -2207,6 +2196,11 @@ function moveWav(&$wav, $options=array())  {
 //  $wav - array of wav file info (see moveWAV)
 //  $old - old "new" entry
 //  $new - replacement "new" entry
+//
+// Returns TRUE if a change was made. False otherwise.
+//
+// Changes a "new" entry in $wav that matched $old to $new.
+
 
 function changeWAVNew(&$wav, $old, $new) {
   $return = FALSE;
@@ -2368,17 +2362,13 @@ function moveToTrash(&$trash = array(), &$trashed = array(), $base_dir = ".") {
     if (! file_put_contents($trash_dir . "/" . $trash_name . ".nocue", array("No cue")))
       logp("error,exit1",
             "FATAL ERROR: trash no cue file, '{$trash_name}.nocue' does not exist and cannot be made.");
-//print "IN Trash\n";
-//print_r($trash);
-//print_r($trashed);
+
   // loop through and move files
   foreach($trash as $key=>$file) {
     // strip off and precending path
 // JLV: is there one?
     $filename = preg_replace("/^.*\//", '', $file);
     $filename = preg_replace("/^.*\\\/", '', $filename);
-
-//print "Trash File:{$file}\nFilename:{$filename}\n";
 
     // Dry Run vs. real
     if (isDryRun())
