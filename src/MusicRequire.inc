@@ -1622,15 +1622,6 @@ function fixFileLine_DEPR1($add_folder, &$cuefile, $cueindex, $cue_meta, &$wav, 
   $album = $list[$list_cnt - 1];
   $artist = $list[$list_cnt - 2];
 
-// JLV: needed?
-  // fixes () and . if they are in album/title
-  // $reg_album = regify($album);
-  // $reg_artist = regify($artist);
-  // $album = fixDot($album);
-  // $artist = fixDot($artist);
-  // $album = fixBrackets($album);
-  // $artist = fixBrackets($artist);
-
   // get $song from FILE
   $songfile = preg_replace("/^\s*FILE\s+\"/", '', $line);
   // safety check - if not a file line
@@ -1641,7 +1632,6 @@ function fixFileLine_DEPR1($add_folder, &$cuefile, $cueindex, $cue_meta, &$wav, 
     return FALSE;
   }
   $songfile = preg_replace("/\"\s+WAVE.*$/", '', $songfile);
-
 
   // replace $artist and $album directory level 0.  Keep space.
   $songfile = str_replace("{$artist}\\{$album}\\", ' ', $songfile);
@@ -1699,8 +1689,6 @@ function fixFileLine_DEPR1($add_folder, &$cuefile, $cueindex, $cue_meta, &$wav, 
   // if $songfile not a tooLong, fix up newsong if needed
   else {
     // string .wav while fixing
-    //$new_song = preg_replace("/\.[wW][aA[vV]$/", '', $songfile);
-
     $new_song = preg_replace("/\.wav$/i", '', $songfile);
 
     if ($command == "fixup")  {
@@ -1834,12 +1822,12 @@ function fixFileLine_DEPR($command, $add_folder, $line, &$wav, $pad, $old_dir, $
   } // end of function
 
 
-// function fixParens($str)
+// function regify($str)
 //  $str - given to string
 //
 // Returns altered (or not) string
 //
-// Esacpes characters in strings
+// Esacpes characters in strings so string can be used in regex
 function regify($str){
   $str = str_replace("/\(/", "\\(", $str);
   $str = str_replace("/\)/", "\\)", $str);
@@ -2006,10 +1994,6 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
   $album = $list[$list_count - 1];
   $artist = $list[$list_count - 2];
-
-  // check if new base_folder exists
-//  if (! file_exists($new_base_folder))
-//    logp("error,exit1","FATAL ERROR in convertFromCue: base folder '{$new_base_folder}' does not exist.");
 
   // cycle through each conversion in $conversions
   foreach ($conversions as $key=>$conversion)  {
@@ -2327,7 +2311,6 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
     }
   }
 
-print "should not reach here in dry run\n";
   closedir($dir);
   return $return;
 
