@@ -76,7 +76,6 @@ function setupMultiMerge(&$cuefile, &$cue_meta, &$wav, &$trash, $options) {
   foreach ($multiDisks as $disc) {
     //
     $cuepath = $disc . "/" . $disc . ".cue";
-//print "\nNCUE path:{$cuepath}\n";
 
     // get ncuefile
     if (! file_exists($cuepath))
@@ -276,7 +275,6 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
     logp("error,exit1", array("FATAL ERROR: could not write candidate cuefile",
               "  '${newpath}.cand'"));
 
-//print_r($cuefile);
   // verify current cuefile array, without file testing
   if (! verifyCue( '', $dir, $newfile, "override-nofile", $cuefile))
     logp("error,exit1",

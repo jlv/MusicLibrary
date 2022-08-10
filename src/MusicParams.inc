@@ -39,55 +39,27 @@ if ($hostname == "ProdHost")
   // $homedir - for systems that are built around a single home directory
   $homedir="E:\MusicLibrary";
 
-  //
-  // Log file directory
-  //$logdir = "e:/MusicLibrary/Log";
-  //
-  // Log print flag: if set to TRUE, prints log messages to screen
-  //  and to log file
-  //$logprint = TRUE;
-  $logprint = FALSE;
-
   // source directory of wave files and cue files
   $srcdir = "e:/MusicLibrary/Music Ref";
-
-  // DEPR? source directory of wave files and cue files
-  $cuedir = "c:/quentin/MusicWorking/cuefiles";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  bloew this directory
   $conversion_base_dir = "e:/MusicLibrary/Conversion";
 
-  // DEPR? destimation MP3 directory
-//  $mp3dir = "e:/MusicLibrary/Music Out";
 }
-elseif ($hostname == "Rising-Sun")
-{
+elseif ($hostname == "Rising-Sun")  {
 
   // $homedir - for systems that are built around a single home directory
   $homedir="D:/MusicLibrary";
 
   // source directory of wave files and cue files
-  //$srcdir = "N:/A";
-  //$srcdir = "N:/B";
-  //$srcdir = "N:/Q-Ref";
-  //$srcdir = "N:/QT";
-//  $srcdir = "N:/QT5";
-//  $srcdir = "N:/QT-Rip2";
-//  $srcdir = "N:/QT-Rip4/Succeed";
+  //  $srcdir = "N:/QT-Rip4/Succeed";
   $srcdir = "N:/Q-Ref1-1";
 
   // output/conversion top directory.  Types of conversions usually housed
-  //  bloew this directory
+  //  below this directory
 //  $conversion_base_dir = "D:/Music/conversion";
   $conversion_base_dir = "N:/Q-Out";
-
-  // source directory of wave files and cue files
-  $cuedir = "N:/Cuefiles";
-
-  // destimation MP3 directory
-  //$mp3dir = "e:/MP3";
-//  $mp3dir = "N:/MP3";
 
 }
 elseif ($hostname == "Hector")  {
@@ -111,35 +83,23 @@ elseif ($hostname == "shigoto")  {
   $srcdir = "F:/Q-Ref1-1";
 
   // output/conversion top directory.  Types of conversions usually housed
-  //  bloew this directory
+  //  below this directory
 //  $conversion_base_dir = "D:/Music/conversion";
   $conversion_base_dir = "F:/Q-Out";
 
-  // source directory of wave files and cue files
-//  $cuedir = "N:/Cuefiles";
-
-  // destimation MP3 directory
-  //$mp3dir = "e:/MP3";
-//  $mp3dir = "N:/MP3";
-
 }
-elseif ($hostname == "tonto")
-{
+elseif ($hostname == "tonto") {
   // tonto development machine
 
   // $homedir - for systems that are built around a single home directory
   $homedir="C:Quentin\MusicLibrary";
 
-  // source directory of wave files and cue files
-  $cuedir = "c:/quentin/MusicWorking/cuefiles";
-
-}
-else
-{
+} else {
   // default system home directory with no specification
 
   // $homedir - for systems that are built around a single home directory
   $homedir="C:\MusicLibrary";
+
 }
 
 ////////////// ========================================================
@@ -151,11 +111,9 @@ else
 // OStype - default to windows
 if (! isset($OStype)) $OStype="Windows";
 
-//
 // $HomeDir - for systems that are built around a single home directory
 if (! isset($homedir)) $homedir="C:\MusicLibrary";
 
-//
 // Log file directory, as default
 if (! isset($logdir)) $logdir=$homedir . "/Log";
 
@@ -165,9 +123,6 @@ if (! isset($srcdir)) $srcdir=$homedir . "/MusicWav";
 // output/conversion top directory.  Types of conversions usually housed
 //  beloww this directory
 if (! isset($conversion_base_dir)) $conversion_base_dir=$homedir . "/Conversion";
-
-// destimation MP3 directory, as default
-//if (! isset($mp3dir)) $mpcdir=$homedir . "/MusicMP3";
 
 // trash directory, as default
 if (! isset($trash_name)) $trash_name = "Z Old Cue Sheets";
@@ -252,7 +207,7 @@ $sys_time_zone='America/Los_Angeles';
 // isDryRun - used by ServerFix to trial run vs. real thing
 //
 $isDryRun=false;
-$isDryRun=true;
+//$isDryRun=true;
 
 // end of MusicParams.inc
 ?>

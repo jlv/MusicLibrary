@@ -120,13 +120,6 @@ function cueFileFix($base_folder, $add_folder, $file, $options=array())  {
     return FALSE;
   }
 
-
-  // // checks if in artist/album directory
-  // if(! preg_match("/{$artist}\/{$album}/", $add_folder))  {
-  //   logp("error,info", "ERROR: cue file in incorrect directory '{$add_folder}'");
-  //   return false;
-  // }
-
   // $cuefile is array of current cue file
   $cuefile = file($file, FILE_IGNORE_NEW_LINES);
   if ( $cuefile === false )
@@ -224,6 +217,4 @@ function cueFileFix($base_folder, $add_folder, $file, $options=array())  {
 
 } // end of function
 
-
-
- ?>
+?>

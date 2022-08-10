@@ -274,8 +274,6 @@ function moveCues($directory, $options)  {
 
       // finish wav array with directories
       foreach($wav as $wavkey=>$wavfile) {
-//        $wav[$wavkey]["old_dir"] = $dir;
-//        $wav[$wavkey]["new_dir"] = $dir;
         $wav[$wavkey]["old_dir"] = $old_dir;
         $wav[$wavkey]["new_dir"] = $new_dir;
       }
@@ -341,7 +339,6 @@ function moveCues($directory, $options)  {
         moveDirContents($old_dir, $new_dir);
 
       } // end of $check == FALSE (just above)
-    //}  // end get suffix = cue
     }  // end while directory/read file loop
 
     // if in check mode, check for error condition, then reinitialize vars as needed
