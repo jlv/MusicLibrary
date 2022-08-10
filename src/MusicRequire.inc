@@ -813,6 +813,9 @@ function checkCueCovered($base_folder, $add_folder, $check_type = "error") {
 
 
 // function verifyCue($base_folder, $add_folder, $file, [$silent = false], [&$cuefile] [skip_file])
+// function verifyCue($base_folder, $add_folder, $file, [&$cuefile], [$options])
+// function verifyCue($base_folder, $add_folder, $file, [$options], [&$cuefile])
+
 //  $base_folder - initial root folder
 //  $add_folder - the folder path to added to $base_folder as crawl proceeds
 //  $file - filename within containing folder
@@ -821,6 +824,10 @@ function checkCueCovered($base_folder, $add_folder, $check_type = "error") {
 //  $cuefile - cuefile array to be tested. if $cuefile is provided, it is used
 //             instead of reading the file.
 //  $skip_file - if TRUE, skip file testing
+//  $options array:
+//   override-nofile - if TRUE, skip file testing of wav/content files
+//   silent - performs function without producing errors or verification in logs. Used when
+//             evaluation is needed rather than error reporting.
 //
 // Returns TRUE if successul, FALSE on failure
 //
@@ -833,10 +840,17 @@ function checkCueCovered($base_folder, $add_folder, $check_type = "error") {
 //
 //  The file must be named *.cue or *.cue.cand
 
-function verifyCue($base_folder, $add_folder, $file, $silent = false,
-                     &$cuefile = array(), $skip_file = false) {
+// function verifyCue($base_folder, $add_folder, $file, $silent = false,
+//                      &$cuefile = array(), $skip_file = false) {
+//function verifyCue($base_folder, $add_folder, $file, &$cuefile = array(), $options = array()) {
+function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefile = array()) {
   // initialize values
   $matches=array();
+
+  // options
+  $silent = getOption("silent", $options, FALSE);
+  $skip_file = getOption("override-nofile", $options);
+
   // start with no error
   $return = true;
 
@@ -1965,7 +1979,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
   // options
   $override_nofile = getOption("override-nofile", $options);
-  
+
   // return if not a .cue file
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
 

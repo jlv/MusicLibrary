@@ -90,14 +90,14 @@ function moveCues($directory, $options)  {
       //
       // multi check [-]1
 
-      if(preg_match("/(-?)1$/", $ftitle, $matches)){
+      if(preg_match("/( ?)(-?)1$/", $ftitle, $matches)){
         // set vars
-        $base_title = substr($ftitle, 0, -strlen($matches[1] . "1"));
+        $base_title = substr($ftitle, 0, -strlen($matches[1] . $matches[2] . "1"));
 
         // check cue title
         if ($cue_title == $ftitle)
           // look for multi, otherwise process as single
-          if (findMulti(array("1", "-1", "2", "-2"), $ftitle) === TRUE) continue;
+          if (findMulti(array("1", "-1", " -1", "2", "-2", " -2"), $ftitle) === TRUE) continue;
           else $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
         elseif ($cue_title != $base_title) {
           // orphaned file
@@ -108,12 +108,14 @@ function moveCues($directory, $options)  {
           continue;
         }
 
-        // if we can find a file with the $base, or $base[-]2, then we have
+        // if we can find a file with the $base, or $base[ -]2, then we have
         //  a multi file
-        if(findMulti(array("","2", "-2"), $base_title) === FALSE) {
+        if(findMulti(array("", "2", "-2", " -2"), $base_title) === FALSE) {
           // not multi, not single. Error.
+          print "BASE title:{$base_title}:\n";
           logp("error", array(
                   "ERROR: file does not qualify as a single disc or multi disc. Skipping.",
+                  "  Could not find the next file in sequence.",
                   "  File: '{$file}'"));
           $return = FALSE;
           continue;
@@ -125,7 +127,7 @@ function moveCues($directory, $options)  {
       }  // if preg match 1.cue
 
       // multi: check if title[-][12] files exist,then skip for multi
-      elseif (findMulti(array("1", "-1", "2", "-2"), $ftitle) === TRUE)
+      elseif (findMulti(array("1", "-1", " -1", "2", "-2", " -2"), $ftitle) === TRUE)
         continue;
 
       // multi: if title matches, process as single since no evidence
@@ -304,7 +306,7 @@ function moveCues($directory, $options)  {
       }  // end if check === FALSE
 
       // verify current cuefile array, without file testing
-      if (! verifyCue( '', $new_dir, $newfile, FALSE, $cuefile, TRUE)) {
+      if (! verifyCue( '', $new_dir, $newfile, "override-nofile", $cuefile)) {
         logp("error", array(
                "ERROR: proposed cuefile array did not verify. Skipping", " File '{$file}'"));
         $return=FALSE;  continue;
@@ -392,7 +394,7 @@ function findMulti( $endings, $base_title )  {
     if ( file_exists($cand_file))
       if (($cue_title = getCueInfo("album", $cand_file)) === FALSE) continue;
       elseif ($cue_title == $base_title) return TRUE;
- }  // foreach
+  }  // foreach
 
   // got here with no matches
   return FALSE;
@@ -467,9 +469,9 @@ function setupMulti($file, &$cuefile, &$files_used, &$trash) {
     logp("error,exit1","FATAL ERROR in setupMulti: could not find file '{$file}'. Exit");
 
   // multi check [-]1
-  if(preg_match("/(-?)1.cue$/", $file, $matches)){
+  if(preg_match("/( ?)(-?)1.cue$/", $file, $matches)){
     // set base title
-    $base_title = substr($file, 0, -strlen($matches[1] . "1.cue"));
+    $base_title = substr($file, 0, -strlen($matches[1] . $matches[2] . "1.cue"));
     // bookkeeping
     $files_used[] = $file;
     $trash[] = $file;

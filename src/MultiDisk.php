@@ -278,7 +278,7 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
 
 //print_r($cuefile);
   // verify current cuefile array, without file testing
-  if (! verifyCue( '', $dir, $newfile, FALSE, $cuefile, TRUE))
+  if (! verifyCue( '', $dir, $newfile, "override-nofile", $cuefile))
     logp("error,exit1",
        "FATAL ERROR: proposed cuefile array did not verify.");
 

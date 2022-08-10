@@ -67,7 +67,7 @@ function serverFix($base_folder, $add_folder, $new_base_folder, $file, $options)
   // if cue file, check then fix if needed
   if (getSuffix($file) == "cue")
     // checks to see if cue file needs any fixing
-    if(! verifyCue($base_folder, $add_folder, $file, TRUE) || getOption("fixall", $options)) {
+    if(! verifyCue($base_folder, $add_folder, $file, "silent") || getOption("fixall", $options)) {
       if (cueFileFix($base_folder, $add_folder, $file, $options))
         logp("info","cueFileFix ran on '{$add_folder}'");
       else
@@ -186,7 +186,7 @@ function cueFileFix($base_folder, $add_folder, $file, $options=array())  {
 
     // if verify, rename files, log and complete
     logp("log","Verifying new cue file...");
-    if (verifyCue($base_folder, $add_folder, $file, false))
+    if (verifyCue($base_folder, $add_folder, $file))
       // log conversion complete
       logp("info",array("ServerFix successfully transformed '{$file}'",
                         "  in '{$add_folder}'"));
