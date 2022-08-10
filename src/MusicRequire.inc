@@ -849,9 +849,9 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   // if .nocue file exists, we don't check anything.  Just return.
   //
   // $flist - array of $add_folder split between every /
-  $flist = preg_split("/\//", $add_folder);
+//  $flist = preg_split("/\//", $add_folder);
 // JLV try this:
-// $flist = explode('/', $add_folder);
+  $flist = explode('/', $add_folder);
   // get artist/album
   $list_count=count($flist);
   // if less than album/artist, return
@@ -892,8 +892,10 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
   if(preg_match('/\.cue$/i', $file) || preg_match('/\.cue\.cand$/i', $file)) {
     // general log
     // keep it quiet?
-    if ( $silent === FALSE )
+    if ( $silent === FALSE ) {
       logp("log", array("Verifying: {$add_folder},", "   '{$file}'"));
+      if ($skip_file === TRUE) logp("log","   Skip file enabled.");
+    }
 
     //
     // check if cue file base matches folder album name
@@ -1002,7 +1004,7 @@ function verifyCue($base_folder, $add_folder, $file, $silent = false,
         if ( $skip_file != TRUE && ! file_exists($pre_path . $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: file in track {$ftrack_no} does not exist.",
-                    "  Track file: {$prepath}{$trkfile}", "  File: {$full_path}"));
+                    "  Track file: {$pre_path}{$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
         }
 
@@ -1166,7 +1168,8 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
   $matches = array();
 
   // gets $artist and $album
-  $list = preg_split("/\//", $add_folder);
+//  $list = preg_split("/\//", $add_folder);
+  $list = explode('/', $add_folder);
   $list_cnt = count($list);
   if ($list_cnt < 2) {
     logp("error",array(
@@ -1179,7 +1182,6 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
 
   // loop though looking for file lines
   for($i=0; $i < count($cuefile); $i++) {
-
     // load album / artist from cue_meta if it exists, otherwise from
     //  gartist/galbum
     //
@@ -1222,7 +1224,7 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
                "  Album:{$album}"));
         return FALSE;
       }
-       $songbase = preg_replace("/\.wav$/i", '', $songfile);
+      $songbase = preg_replace("/\.wav$/i", '', $songfile);
 
 
       // get current track no
@@ -1961,6 +1963,9 @@ function makeCueConvertable(&$cuefile) {
 function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $options){
   global $conversions;
 
+  // options
+  $override_nofile = getOption("override-nofile", $options);
+  
   // return if not a .cue file
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
 
@@ -2058,7 +2063,7 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 //       --reverse - renames the files in the other direction from new to old
 //       --override-nofile - show warning if old files do not exist, but continue
 //                            processing and don't return false
-//       --test-exist -
+//       --test-exist - tests existance of src file and errors if not there
 //
 // Returns TRUE if successul, FALSE on failure
 //
@@ -2071,13 +2076,17 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
 function moveWav(&$wav, $options=array())  {
   $return = TRUE;
+
   // get options
   $reverse = getOption("reverse", $options);
-  $override_nofile = getOption("--override-nofile", $options);
+  $override_nofile = getOption("override-nofile", $options);
   $test_exist = getOption("test-exist", $options);
 
+// print_r($options);
+// print "test exist:{$test_exist}:\n";
+//print_r($wav);
   // set message
-  if ($test_exist == FALSE) $msg = "Renaming"; else $msg="Test existance";
+  if ($test_exist == FALSE) $msg = "Rename:"; else $msg="Test exist:";
 
   // general message if dryRun
   if (isDryRun()) logp("log","DryRun: the following would be renamed:");
@@ -2115,6 +2124,13 @@ function moveWav(&$wav, $options=array())  {
 
       // check for normal path, long path, or error
       if (file_exists($old_path)) {
+// logp("echo","Rename priary:" . isDryRun() . ":test exist:{$test_exist}:");
+// if (! isDryRun() && $test_exist === FALSE)
+//   logp("echo","rename condition met ===");
+//
+// if (! isDryRun() && $test_exist == FALSE)
+//     logp("echo","rename condition met ==");
+
         if (! isDryRun() && $test_exist === FALSE && ! rename($old_path, $new_path))  {
           logp("error", array("ERROR moveWav: failure on renaming '{$old_path}'",
                  " to '{$new_path}'"));
@@ -2137,8 +2153,8 @@ function moveWav(&$wav, $options=array())  {
         // if override is true, continue with process
         if ($override_nofile === TRUE) {
           logp("error",array(
-                  "WARNING moveWav: file does not exist, but override set.",
-                  "File: '{$old_path}'"));
+                  "WARNING moveWav: file does not exist, but override set, so proceeding without error.",
+                  "  File: '{$old_path}'"));
           $return=TRUE;
         } else {
           logp("error",array(
@@ -2206,7 +2222,7 @@ function changeWAVNew(&$wav, $old, $new) {
 // Returns FALSE if error in moving
 //
 // Moves contents of from_dir to dest_dir. If files already exist in dest_dir,
-//  adds -N before suffix and attempts again (up to limit).
+//  adds -N digit before suffix and attempts again (up to limit).
 // Once from_dir is clean, attempts to delete it.
 //
 
@@ -2229,13 +2245,13 @@ function moveDirContents($from_dir = NULL, $dest_dir = NULL) {
   // check and open dir
   if (! is_dir($from_dir))  {
     logp("error",
-           "ERROR moveDirContents: source directory not found ,'{$from_dir}'");
+           "ERROR moveDirContents: source directory not found, '{$from_dir}'");
     return FALSE;
   }
 
   if (($dir = opendir($from_dir)) === FALSE)
     logp("error,exit1",
-         "FATAL ERROR moveDirContents: could not open source directory,'{$from_dir}'");
+         "FATAL ERROR moveDirContents: could not open source directory, '{$from_dir}'");
 
   // check dest dir
   if (! is_dir($dest_dir))  {
@@ -2446,22 +2462,24 @@ function getArgOptions($argv, &$options = array())  {
 //  $option - name of option
 //  $options - array of key=>value options
 //  $current_value - value variable is set to if no option is set. A general
-//                   "default" value for the variable.
+//                   "default" value for the variable. Tried NULL as a default
+//                   but FALSE works better for most flags.
 //  $default_value - value used for attribute if the option is set but no value
 //                   is declare. This value only takes effect when the option
 //                   is set.
 //                   defaults to TRUE
 
-function getOption($option, $options, $current_value = NULL, $default_set_value = TRUE) {
+function getOption($option, $options, $current_value = FALSE, $default_set_value = TRUE) {
   // start with current value
   $value = $current_value;
 
   // arrayify if needed
-  if (! is_array($options)) $options=array($options=>NULL);
+  if (! is_array($options)) $options=array($options => $default_set_value);
 
-  if (isset($options[$option]))
+  if (isset($options[$option])) {
     if ($options[$option] === NULL) $value = $default_set_value;
     else $value = $options[$option];
+  }
 
   return $value;
 } // end of function getOption

@@ -6,7 +6,7 @@
 //
 
 require "MusicRequire.inc";
-logp_init("MultiDisk", "");
+logp_init("MultiDisk");
 
 // check options
 getArgOptions($argv, $options);
@@ -26,7 +26,6 @@ $cue_meta = array();
 $wav = array();
 $trash = array();
 
-
 // setup the merge
 if (! setupMultiMerge($cuefile, $cue_meta, $wav, $trash, "fixup"))
   logp("error,exit1","FATAL ERROR: setup multi disk merge failed.");
@@ -35,7 +34,8 @@ if (! setupMultiMerge($cuefile, $cue_meta, $wav, $trash, "fixup"))
 if (! confirmMerge($cuefile, $wav)) exit;
 
 // execute
-if (! executeMerge($cuefile, $wav, $trash, $options)) exit;
+if (! executeMerge($cuefile, $wav, $trash, $options))
+  logp("echo,exit1","MultiDisk executeMerge failed. See errors above for details.");
 
 logp("echo,exit0","MultiDisk successfully merged directories.  See logs for details.");
 
@@ -248,6 +248,8 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
   global $multiDisks;
   $return = TRUE;
 
+  logp("log","Executing merge and move...");
+
   $dir= getArtistFromCwd() . "/" . $finalDir;
   $newfile = $finalDir . ".cue";
   $newpath = $finalDir . "/" . $newfile;
@@ -293,7 +295,7 @@ function executeMerge(&$cuefile, &$wav, &$trash, $options)  {
   // move to trash.  Note using parent as base trash directory.
   //  also note: we move to Trash before we rename .cand file in case
   //   the finalDir is one of the contributing dirs (which would remove
-  //   it's cue file)
+  //   its cue file)
   if (! moveToTrash($trash, $trashed, "..")) $return = FALSE;
 
   // rename candidate file
