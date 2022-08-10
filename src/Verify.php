@@ -14,6 +14,13 @@ logp_init("Verify", "", "echo[error]");
 getArgOptions($argv, $options);
 checkDryRunOption($options);
 
+//
+// Global Variables
+//
+
+// verify_no_cue_dir:
+$verify_no_cue_dir="";
+
 // execute through crawl
 if (crawl($srcdir, '', '', "verify"))
   logp("echo","Verification pass completed.");
@@ -23,13 +30,6 @@ else
 // safety
 exit;
 
-
-//
-// Global Variables
-//
-
-// verify_no_cue_dir:
-$verify_no_cue_dir="";
 
 function verify($base_folder, $add_folder, $new_base_folder, $file, $options)  {
   $return = true;

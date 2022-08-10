@@ -825,6 +825,7 @@ function checkCueCovered($base_folder, $add_folder, $check_type = "error") {
 //             instead of reading the file.
 //  $skip_file - if TRUE, skip file testing
 //  $options array:
+//   skip-file - ?? needed as seperate option from override-nofile?
 //   override-nofile - if TRUE, skip file testing of wav/content files
 //   silent - performs function without producing errors or verification in logs. Used when
 //             evaluation is needed rather than error reporting.
@@ -908,7 +909,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
     // keep it quiet?
     if ( $silent === FALSE ) {
       logp("log", array("Verifying: {$add_folder},", "   '{$file}'"));
-      if ($skip_file === TRUE) logp("log","   Skip file enabled.");
+      if ($skip_file === TRUE) logp("log","   No-file override enabled.");
     }
 
     //
@@ -999,10 +1000,9 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         $trkfile = preg_replace("/\".*$/", '', $trkfile);
 
         // get track no and check format
-        if (preg_match("/(^\d{2,}) /", $trkfile, $matches))
+        if (preg_match("/(^\d+)\s/", $trkfile, $matches))
           $ftrack_no=$matches[1];
-        else
-        {
+        else  {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: track filename does not start with a track number followed by a space",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
@@ -1011,11 +1011,11 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         }
 
         // get song title
-        $stitle = preg_replace("/.wav$/", '', $trkfile);
-        $stitle = preg_replace("/(^\d+) /", '', $stitle);
+        $stitle = preg_replace("/.wav$/i", '', $trkfile);
+        $stitle = preg_replace("/(^\d+)\s/", '', $stitle);
 
         //checks if track file name exists in directory
-        if ( $skip_file != TRUE && ! file_exists($pre_path . $trkfile)) {
+        if ( $skip_file !== TRUE && ! file_exists($pre_path . $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: file in track {$ftrack_no} does not exist.",
                     "  Track file: {$pre_path}{$trkfile}", "  File: {$full_path}"));
@@ -1031,7 +1031,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         }
 
         // check format starts with tracknum
-        if(! preg_match("/^\d{2,3} /", $trkfile)) {
+        if(! preg_match("/^\d+\s/", $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename does not start with a track number followed by a space",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
@@ -1039,15 +1039,19 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         }
 
         // -, whitespace, not allowed after tracknum
-        if(preg_match("/^\d{2,3} [-\s]/", $trkfile)) {
+        if(preg_match("/^\d+ [-\s]/", $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename in track {$ftrack_no} has - or space after track number",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
           $return = FALSE;
         }
 
-        //"
-        if(preg_match("/([~\?\*\+\[\]\{\}\^\$\|<>:;\/\"])/", $trkfile, $matches)){
+        // speical characters
+        //
+        //  pulling many out --
+//        if(preg_match("/([~\?\*\+\[\]\{\}\^\$\|<>:;\/\"])/", $trkfile, $matches)){
+
+        if(preg_match("/([\?\*\|<>:\/\"])/", $trkfile)){
           if ( $silent === FALSE )
             logp("error", array(
                     "ERROR verify: file name in track {$ftrack_no} has invalid special character, '{$matches[1]}'",
@@ -1055,7 +1059,8 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
           $return = FALSE;
         }
 
-        if(!preg_match("/\.[wW][aA][vV]$/i",$trkfile)){
+        // check that we have a .wav file
+        if(!preg_match("/\.wav$/i",$trkfile)){
           if ( $silent === FALSE )
             logp("error", array("ERROR: filename in track {$ftrack_no} does not end in .wav",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));
@@ -1065,7 +1070,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         // look ahead up to two lines for TRACK directive
         $j=1;
         while($found_track_title === FALSE && $j < 3)
-          if(preg_match("/(^ *TRACK )(\d+)/", $cuefile[$i+$j++], $matches))
+          if(preg_match("/(^\s*TRACK\s+)(\d+)/", $cuefile[$i+$j++], $matches))
           {
 
             $track_no = $matches[2];
@@ -1222,8 +1227,17 @@ function processFILEtag($add_folder, &$cuefile, $cue_meta = array(), &$wav, $com
       // strip back end of string.  Sometimes no WAVE but just a "
       $repl = 0;
       $songfile = preg_replace("/\"\s+WAVE.*$/", '', $songfile, -1, $repl);
-      if ($repl < 1)
-        $songfile = preg_replace("/\"$/", '', $songfile);
+      if ($repl < 1) {
+        $songfile = preg_replace("/\"[\sWAVE]*$/", '', $songfile, -1, $repl);
+        // if no replacement
+        if ($repl < 1) {
+          logp("error",array(
+                  "ERROR in processFILEtag: could not replace end of FILE line which will result",
+                  "  in malformed new filename.  Skipping title.",
+                  "  File line: {$songfile}"));
+          return FALSE;
+        }
+      } // end of first $repl < 1
 
       // replace $artist and $album directory level 0.  Keep space.
       $songfile = str_replace("{$artist}\\{$album}\\", '', $songfile);
@@ -1978,13 +1992,13 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   global $conversions;
 
   // options
-  $override_nofile = getOption("override-nofile", $options);
+//  $override_nofile = getOption("override-nofile", $options);
 
   // return if not a .cue file
   if (! preg_match('/\.cue$/i', $file))  return TRUE;
 
   // Makes sure that the cue file is all good
-  if (verifyCue($base_folder, $add_folder, $file) !== TRUE){
+  if (verifyCue($base_folder, $add_folder, $file, $options) !== TRUE)  {
     logp("error", array("ERROR: folder '{$add_folder}',",
                         "  file '{$file}'",
                         " failed on verifyCue call. Returning."));
@@ -2000,7 +2014,8 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
   // get info from folder
 
-  $list = preg_split("/\//", $add_folder);
+//  $list = preg_split("/\//", $add_folder);
+  $list = explode('/', $add_folder);
 
   // first much check if the album and songs exist in $new_base_folder
   $list_count = count($list);
@@ -2015,12 +2030,13 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
   $artist = $list[$list_count - 2];
 
   // cycle through each conversion in $conversions
+  $conv_occurred = FALSE;
   foreach ($conversions as $key=>$conversion)  {
     // only process if convert is TRUE
-    if ($conversion["convert"] === TRUE)
-    {
+    if ($conversion["convert"] === TRUE) {
       // logp
-      logp("log","Converting to {$key}: {$base_folder}, {$add_folder}, {$file}");
+      logp("log",array("Converting to {$key}: {$base_folder},",
+                       "  {$add_folder}, {$file}"));
 
       // change directory if specified in params
       if ($conversion["cd_dir"] === TRUE) chdir($base_folder . '/' . $add_folder);
@@ -2049,23 +2065,29 @@ function convertFromCue($base_folder, $add_folder, $new_base_folder, $file, $opt
 
       logp("log", "Command:" . $command);
       // exec command
-      if (! isDryRun())
-      {
+      if (! isDryRun()) {
         $rescode=0;
         system($command,$rescode);
-        if ($rescode != 0)
-        {
+        if ($rescode != 0) {
           logp("error","ERROR: conversion command failed for '{$add_folder}', file '{$file}'");
           return FALSE;
         }
-      } // DryRun
+      } // isDryRun
+
+      $conv_occurred = TRUE;
     } // if convert
   }  // foreach
 
   // inform
-  logp("info",array("Converted '{$add_folder}',",
+  if ($conv_occurred === TRUE)
+    logp("info",array("Converted '{$add_folder}',",
                 "   '{$file}', ",
                 "   from '{$base_folder}'"));
+  else
+    logp("log",array("No conversion was invoked: '{$add_folder}',",
+              "   '{$file}', ",
+              "   from '{$base_folder}'"));
+
   return;
 }
 
@@ -2115,13 +2137,17 @@ function moveWav(&$wav, $options=array())  {
       logp("error,exit1","FATAL ERROR in moveWav: null 'new' value in key '{$key}'");
 
     // set file names
+    //
+    //  set $old_long
+    if (isset($index["old_long"])) $old_long = $index["old_long"]; else $old_long=NULL;
+
     if (isset($index["old_dir"]) && $index["old_dir"] != NULL)  {
       $old_path = $index["old_dir"] . "/" . $index["old"];
-      $long_path = $index["old_dir"] . "/" . $index["old_long"];
+      $long_path = $index["old_dir"] . "/" . $old_long;
     }
     else {
       $old_path = $index["old"];
-      $long_path = $index["old_long"];
+      $long_path = $old_long;
     }
 
     if (isset($index["new_dir"]) && $index["new_dir"] != NULL)
@@ -2188,7 +2214,7 @@ function moveWav(&$wav, $options=array())  {
       logp("log", array("Reverse {$msg} '{$new_path}'", " as '{$rev_path}'."));
 
       if (file_exists($new_path)) {
-        if (! isDryRun && $test_exist === FALSE && ! rename($new_path, $rev_path))  {
+        if (! isDryRun() && $test_exist === FALSE && ! rename($new_path, $rev_path))  {
           logp("error", array("ERROR moveWav: failure on reverse renaming '{$new_path}'",
                   " as '{$rev_path}'"));
           $return = FALSE;

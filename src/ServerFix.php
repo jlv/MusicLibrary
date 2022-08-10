@@ -186,7 +186,7 @@ function cueFileFix($base_folder, $add_folder, $file, $options=array())  {
 
     // if verify, rename files, log and complete
     logp("log","Verifying new cue file...");
-    if (verifyCue($base_folder, $add_folder, $file))
+    if (verifyCue($base_folder, $add_folder, $file, $options))
       // log conversion complete
       logp("info",array("ServerFix successfully transformed '{$file}'",
                         "  in '{$add_folder}'"));

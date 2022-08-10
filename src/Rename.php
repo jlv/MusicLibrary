@@ -49,7 +49,7 @@ if (! confirm($wav)) exit;
 
 logp("echo","Completing rename...");
 if (completeRename($oldcue, $cuefile, $wav))
-  logp("echo","  ...finished Rename to {$newDir}");
+  logp("echo","  ...finished Rename to '{$newDir}'");
 else
   logp("error,exit1","There were errors on rename. See logs.");
 
@@ -74,20 +74,29 @@ function confirm(&$wav) {
   global $newDir;
   global $trackExcerpt;
 
-print_r($wav);
+//print_r($wav);
 
   // display parameters
   print "\n\n********************************************************\n";
-  print "CONFIRM RENAME PARAMETERS\n\n";
+  print "  CONFIRM RENAME PARAMETERS\n\n";
+  print "Album:\n";
   print $oldDir . "  ---->  " . "\n    " . $newDir . "\n";
-  print "Track Excerpt: {$trackExcerpt}\n\n";
+  print "Track Replacement Excerpt: {$trackExcerpt}\n\n";
+  print "Tracks:\n";
 
-  foreach($wav as $index)
-    print "{$index["old"]}\n  --> {$index["new"]}\n\n";
+  foreach($wav as $index) {
+    // get correct file,if a tooLong
+    if (isset($index['tooLongExists']) && $index['tooLongExists'] === TRUE)
+      $old_song = $index["old_long"];
+    else
+      $old_song = $index["old"];
 
-  print "\n\n";
+    print "{$old_song}\n  --> {$index["new"]}\n\n";
+  } // foreach
 
-  $response = readline("\nAre these new track names correct and directories? >");
+  print "\n";
+
+  $response = readline("Are these new track names correct and directories? >");
   if(strtoupper($response) != "Y") exit();
 
   $response = readline("\nAre you sure you want to rename? >");
@@ -123,25 +132,7 @@ function setupAlbum(&$cuefile, &$wav) {
       // for legacy artist\Album, replace everything up to backslash
       $songfile = preg_replace("/^.*\\\/", '', $songfile);
 
-
-      // replace old Dir with newDir in file name if an option
-      // check file existance:
-      // try normal filename renames
-//        $pfix = " - ";
-//        $cuefile[$i] = str_replace($pfix . $oldDir . $pfix, $pfix . $newDir . $pfix, $cuefile[$i]);
-//        $pfix = " ~ ";
-//        $cuefile[$i] = str_replace($pfix . $oldDir . $pfix, $pfix . $newDir . $pfix, $cuefile[$i]);
-
       $wav[$i]["old"] = $songfile;
-
-      // for legacy, replace oldDir with newDir
-      //$cuefile[$i] = str_replace("\\{$oldDir}\\","\\{$newDir}\\",$cuefile[$i]);
-
-
-
-      // fixes up FILE line and $songfile
-      //$cuefile[$i] = preg_replace($trackExcerpt, '', $cuefile[$i]);
-
 
       // edit $songfile
       $newSongfile = $songfile;
@@ -170,8 +161,10 @@ function setupAlbum(&$cuefile, &$wav) {
 } // end of setupAlbum function
 
 
-// function editAlbum($currentDir, $oldDir, $newDir, $trackExcerpt)
-//  $oldDir - old album name to be changed
+// function completeRename($oldcue, &$cuefile, &$wav)
+//  $oldcue - old cuefile array
+//  $cuefile - cuefile to write
+//  $wav - wav files array (see moveWav for definition)
 function completeRename($oldcue, &$cuefile, &$wav) {
   global $oldDir;
   global $newDir;
@@ -184,8 +177,7 @@ function completeRename($oldcue, &$cuefile, &$wav) {
   if (! file_put_contents($oldcue . ".rename", $cuefile))
     logp("error,exit1","FATAL ERROR: could not write rename cue file: '{$oldcue}.rename'");
 
-  if(isDryRun())
-  {
+  if(isDryRun()) {
     logp("info", "DryRun: rename '{$oldDir}.cue' as '{$oldDir}.cue.pre-rename'");
     logp("info", "DryRun: rename directory '{$oldDir}' as '{$newDir}'");
   } else {
