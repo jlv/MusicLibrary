@@ -1,6 +1,20 @@
 <?php
 
 
+$file="TestFile -1.cue";
+
+if(preg_match("/( *)(-?)1.cue$/", $file, $matches)){
+	// set base title
+	$base_title = substr($file, 0, -strlen($matches[1] . $matches[2] . "1.cue"));
+
+	print_r($matches);
+	print "base:{$base_title}:\n";
+}
+
+exit;
+
+
+
 $target="foo";
 $link="bar";
 
