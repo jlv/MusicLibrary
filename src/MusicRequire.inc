@@ -945,10 +945,8 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
       $input=$cuefile[$i];
 
       // check artist line
-      if($in_tracks === FALSE && preg_match("/(^\s*PERFORMER \")(.*)\".*/",$input,$matches))
-      {
-        if ($matches[2] != $artist)
-        {
+      if($in_tracks === FALSE && preg_match("/(^\s*PERFORMER \")(.*)\".*/",$input,$matches)) {
+        if ($matches[2] != $artist)  {
           if ( $silent === FALSE )
             logp("error", array(
               "ERROR verify: artist/performer from directory path, '{$artist}', does not",
@@ -1000,7 +998,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
         $trkfile = preg_replace("/\".*$/", '', $trkfile);
 
         // get track no and check format
-        if (preg_match("/(^\d+)\s/", $trkfile, $matches))
+        if (preg_match("/^(\d+) /", $trkfile, $matches))
           $ftrack_no=$matches[1];
         else  {
           if ( $silent === FALSE )
@@ -1012,7 +1010,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
 
         // get song title
         $stitle = preg_replace("/.wav$/i", '', $trkfile);
-        $stitle = preg_replace("/(^\d+)\s/", '', $stitle);
+        $stitle = preg_replace("/^\d+ /", '', $stitle);
 
         //checks if track file name exists in directory
         if ( $skip_file !== TRUE && ! file_exists($pre_path . $trkfile)) {
@@ -1030,8 +1028,9 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
           $return = FALSE;
         }
 
+// needed?
         // check format starts with tracknum
-        if(! preg_match("/^\d+\s/", $trkfile)) {
+        if(! preg_match("/^\d+ /", $trkfile)) {
           if ( $silent === FALSE )
             logp("error", array("ERROR verify: filename does not start with a track number followed by a space",
                     "  Track file: {$trkfile}", "  File: {$full_path}"));

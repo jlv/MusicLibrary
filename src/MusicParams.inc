@@ -216,16 +216,18 @@ $conversions["mp3-128"] = array("convert"=>TRUE, "converter"=>$dflt_converter,
       "image"=>FALSE);
 
 // // mp3-192 converter
-// $conversions["mp3-192"] = array("convert"=>TRUE, "converter"=>$dflt_converter,
-//       "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>TRUE,
-//       "pre-cue"=>" /dest mp3 /cbr 192 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
-//       "image"=>FALSE);
-//
-// // mp3-320 converter
-// $conversions["mp3-320"] = array("convert"=>TRUE, "converter"=>$dflt_converter,
-//       "base_folder"=>$conversion_base_dir . "/MP3-320", "cd_dir"=>TRUE,
-//       "pre-cue"=>" /dest mp3 /cbr 320 -i ", "pre-out"=>" /usesource -o ", "post-out"=>"",
-//       "image"=>FALSE);
+$conversions["mp3-192"] = array("convert"=>TRUE, "converter"=>$dflt_converter,
+      "base_folder"=>$conversion_base_dir . "/MP3-192", "cd_dir"=>TRUE,
+      "pre-cue"=>" /dest mp3 /cbr 192 -i ",
+      "pre-out"=>" /usesource /pfilename \"%track% %title%\" -o ", "post-out"=>"",
+      "image"=>FALSE);
+
+// mp3-320 converter
+$conversions["mp3-320"] = array("convert"=>TRUE, "converter"=>$dflt_converter,
+      "base_folder"=>$conversion_base_dir . "/MP3-320", "cd_dir"=>TRUE,
+      "pre-cue"=>" /dest mp3 /cbr 320 -i ",
+      "pre-out"=>" /usesource /pfilename \"%track% %title%\" -o ", "post-out"=>"",
+      "image"=>FALSE);
 
 
 // parameters to feed converter
