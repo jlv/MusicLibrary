@@ -112,7 +112,7 @@ function moveCues($directory, $options)  {
         //  a multi file
         if(findMulti(array("", "2", "-2", " -2"), $base_title) === FALSE) {
           // not multi, not single. Error.
-          print "BASE title:{$base_title}:\n";
+  //        print "BASE title:{$base_title}:\n";
           logp("error", array(
                   "ERROR: file does not qualify as a single disc or multi disc. Skipping.",
                   "  Could not find the next file in sequence.",

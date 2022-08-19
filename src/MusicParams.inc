@@ -54,7 +54,8 @@ elseif ($hostname == "Rising-Sun")  {
 
   // source directory of wave files and cue files
   //  $srcdir = "N:/QT-Rip4/Succeed";
-  $srcdir = "N:/Q-Ref1-1";
+  //$srcdir = "N:/Q-Ref1-1";
+  $srcdir = "N:/QX1-1";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  below this directory
