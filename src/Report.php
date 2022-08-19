@@ -4,12 +4,16 @@
 //
 // creates logfile report of every file in system
 //
+$help = array(
+  "Report",
+  "  no options"
+);
 
 require 'MusicRequire.inc';
-logp_init("Report", "");
+logp_init("Report");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 // set crawl in motion

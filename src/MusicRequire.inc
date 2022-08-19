@@ -2150,9 +2150,12 @@ if(!function_exists("readline")) {
   }
 }
 
-// function getArgOptions($argv, &$options)
+// function getArgOptions($argv, &$options, [$help])
 //  $argv - argv from command line
 //  $options - array in which to return options
+//  $help - if set as an array of messages, prints out the help
+//          text when an option of --? or --help is used, then
+//          exits
 //
 // Returns: TRUE if option loaded, FALSE if no option found
 //
@@ -2160,7 +2163,7 @@ if(!function_exists("readline")) {
 //  assumes it's an option.  If --option=value, then creates a key=>value
 //  pair in $options, otherwise creates a key=>TRUE pair.
 
-function getArgOptions($argv, &$options = array())  {
+function getArgOptions($argv, &$options = array(), $help = array())  {
   $return = FALSE;
   $options=array();
   $arg_arr=array();
@@ -2181,6 +2184,13 @@ function getArgOptions($argv, &$options = array())  {
         // no assignment means true
         else
           $options[$arg_arr[0]] = TRUE;
+
+        // check for help array and match of option and TRUE
+        if ($help && ( $arg_arr[0] == '?' || $arg_arr[0] ) &&
+              $options[$arg_arr[0]] === TRUE) {
+          foreach($help as $line) print $line . "\n";
+          exit (0);
+        }
 
       $return=TRUE;
     }

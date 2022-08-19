@@ -5,14 +5,18 @@
 //
 // After EAC ripping, scans each cuefile in a directory, touches up any issues
 //  and moves the cuefile to the appropriate directory.
+$help = array(
+  "MoveCues [--reorder]",
+  "  --reorder - reorders tracks in any compbined files"
+);
 
 require 'MusicRequire.inc';
 
-logp_init("MoveCues", "");
+logp_init("MoveCues");
 
 // check options
 // get options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 // scanCues($testDir, $trashDir)

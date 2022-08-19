@@ -4,12 +4,16 @@
 //  --override-nofile - overrides completion of disk merge skipping non-existant
 //                       files
 //
+$help = array(
+  "MultiDisk [--override-nofile]",
+  "--override-nofile - overrides completion of disk merge skipping non-existant files"
+);
 
 require "MusicRequire.inc";
 logp_init("MultiDisk");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 // check if Rename.inc exists in local directory, then require if exists

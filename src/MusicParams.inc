@@ -76,12 +76,17 @@ elseif ($hostname == "shigoto")  {
   $homedir="C:/jlv/MusicLibrary";
 
   // source directory of wave files and cue files
+  //
+  // default
+  $srcdir = $homedir . "/SrcDir";
+
+  // working versions:
   //$srcdir = "N:/A";
   //$srcdir = "N:/B";
   //$srcdir = "N:/Q-Ref";
   //$srcdir = "N:/QT";
 //  $srcdir = "F:/QT6";
-  $srcdir = "F:/Q-Ref1-1";
+//  $srcdir = "F:/Q-Ref1-1";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  below this directory

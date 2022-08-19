@@ -6,12 +6,19 @@
 //  --fixall - runs serverFix on all cue files, even if they validate
 //  --override-nofile - write cuefile and process whatever can be processed
 //                       skipping non-existance files.
+$help = array(
+  "serverFix [--fixall] [--override-nofile]",
+  "  --fixall - runs serverFix on all cue files, even if they validate",
+  "  --override-nofile - write cuefile and process whatever can be processed",
+  "    skipping non-existance files",
+  "Crawls srcdir and fixes legacy cue files and filenames."
+);
 
 require "MusicRequire.inc";
 logp_init("ServerFix");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 

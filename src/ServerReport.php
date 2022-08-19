@@ -3,15 +3,19 @@
 // functional definition
 //
 // prints every cue file and wav file
+$help = array(
+  "ServerReport",
+  "  no options"
+);
 
 require "MusicRequire.inc";
 //
 // begin function - main
 //
-logp_init("ServerReport", "");
+logp_init("ServerReport");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 crawl($srcdir, "", "", "crawlName", array());

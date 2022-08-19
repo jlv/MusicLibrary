@@ -11,12 +11,16 @@
 //
 //  wav array: The 2D array uses Index as first dimension and as 2nd dim
 //           "old", "new", "old_dir", and "new_dir" for data values.
+$help = array(
+  "Rename",
+  "  options?"
+);
 
 require "MusicRequire.inc";
-logp_init("Rename", "", "echo[error],echo[info]");
+logp_init("Rename");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 // check if Rename.inc exists in local directory, then require if exists

@@ -6,12 +6,16 @@
 //   - To skip a directory, add a file $directory.nocue
 //
 //
+$help = array(
+  "Verify",
+  "  no options"
+);
 
 require "MusicRequire.inc";
 logp_init("Verify", "", "echo[error]");
 
 // check options
-getArgOptions($argv, $options);
+getArgOptions($argv, $options, $help);
 checkDryRunOption($options);
 
 //
