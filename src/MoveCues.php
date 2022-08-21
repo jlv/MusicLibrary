@@ -78,30 +78,33 @@ function moveCues($directory, $options)  {
       // ftitle and starting base_title (which may be replaced)
       $ftitle = substr($file, 0, strlen($file) - 4);
       $base_title = $ftitle;
+
       // get album title from cue file (errors will have already displayed)
       if (($cue_title = getCueInfo("album", $file)) === FALSE) continue;
 
       // logic for establishing multi mode
-      //  - if ends in [-]1:
-      //     - check if title matches with the [-]1:
+      //  - if ends in [ ][-][ ]1:
+      //     - check if title matches with the [ ][-][ ]1:
       //         if so, look for subsequent versions, otherwise process as single
       //     - elseif check if other files exist (and title matches)
       //     - else error
-      //  - elseif title[-][12] files exist, check titles & skip (going multi)
+      //  - elseif title[ ][-][ ][12] files exist, check titles & skip (going multi)
       //  - elseif title matches, process as single
       //  - elseif ends in \d, check if a [-]1 exists and title matches & skip
       //  - else error
       //
       // multi check [-]1
 
-      if(preg_match("/( ?)(-?)1$/", $ftitle, $matches)){
+      if(preg_match("/( ?)(-?)( ?)1$/", $ftitle, $matches)){
         // set vars
-        $base_title = substr($ftitle, 0, -strlen($matches[1] . $matches[2] . "1"));
+        $base_title = substr($ftitle, 0, -strlen($matches[1] . $matches[2] . $matches[3] . "1"));
 
         // check cue title
         if ($cue_title == $ftitle)
-          // look for multi, otherwise process as single
-          if (findMulti(array("1", "-1", " -1", "2", "-2", " -2"), $ftitle) === TRUE) continue;
+          // look for multi files, otherwise process as single
+          if (findMulti(
+               array("1", "-1", " -1", "- 1", " - 1", "2", "-2", " -2", "- 2", " - 2"),
+             $ftitle) === TRUE) continue;
           else $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
         elseif ($cue_title != $base_title) {
           // orphaned file
@@ -112,11 +115,10 @@ function moveCues($directory, $options)  {
           continue;
         }
 
-        // if we can find a file with the $base, or $base[ -]2, then we have
+        // if we can find a file with the $base, or $base[ - ]2, then we have
         //  a multi file
-        if(findMulti(array("", "2", "-2", " -2"), $base_title) === FALSE) {
+        if(findMulti(array("", "2", "-2", " -2", "- 2", " - 2"), $base_title) === FALSE) {
           // not multi, not single. Error.
-  //        print "BASE title:{$base_title}:\n";
           logp("error", array(
                   "ERROR: file does not qualify as a single disc or multi disc. Skipping.",
                   "  Could not find the next file in sequence.",
@@ -131,7 +133,9 @@ function moveCues($directory, $options)  {
       }  // if preg match 1.cue
 
       // multi: check if title[-][12] files exist,then skip for multi
-      elseif (findMulti(array("1", "-1", " -1", "2", "-2", " -2"), $ftitle) === TRUE)
+      elseif (findMulti(
+               array("1", "-1", " -1", "- 1", " - 1", "2", "-2", " -2", "- 2", " - 2"),
+               $ftitle) === TRUE)
         continue;
 
       // multi: if title matches, process as single since no evidence
