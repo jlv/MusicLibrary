@@ -6,8 +6,11 @@
 // After EAC ripping, scans each cuefile in a directory, touches up any issues
 //  and moves the cuefile to the appropriate directory.
 $help = array(
-  "MoveCues [--reorder]",
-  "  --reorder - reorders tracks in any compbined files"
+  "MoveCues [options]",
+  "  Options:",
+  "   --reorder - reorders tracks in any compbined files",
+  "After EAC ripping, scans each cuefile in current directory, combines multi-CD",
+  " cue files, and moves to the appropriate directory."
 );
 
 require 'MusicRequire.inc';
@@ -107,9 +110,16 @@ function moveCues($directory, $options)  {
              $ftitle) === TRUE) continue;
           else $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
         elseif ($cue_title != $base_title) {
-          // orphaned file
+          // check special case if base ends with digit -- could be a sequential file
+          //  look for base with a x0
+          if (file_exists($base_title . '0')) continue;
+
+//print "CUE :'{$cue_title}'\nBASE:'{$base_title}'\n";
+
+          // otherwise an orphaned file
           logp("error", array(
-            "ERROR: TITLE in cue file does not match file or match multidisk pattern.",
+            "ERROR: TITLE in cue file does not match file, match multidisk pattern,",
+            "  or can find a sequence.",
             "  File: '{$file}'"));
           $return = FALSE;
           continue;
@@ -117,7 +127,12 @@ function moveCues($directory, $options)  {
 
         // if we can find a file with the $base, or $base[ - ]2, then we have
         //  a multi file
-        if(findMulti(array("", "2", "-2", " -2", "- 2", " - 2"), $base_title) === FALSE) {
+
+//print "BASE:'{$base_title}'\n";
+//print "CUE :'{$cue_title}'\nBASE:'{$base_title}'\n";
+//print "CUE :'{$cue_title}'\nBASE:'{$base_title}'\nFILE:'{$ftitle}'\n";
+
+        elseif(findMulti(array("", "2", "-2", " -2", "- 2", " - 2"), $base_title) === FALSE) {
           // not multi, not single. Error.
           logp("error", array(
                   "ERROR: file does not qualify as a single disc or multi disc. Skipping.",
@@ -128,11 +143,11 @@ function moveCues($directory, $options)  {
         }
 
         // made it here.  It's a multi with this as the lead file.
-        $setupRet = setupMulti($file, $cuefile, $files_used, $trash);
+        else $setupRet = setupMulti($file, $cuefile, $files_used, $trash);
 
       }  // if preg match 1.cue
 
-      // multi: check if title[-][12] files exist,then skip for multi
+      // multi: check if title[ - ][12] files exist,then skip for multi
       elseif (findMulti(
                array("1", "-1", " -1", "- 1", " - 1", "2", "-2", " -2", "- 2", " - 2"),
                $ftitle) === TRUE)
@@ -143,11 +158,11 @@ function moveCues($directory, $options)  {
       elseif  ($ftitle == $cue_title)
         $setupRet = setupSingle($file, $cuefile, $files_used, $trash);
 
-      // multi check \d*.cue and matches, skip
-      elseif (preg_match("/(-?)(\d*)$/", $ftitle, $matches)) {
+      // multi check [ - \d+].cue and matches, skip
+      elseif (preg_match("/( ?)(-?)( ?)(\d+)$/", $ftitle, $matches)) {
         // could be a suffix on a file, or could be a bigger part of
         //  the actual file.  Chop it down to find a match.
-        $ext_suf = $matches[1] . $matches[2];
+        $ext_suf = $matches[1] . $matches[2] . $matches[3] . $matches[4];
         $ext_base = substr($ftitle, 0, -strlen($ext_suf));
 
         // set condition test for loop looking for a match for
@@ -165,8 +180,8 @@ function moveCues($directory, $options)  {
         else {
           logp("error", array(
                   "ERROR: file does not qualify as a single disc or multi disc. Skipping.",
-                  "  File ends with numbers but cannot find a multi-cue match for another",
-                  "  file, and in-cue title doesn't match the file name.",
+                  "  File ends with numbers but cannot find a multi-cue match for another file,",
+                  "  and in-cue title doesn't match the file name.",
                   "  File: '{$file}'"));
           $return = FALSE;
           continue;
@@ -399,6 +414,13 @@ function findMulti( $endings, $base_title )  {
     if ( file_exists($cand_file))
       if (($cue_title = getCueInfo("album", $cand_file)) === FALSE) continue;
       elseif ($cue_title == $base_title) return TRUE;
+      // print warning check for case
+      elseif (! strcasecmp($cue_title, $base_title))
+        logp("error",array(
+               "WARNING in findMulti: cue file title and base file title are identical",
+               "  except in case.",
+               "  Cue file :'{$cue_title}'",
+               "  Base file:'{$base_title}'"));
   }  // foreach
 
   // got here with no matches

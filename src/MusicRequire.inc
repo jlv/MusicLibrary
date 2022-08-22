@@ -1029,7 +1029,7 @@ function verifyCue($base_folder, $add_folder, $file, $options = array(), &$cuefi
           $return = FALSE;
         }
 
-        // speical characters
+        // special characters
         //
         //  pulling many out --
 //        if(preg_match("/([~\?\*\+\[\]\{\}\^\$\|<>:;\/\"])/", $trkfile, $matches)){
@@ -1137,7 +1137,8 @@ function getCueInfo($infotype, $file, &$cuefile=array()) {
   // read input, look for title
   foreach ($cuefile as $line)
     if (preg_match("/^\s*{$infotag}\s*\"(.*)\"$/", $line, $matches))
-       return $matches[1];
+//       return $matches[1];
+      return convertToFile($matches[1]);
     elseif (preg_match("/^\s*FILE /", $line, $matches)) {
       // if we find file, there was not title previously.  Error
       logp("error",array(
@@ -1581,6 +1582,29 @@ function trackifyCue(&$cuefile, &$wav, $option = FALSE)  {
 
   return TRUE;
 } // end of function
+
+
+// function convertToFile($str)
+// $str - string to convert
+//
+// Returns converted string
+//
+// Replaces non-valid file characters with the ones used by EAC
+//  \?\*\|<>:\/\"
+
+function convertToFile($str) {
+  $str = str_replace(':', '-', $str);
+  $str = str_replace('\\', '-', $str);
+  $str = str_replace('/', '-', $str);
+  $str = str_replace('*', '-', $str);
+  $str = str_replace('>', '-', $str);
+  $str = str_replace('<', '-', $str);
+  $str = str_replace('?', '-', $str);
+  $str = str_replace('"', '-', $str);
+//  $str = str_replace('', '-', $str);
+
+  return $str;
+}
 
 
 // function regify($str)
@@ -2186,7 +2210,7 @@ function getArgOptions($argv, &$options = array(), $help = array())  {
           $options[$arg_arr[0]] = TRUE;
 
         // check for help array and match of option and TRUE
-        if ($help && ( $arg_arr[0] == '?' || $arg_arr[0] ) &&
+        if ($help && ( $arg_arr[0] == '?' || $arg_arr[0] == 'help') &&
               $options[$arg_arr[0]] === TRUE) {
           foreach($help as $line) print $line . "\n";
           exit (0);
