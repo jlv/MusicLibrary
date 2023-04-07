@@ -85,12 +85,14 @@ function debug()  {
 ///     ['_default_str'] - copy of latest _default_ctl string from logp_init
 ///     ['_options_str'] - copy of latest options string from logp_init
 //
+
+
 // function logp_init($logroot, $default_ctl, $options)
 //   $logroot - rootname of log file, after which date and extension are added
 //              example: mylog produces file mylog-20181228-074823.log
 //   $default_ctl - control string that sets defaults. For control options, see
 //              logp function below.
-//              To clear current default_ctl, use "clear" or "none"
+//              To clear current default_ctl, set to "clear" or "none"
 //   $options - options that are set globally for log system, generally of the form
 //              option1[=foo],option2[=bar],..., or just option,option2,...
 //              To clear current options, use "clear" or "none"
@@ -99,7 +101,8 @@ function debug()  {
 //                                         Defaults to TRUE if no =. FALSE means doesn't
 //                                         echo messages as a results of calling logtype.
 //
-// initializes or changes log control for further use by logp.
+// initializes or changes log control for further use by log system and logp.
+// Should be called before first log statement.
 //   - if values are set to null, no changes take place
 //
 // Uses globals:
@@ -108,6 +111,13 @@ function debug()  {
 //   - $log_detault_options - default options if not specified on initial call
 //   - $_base: internal structure for base data
 //
+
+// function logp_init($logroot, $default_ctl=NULL, $options=NULL)
+//  - $logroot - root prefix for log file
+//  - $default_ctl -
+//  - $options -
+//
+
 
 function logp_init($logroot, $default_ctl=NULL, $options=NULL)  {
   global $logdir;
@@ -562,6 +572,40 @@ function logp_int_ctlstring ($ctl)  {
 /// Shared Functions
 ///
 ///
+
+// function
+
+function files_compare($a, $b)
+{
+  // check file existance
+  if (! file_exists($a)) return false;
+  if (! file_exists($b)) return false;
+
+  // Check if filesize is different
+  if(filesize($a) !== filesize($b))
+      return false;
+
+  // Check if content is different
+  $chunksize = 8192;
+  $ah = fopen($a, 'rb');
+  $bh = fopen($b, 'rb');
+
+  $result = true;
+  while(!feof($ah))
+  {
+    if(fread($ah, $chunksize) != fread($bh, $chunksize))
+    {
+      $result = false;
+      break;
+    }
+  }
+
+  fclose($ah);
+  fclose($bh);
+
+  return $result;
+}
+
 
 
 // function isDryRun()
