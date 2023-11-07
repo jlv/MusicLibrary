@@ -53,15 +53,19 @@ elseif ($hostname == "Rising-Sun")  {
   $homedir="D:/MusicLibrary";
 
   // source directory of wave files and cue files
-  $srcdir = "N:/QT";
+  $srcdir = "N:/Q-Tmp";
+  // $srcdir = "N:/QT";
   //  $srcdir = "N:/QT-Rip4/Succeed";
   //$srcdir = "N:/Q-Ref1-1";
   // $srcdir = "N:/QX1-1";
+  $srcdir = "N:/Tmp-In-2";
 
   // output/conversion top directory.  Types of conversions usually housed
   //  below this directory
 //  $conversion_base_dir = "D:/Music/conversion";
-  $conversion_base_dir = "N:/Q-Out";
+//  $conversion_base_dir = "N:/Q-Tmp-Out";
+//  $conversion_base_dir = "N:/Q-Out";
+  $conversion_base_dir = "N:/Tmp-Out-2";
 
 }
 elseif ($hostname == "Hector")  {

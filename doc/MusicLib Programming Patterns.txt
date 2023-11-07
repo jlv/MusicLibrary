@@ -1,0 +1,44 @@
+Programming Patterns for Music Library
+
+Logging:
+  logp_init
+  logp
+  logp_close
+
+Helper fucntions:
+  getArgOptions
+  checkDryRunOption
+
+
+
+General Pattern:
+
+# Set up help message
+
+// MultiDisk [--override-nofile]
+//  --override-nofile - overrides completion of disk merge skipping non-existant
+//                       files
+$help = array(
+  "MultiDisk [--override-nofile]",
+  "--override-nofile - overrides completion of disk merge skipping non-existant files"
+);
+
+# get Music Library functions, and set up logp
+require "MusicRequire.inc";
+logp_init("CompareTree");
+
+# check options
+
+// check options
+getArgOptions($argv, $options, $help);
+checkDryRunOption($options);
+
+# check for input .inc file
+
+// check if Rename.inc exists in local directory, then require if exists
+if (file_exists("./MultiDisk.inc"))
+  require "./MultiDisk.inc";
+else {
+  logp ("echo,error,exit1",
+        "FATAL ERROR: Could not find variables file \"Multidisk.inc\" in calling directory. Exiting");
+}

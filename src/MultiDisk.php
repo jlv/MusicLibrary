@@ -21,7 +21,7 @@ if (file_exists("./MultiDisk.inc"))
   require "./MultiDisk.inc";
 else {
   logp ("echo,error,exit1",
-        "FATAL ERROR: Could not find variables file \"Multidisk.inc\" in calling directory. Exiting");
+        "FATAL ERROR: Could not find variables file \"Multidisk.inc\" in calling directory. Exiting.");
 }
 
 // initialize globals
